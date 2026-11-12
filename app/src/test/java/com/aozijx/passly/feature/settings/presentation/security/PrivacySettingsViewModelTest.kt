@@ -5,16 +5,17 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleSecuritySettings
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -105,7 +106,7 @@ class PrivacySettingsViewModelTest {
                 }
             model.onPageEntered()
             val effects = mutableListOf<PrivacySettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
@@ -156,7 +157,7 @@ class PrivacySettingsViewModelTest {
                 }
             model.onPageEntered()
             val effects = mutableListOf<PrivacySettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value

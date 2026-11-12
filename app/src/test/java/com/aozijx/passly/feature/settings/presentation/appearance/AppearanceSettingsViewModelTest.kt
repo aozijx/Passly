@@ -7,15 +7,16 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
-import com.aozijx.passly.testing.sampleAppearanceSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleAppearanceSettings
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -38,7 +39,7 @@ class AppearanceSettingsViewModelTest {
             val model = AppearanceSettingsViewModel(repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             val before = repository.appearance.value
             val actions =
                 listOf(
@@ -61,7 +62,7 @@ class AppearanceSettingsViewModelTest {
             val model = AppearanceSettingsViewModel(repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
             runCurrent()
             assertEquals(listOf("language"), repository.writes)
@@ -80,7 +81,7 @@ class AppearanceSettingsViewModelTest {
             val model = AppearanceSettingsViewModel(repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
             runCurrent()
             ViewModelStore().apply {

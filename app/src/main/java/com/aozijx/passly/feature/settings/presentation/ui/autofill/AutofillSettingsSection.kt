@@ -17,6 +17,7 @@ import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSystemServiceStatus
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 
@@ -47,7 +48,7 @@ internal fun AutofillSettingsSection(
                         key = "autofill.system_settings",
                         title = stringResource(R.string.settings_autofill_system_service),
                         subtitle = stringResource(R.string.settings_autofill_system_service_summary),
-                        value = stringResource(systemServiceStatus.statusTextRes),
+                        value = SettingsItemValue.Text(stringResource(systemServiceStatus.statusTextRes)),
                         onClick = { onAction(AutofillSettingsAction.OpenSystemAutofillSettings) },
                     ),
                 )

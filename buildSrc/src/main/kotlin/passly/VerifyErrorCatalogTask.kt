@@ -25,7 +25,7 @@ abstract class VerifyErrorCatalogTask : DefaultTask() {
         val catalog = ErrorCatalogParser.parse(catalogFile.get().asFile)
         val expectedMarkdown = ErrorCatalogRenderer.render(catalog).markdown
         require(markdownFile.get().asFile.readText() == expectedMarkdown) {
-            "docs/architecture/observability/error-codes.md is stale; run generateErrorCodes"
+            "docs/platform/architecture/observability/error-codes.md is stale; run generateErrorCodes"
         }
         val resourcesByLocale =
             stringResourceFiles.files

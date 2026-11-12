@@ -2,9 +2,9 @@ package com.aozijx.passly.app.autofill
 
 import android.content.Context
 import android.content.Intent
+import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
 import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
-import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
 import javax.inject.Inject
 import javax.inject.Singleton
 

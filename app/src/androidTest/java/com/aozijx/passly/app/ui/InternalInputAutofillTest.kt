@@ -29,9 +29,9 @@ import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheet
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordFormState
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.password.AddPasswordEditorScreen
-import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
-import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
+import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
+import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

@@ -6,6 +6,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
 /** Unparsed user input. Empty or malformed numbers never acquire fallback values. */
@@ -24,8 +26,9 @@ data class OtpConfigInput(
 
     fun parse(): OtpConfigInputResult {
         val parsedDigits = digits.trim().toIntOrNull()
-        val parsedPeriod = if (type == OtpType.HOTP) null else period.trim().toIntOrNull()
-        val parsedCounter = if (type == OtpType.HOTP) counter.trim().toLongOrNull() else null
+        val definition = OtpTypeDefinitions[type]
+        val parsedPeriod = if (definition.movingFactor == OtpMovingFactor.COUNTER) null else period.trim().toIntOrNull()
+        val parsedCounter = if (definition.movingFactor == OtpMovingFactor.COUNTER) counter.trim().toLongOrNull() else null
         val invalid = OtpConfigValidation.validateParameters(type, algorithm, parsedDigits, parsedPeriod, parsedCounter)
 
         val normalizedSecret =

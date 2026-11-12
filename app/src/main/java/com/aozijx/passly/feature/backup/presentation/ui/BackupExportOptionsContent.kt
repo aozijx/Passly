@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
@@ -41,8 +42,7 @@ internal fun BackupExportOptionsContent(
     BackupSheetColumn(scrollable = true) {
         Text(
             text = stringResource(state.titleResource),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = passlySheetTitleStyle(),
         )
         ExportSecurityNotice(state.securityNoticeResource, state.securityNoticeIsWarning)
 
@@ -95,8 +95,11 @@ internal fun BackupExportOptionsContent(
             TextButton(
                 onClick = {
                     onAction(
-                        if (state.allEntryTypesSelected) BackupUiAction.ClearEntryTypes
-                        else BackupUiAction.SelectAllEntryTypes,
+                        if (state.allEntryTypesSelected) {
+                            BackupUiAction.ClearEntryTypes
+                        } else {
+                            BackupUiAction.SelectAllEntryTypes
+                        },
                     )
                 },
             ) {

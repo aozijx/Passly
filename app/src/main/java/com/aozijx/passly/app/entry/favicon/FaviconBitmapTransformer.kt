@@ -22,6 +22,10 @@ class FaviconBitmapTransformer
             crop: FaviconCropRequest?,
         ) {
             validateBounds(input)
+            if (crop == null && input.extension.equals(GIF_EXTENSION.removePrefix("."), ignoreCase = true)) {
+                input.copyTo(output, overwrite = true)
+                return
+            }
             val decoded =
                 try {
                     ImageDecoder.decodeBitmap(ImageDecoder.createSource(input)) { decoder, info, _ ->
@@ -61,6 +65,16 @@ class FaviconBitmapTransformer
             }
         }
 
+        fun outputExtension(
+            input: File,
+            crop: FaviconCropRequest?,
+        ): String =
+            if (crop == null && input.extension.equals(GIF_EXTENSION.removePrefix("."), ignoreCase = true)) {
+                GIF_EXTENSION
+            } else {
+                WEBP_EXTENSION
+            }
+
         private fun validateBounds(input: File) {
             val bounds =
                 BitmapFactory.Options().also { options ->
@@ -94,6 +108,8 @@ class FaviconBitmapTransformer
         }
 
         private companion object {
+            const val GIF_EXTENSION = ".gif"
+            const val WEBP_EXTENSION = ".webp"
             const val MAX_SOURCE_EDGE = 4096
             const val NO_CROP_MAX_EDGE = 1024
             const val CROP_SIZE = 512

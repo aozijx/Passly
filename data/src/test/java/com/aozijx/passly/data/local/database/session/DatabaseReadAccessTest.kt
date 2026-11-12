@@ -3,7 +3,7 @@ package com.aozijx.passly.data.local.database.session
 import com.aozijx.passly.runtime.session.SecureSessionState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -22,7 +22,7 @@ class DatabaseReadAccessTest {
             val observed = mutableListOf<DatabaseReadAccess>()
 
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                observeDatabaseReadAccess(authorized, databaseState, lockGeneration).toList(observed)
+                observeDatabaseReadAccess(authorized, databaseState, lockGeneration).collect { observed += it }
             }
 
             databaseState.value = SecureSessionState.SEALED
@@ -51,7 +51,7 @@ class DatabaseReadAccessTest {
             val lockGeneration = MutableStateFlow(0L)
             val observed = mutableListOf<DatabaseReadAccess>()
             backgroundScope.launch {
-                observeDatabaseReadAccess(authorized, databaseState, lockGeneration).toList(observed)
+                observeDatabaseReadAccess(authorized, databaseState, lockGeneration).collect { observed += it }
             }
             runCurrent()
 

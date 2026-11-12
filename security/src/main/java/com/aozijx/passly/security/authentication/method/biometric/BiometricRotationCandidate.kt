@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication.method.biometric
-import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -43,13 +43,16 @@ internal suspend fun withBiometricRotationCandidate(
         throw cancelled
     } catch (_: Exception) {
         return when (result) {
-            is AuthenticationResult.Success ->
+            is AuthenticationResult.Success -> {
                 result.copy(
                     pendingMaintenance =
                         result.pendingMaintenance + AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP,
                 )
+            }
 
-            else -> result
+            else -> {
+                result
+            }
         }
     }
     return result

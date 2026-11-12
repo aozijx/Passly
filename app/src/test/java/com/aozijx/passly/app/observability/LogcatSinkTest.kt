@@ -2,12 +2,12 @@ package com.aozijx.passly.app.observability
 
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.ErrorPayload
-import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogLevel
@@ -15,10 +15,10 @@ import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
-import com.aozijx.passly.core.observability.fields
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

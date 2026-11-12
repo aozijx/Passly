@@ -30,24 +30,40 @@ internal object ScannerUiStateReducer {
         mutation: ScannerMutation,
     ): ScannerUiState =
         when (mutation) {
-            ScannerMutation.Started -> ScannerUiState.Scanning()
-            ScannerMutation.ImageProcessingStarted ->
+            ScannerMutation.Started -> {
+                ScannerUiState.Scanning()
+            }
+
+            ScannerMutation.ImageProcessingStarted -> {
                 state.transitionUnlessStopped(ScannerUiState.ProcessingImage)
+            }
 
-            ScannerMutation.ImageProcessingFailed ->
+            ScannerMutation.ImageProcessingFailed -> {
                 state.transitionUnlessStopped(ScannerUiState.Scanning())
-            ScannerMutation.Stopped -> ScannerUiState.Stopped
-            is ScannerMutation.ScanCompleted ->
-                state.transitionUnlessStopped(ScannerUiState.ShowingResult(mutation.result))
+            }
 
-            is ScannerMutation.FeedbackPublished -> state.withFeedback(mutation.feedback)
-            is ScannerMutation.FeedbackCleared -> state.clearFeedback(mutation.id)
+            ScannerMutation.Stopped -> {
+                ScannerUiState.Stopped
+            }
+
+            is ScannerMutation.ScanCompleted -> {
+                state.transitionUnlessStopped(ScannerUiState.ShowingResult(mutation.result))
+            }
+
+            is ScannerMutation.FeedbackPublished -> {
+                state.withFeedback(mutation.feedback)
+            }
+
+            is ScannerMutation.FeedbackCleared -> {
+                state.clearFeedback(mutation.id)
+            }
         }
 }
 
 private fun ScannerUiState.transitionUnlessStopped(target: ScannerUiState): ScannerUiState =
     when (this) {
         ScannerUiState.Stopped -> this
+
         is ScannerUiState.Scanning,
         ScannerUiState.ProcessingImage,
         is ScannerUiState.ShowingResult,
@@ -57,7 +73,9 @@ private fun ScannerUiState.transitionUnlessStopped(target: ScannerUiState): Scan
 private fun ScannerUiState.withFeedback(feedback: ScannerFeedback): ScannerUiState =
     when (this) {
         is ScannerUiState.Scanning -> copy(feedback = feedback)
+
         is ScannerUiState.ShowingResult -> copy(feedback = feedback)
+
         ScannerUiState.ProcessingImage,
         ScannerUiState.Stopped,
         -> this
@@ -66,7 +84,9 @@ private fun ScannerUiState.withFeedback(feedback: ScannerFeedback): ScannerUiSta
 private fun ScannerUiState.clearFeedback(id: Long? = null): ScannerUiState =
     when (this) {
         is ScannerUiState.Scanning -> copy(feedback = feedback?.takeUnless { id == null || it.id == id })
+
         is ScannerUiState.ShowingResult -> copy(feedback = feedback?.takeUnless { id == null || it.id == id })
+
         ScannerUiState.ProcessingImage,
         ScannerUiState.Stopped,
         -> this

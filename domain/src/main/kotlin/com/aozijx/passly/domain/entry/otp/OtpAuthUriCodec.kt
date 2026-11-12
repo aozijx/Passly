@@ -1,10 +1,13 @@
 package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpAuthUriKind
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 import java.net.URI
 import java.net.URISyntaxException
@@ -58,10 +61,10 @@ object OtpAuthUriCodec {
     private fun parseUri(uri: URI): OtpUriParseResult {
         require(!uri.isOpaque && !uri.rawAuthority.isNullOrBlank())
         require(uri.rawFragment == null && uri.rawUserInfo == null && uri.port == -1)
-        val type =
+        val uriKind =
             when (uri.host?.lowercase()) {
-                "totp" -> OtpType.TOTP
-                "hotp" -> OtpType.HOTP
+                "totp" -> OtpAuthUriKind.TIME_BASED
+                "hotp" -> OtpAuthUriKind.COUNTER_BASED
                 else -> return OtpUriParseResult.Unsupported
             }
         require(uri.rawAuthority.equals(uri.host, ignoreCase = true))
@@ -70,12 +73,7 @@ object OtpAuthUriCodec {
         val parameters = parseQuery(uri.rawQuery.orEmpty())
         if ("encoder" in parameters || "encoding" in parameters) return OtpUriParseResult.Unsupported
         val label = parseLabel(decodeComponent(path.drop(1)), parameters["issuer"])
-        val resolvedType =
-            if (type == OtpType.TOTP && label.issuer.equals("Steam", ignoreCase = true)) {
-                OtpType.STEAM
-            } else {
-                type
-            }
+        val definition = OtpTypeDefinitions.fromAuthUri(uriKind, label.issuer) ?: return OtpUriParseResult.Unsupported
         val algorithm =
             when (parameters["algorithm"]?.uppercase()) {
                 null, "SHA1" -> OtpHashAlgorithm.SHA1
@@ -86,23 +84,23 @@ object OtpAuthUriCodec {
         val digits =
             if ("digits" in parameters) {
                 parameters.getValue("digits").toIntOrNull() ?: return OtpUriParseResult.Malformed
-            } else if (resolvedType == OtpType.STEAM) {
-                5
             } else {
-                6
+                definition.defaultDigits
             }
-        if ((resolvedType == OtpType.STEAM && digits != 5) ||
-            (resolvedType != OtpType.STEAM && digits !in 6..8)
-        ) {
+        if (digits !in definition.allowedDigits) {
             return OtpUriParseResult.Unsupported
         }
-        val period =
-            if ("period" in parameters) {
-                parameters.getValue("period").toIntOrNull()?.takeIf { it > 0 }
-                    ?: return OtpUriParseResult.Malformed
-            } else {
-                30
+        val period = when (definition.movingFactor) {
+            OtpMovingFactor.TIME -> {
+                if ("period" in parameters) {
+                    parameters.getValue("period").toIntOrNull()?.takeIf { it > 0 }
+                        ?: return OtpUriParseResult.Malformed
+                } else {
+                    definition.defaultPeriodSeconds ?: return OtpUriParseResult.Unsupported
+                }
             }
+            OtpMovingFactor.COUNTER -> null
+        }
         val counter =
             if ("counter" in parameters) {
                 parameters.getValue("counter").toLongOrNull()?.takeIf { it >= 0 }
@@ -110,23 +108,30 @@ object OtpAuthUriCodec {
             } else {
                 null
             }
-        if (type == OtpType.HOTP && counter == null) return OtpUriParseResult.Malformed
-        if (resolvedType == OtpType.STEAM && (period != 30 || algorithm != OtpHashAlgorithm.SHA1)) {
-            return OtpUriParseResult.Unsupported
+        if (definition.movingFactor == OtpMovingFactor.COUNTER && counter == null) return OtpUriParseResult.Malformed
+        if (definition.fixedPeriodSeconds != null && period != definition.fixedPeriodSeconds) return OtpUriParseResult.Unsupported
+        if (definition.fixedAlgorithm != null && algorithm != definition.fixedAlgorithm) return OtpUriParseResult.Unsupported
+        val config =
+            try {
+                OtpConfig(
+                    type = definition.type,
+                    secret = OtpSecretCodec.canonicalBase32(
+                        parameters["secret"] ?: return OtpUriParseResult.Malformed,
+                        OtpSecretEncoding.BASE32,
+                    ),
+                    algorithm = algorithm,
+                    digits = digits,
+                    periodSeconds = period,
+                    counter = counter.takeIf { definition.movingFactor == OtpMovingFactor.COUNTER },
+                    issuer = label.issuer,
+                    accountName = label.account,
+                )
+            } catch (_: IllegalArgumentException) {
+                return OtpUriParseResult.Unsupported
+            } catch (_: OtpGenerationError) {
+                return OtpUriParseResult.Malformed
         }
-        val secret = parameters["secret"] ?: return OtpUriParseResult.Malformed
-        return OtpUriParseResult.Parsed(
-            OtpConfig(
-                type = resolvedType,
-                secret = OtpSecretCodec.canonicalBase32(secret, OtpSecretEncoding.BASE32),
-                algorithm = algorithm,
-                digits = digits,
-                periodSeconds = if (type == OtpType.HOTP) null else period,
-                counter = if (type == OtpType.HOTP) counter else null,
-                issuer = label.issuer,
-                accountName = label.account,
-            ),
-        )
+        return OtpUriParseResult.Parsed(config)
     }
 
     fun format(
@@ -134,19 +139,16 @@ object OtpAuthUriCodec {
         title: String,
     ): OtpUriFormatResult =
         try {
+            val definition = OtpTypeDefinitions[config.type]
+            require(OtpConfigValidation.validate(config).isEmpty())
             val issuer =
                 config.issuer?.takeIf(String::isNotBlank)
-                    ?: if (config.type == OtpType.STEAM) "Steam" else null
+                    ?: definition.issuerAlias
+            require(OtpTypeDefinitions.fromAuthUri(definition.authUriKind, issuer)?.type == definition.type)
             val label =
                 config.accountName?.takeIf(String::isNotBlank)?.let { Label(issuer, it) }
                     ?: parseLabel(title, issuer)
-            if (config.type == OtpType.STEAM) {
-                require(label.issuer.equals("Steam", ignoreCase = true) && config.algorithm == OtpHashAlgorithm.SHA1)
-                require(config.digits == 5 && config.periodSeconds == 30)
-            } else {
-                require(config.digits in 6..8)
-                require(config.type != OtpType.TOTP || !label.issuer.equals("Steam", ignoreCase = true))
-            }
+            require(OtpTypeDefinitions.fromAuthUri(definition.authUriKind, label.issuer)?.type == definition.type)
             val secret = config.secret ?: throw OtpGenerationError.InvalidSecret
             val parameters =
                 linkedMapOf(
@@ -159,19 +161,14 @@ object OtpAuthUriCodec {
                         },
                     "digits" to config.digits.toString(),
                 )
-            when (config.type) {
-                OtpType.TOTP, OtpType.STEAM -> parameters["period"] = requireNotNull(config.periodSeconds).toString()
-                OtpType.HOTP -> parameters["counter"] = requireNotNull(config.counter).toString()
+            when (definition.movingFactor) {
+                OtpMovingFactor.TIME -> parameters["period"] = requireNotNull(config.periodSeconds).toString()
+                OtpMovingFactor.COUNTER -> parameters["counter"] = requireNotNull(config.counter).toString()
             }
             label.issuer?.let { parameters["issuer"] = it }
-            val host =
-                when (config.type) {
-                    OtpType.TOTP, OtpType.STEAM -> "totp"
-                    OtpType.HOTP -> "hotp"
-                }
             val text = label.issuer?.let { "$it:${label.account}" } ?: label.account
             val query = parameters.entries.joinToString("&") { (key, value) -> "$key=${encodeComponent(value)}" }
-            OtpUriFormatResult.Formatted("otpauth://$host/${encodeComponent(text)}?$query")
+            OtpUriFormatResult.Formatted("otpauth://${definition.authUriKind.schemeAuthority}/${encodeComponent(text)}?$query")
         } catch (_: IllegalArgumentException) {
             OtpUriFormatResult.InvalidConfiguration
         } catch (_: OtpGenerationError) {

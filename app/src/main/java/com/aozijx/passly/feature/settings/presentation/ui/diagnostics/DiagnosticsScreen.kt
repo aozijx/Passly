@@ -40,16 +40,17 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsAction
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsExportState
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsLoadState
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsUiState
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsVisibleLines
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isClearing
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isConfirmationVisible
-import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsUiState
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,9 +122,14 @@ internal fun DiagnosticsScreen(
 
             is DiagnosticsLoadState.Ready -> {
                 when (val lines = state.visibleLines) {
-                    DiagnosticsVisibleLines.Empty -> item { StatusText(stringResource(R.string.settings_log_empty)) }
-                    is DiagnosticsVisibleLines.Items -> items(lines.lines) { line ->
-                        DiagnosticsLineContent(line) { selectedLine = it }
+                    DiagnosticsVisibleLines.Empty -> {
+                        item { StatusText(stringResource(R.string.settings_log_empty)) }
+                    }
+
+                    is DiagnosticsVisibleLines.Items -> {
+                        items(lines.lines) { line ->
+                            DiagnosticsLineContent(line) { selectedLine = it }
+                        }
                     }
                 }
             }
@@ -144,9 +150,14 @@ internal fun DiagnosticsScreen(
                     }
                 }
                 when (val lines = state.visibleLines) {
-                    DiagnosticsVisibleLines.Empty -> item { StatusText(stringResource(R.string.settings_log_empty)) }
-                    is DiagnosticsVisibleLines.Items -> items(lines.lines) { line ->
-                        DiagnosticsLineContent(line) { selectedLine = it }
+                    DiagnosticsVisibleLines.Empty -> {
+                        item { StatusText(stringResource(R.string.settings_log_empty)) }
+                    }
+
+                    is DiagnosticsVisibleLines.Items -> {
+                        items(lines.lines) { line ->
+                            DiagnosticsLineContent(line) { selectedLine = it }
+                        }
                     }
                 }
             }
@@ -266,7 +277,7 @@ private fun FormatSheet(
                     } else {
                         stringResource(R.string.settings_export_format_title)
                     },
-                style = MaterialTheme.typography.titleLarge,
+                style = passlySheetTitleStyle(),
             )
             Spacer(Modifier.height(4.dp))
             FormatOption(LogFormat.JSONL, R.string.settings_diagnostics_jsonl_description, onSelect)

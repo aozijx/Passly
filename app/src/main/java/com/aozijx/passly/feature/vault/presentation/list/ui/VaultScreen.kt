@@ -22,7 +22,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.paging.PagingData
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
-import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
@@ -50,7 +49,6 @@ fun VaultScreen(
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
     otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
-    onAcquireOtp: (String) -> OtpLease,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onAction: (VaultUiAction) -> Unit,
@@ -165,7 +163,6 @@ fun VaultScreen(
             entries = entries,
             onItemAction = onItemAction,
             otpUiStateFlow = otpUiStateFlow,
-            onAcquireOtp = onAcquireOtp,
             onAction = onAction,
             contentPadding = padding,
         )

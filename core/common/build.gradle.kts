@@ -4,12 +4,25 @@ plugins {
     `java-library`
 }
 
+val generateErrorCatalogSources =
+    rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
+        "generateErrorCatalogSources",
+    )
+
 kotlin {
     jvmToolchain(
         libs.versions.jvmToolchain
             .get()
             .toInt(),
     )
+
+    sourceSets.main {
+        kotlin.srcDir(generateErrorCatalogSources.map { it.commonOutputDirectory })
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(generateErrorCatalogSources)
 }
 
 dependencies {

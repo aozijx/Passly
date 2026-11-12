@@ -2,10 +2,10 @@ package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
-import com.aozijx.passly.feature.vault.otp.presentation.OtpEditorPolicy
-import com.aozijx.passly.feature.vault.otp.presentation.plugin
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 
 internal object OtpFormReducer {
     fun reduce(
@@ -27,28 +27,30 @@ internal object OtpFormReducer {
             is AddOtpAction.ConfigApplied -> state.withConfig(mutation.config)
         }
 
-    private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState =
-        when (val policy = type.plugin().editorPolicy) {
-            is OtpEditorPolicy.Timed ->
+    private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState {
+        val definition = OtpTypeDefinitions[type]
+        val validDigits = digits.toIntOrNull()?.takeIf(definition.allowedDigits::contains)
+        return when (definition.movingFactor) {
+            OtpMovingFactor.TIME ->
                 copy(
                     type = type,
-                    digits = digits.takeUnless(policy.digitsToReset::contains) ?: policy.defaultDigits,
-                    period = period.ifBlank { policy.defaultPeriod },
+                    digits = (validDigits ?: definition.defaultDigits).toString(),
+                    period =
+                        (definition.fixedPeriodSeconds
+                            ?: period.toIntOrNull()?.takeIf { it > 0 }
+                            ?: checkNotNull(definition.defaultPeriodSeconds)).toString(),
+                    algorithm = definition.fixedAlgorithm ?: algorithm,
                 )
-            is OtpEditorPolicy.Counter ->
+
+            OtpMovingFactor.COUNTER ->
                 copy(
                     type = type,
-                    digits = digits.takeUnless(policy.digitsToReset::contains) ?: policy.defaultDigits,
-                    counter = counter.ifBlank { policy.defaultCounter },
-                )
-            is OtpEditorPolicy.FixedTimed ->
-                copy(
-                    type = type,
-                    digits = policy.digits,
-                    period = policy.period,
-                    algorithm = policy.algorithm,
+                    digits = (validDigits ?: definition.defaultDigits).toString(),
+                    counter = counter.toLongOrNull()?.takeIf { it >= 0L }?.toString()
+                        ?: checkNotNull(definition.defaultCounter).toString(),
                 )
         }
+    }
 
     private fun OtpFormState.withConfig(config: OtpConfig): OtpFormState =
         copy(
@@ -57,8 +59,8 @@ internal object OtpFormReducer {
             secret = config.secret.orEmpty(),
             issuer = config.issuer.orEmpty(),
             digits = config.digits.toString(),
-            period = (config.periodSeconds ?: 30).toString(),
-            counter = (config.counter ?: 0L).toString(),
+            period = (config.periodSeconds ?: OtpTypeDefinitions[config.type].defaultPeriodSeconds ?: 30).toString(),
+            counter = (config.counter ?: OtpTypeDefinitions[config.type].defaultCounter ?: 0L).toString(),
             algorithm = config.algorithm,
             encoding = config.encoding,
         ).withTypeDefaults(config.type)

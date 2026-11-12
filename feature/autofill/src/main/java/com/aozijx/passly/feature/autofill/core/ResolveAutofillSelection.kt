@@ -12,10 +12,10 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionRejection
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
-import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialResolver
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore

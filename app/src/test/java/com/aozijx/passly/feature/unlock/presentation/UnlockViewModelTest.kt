@@ -1,21 +1,21 @@
 package com.aozijx.passly.feature.unlock.presentation
 
-import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
+import com.aozijx.passly.domain.access.model.AttemptStatus
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
-import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.AttemptStatus
-import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.SessionLockRequest
-import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.testing.MainDispatcherRule
@@ -60,8 +60,7 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 
-            val submittedSetup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Saving
-            assertTrue(submittedSetup.draft.newPassword.isEmpty)
+            assertEquals(UnlockPasswordSetup.Saving, viewModel.uiState.value.passwordSetup)
 
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged("another-long-password"))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged("another-long-password"))
@@ -71,10 +70,7 @@ class UnlockViewModelTest {
             runCurrent()
 
             assertEquals(1, provisioner.calls)
-            assertEquals(
-                UnlockPasswordSetup.Saving::class,
-                viewModel.uiState.value.passwordSetup::class,
-            )
+            assertEquals(UnlockPasswordSetup.Saving, viewModel.uiState.value.passwordSetup)
 
             gate.complete(AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD))
             runCurrent()
@@ -104,8 +100,10 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 
-            val setup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Failed
-            assertEquals(UnlockFailureMessage.AppPasswordSetupFailed, setup.message)
+            val setup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing
+            val feedback = setup.feedback as PasswordSetupFeedback.Failed
+            assertEquals(UnlockFailureMessage.AppPasswordSetupFailed, feedback.message)
+            assertTrue(setup.draft.newPassword.isEmpty)
             assertTrue(provisioner.submitted.single().all { it == '\u0000' })
         }
 
@@ -138,10 +136,7 @@ class UnlockViewModelTest {
 
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
-            assertEquals(
-                UnlockPasswordSetup.Editing::class,
-                viewModel.uiState.value.passwordSetup::class,
-            )
+            assertTrue(viewModel.uiState.value.passwordSetup is UnlockPasswordSetup.Editing)
 
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(PASSWORD))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged(PASSWORD))
@@ -149,10 +144,8 @@ class UnlockViewModelTest {
             runCurrent()
 
             assertEquals(2, provisioner.calls)
-            assertEquals(
-                UnlockPasswordSetup.Failed::class,
-                viewModel.uiState.value.passwordSetup::class,
-            )
+            val setup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing
+            assertTrue(setup.feedback is PasswordSetupFeedback.Failed)
         }
 
     @Test
@@ -175,23 +168,78 @@ class UnlockViewModelTest {
                         object : AuthenticationKdfParameterSource {
                             override suspend fun selected() = PARAMETERS
                         },
-                    methodProvisioner = RecordingAuthenticationMethodProvisioner { AuthenticationResult.Cancelled(CancellationReason.USER) },
+                    methodProvisioner =
+                        RecordingAuthenticationMethodProvisioner {
+                            AuthenticationResult.Cancelled(
+                                CancellationReason.USER,
+                            )
+                        },
                 )
 
             runCurrent()
 
             assertEquals(0, statusReads)
-            assertTrue(viewModel.uiState.value.authenticationAttemptStatuses.isEmpty())
+            assertTrue(
+                viewModel.uiState.value.authenticationAttemptStatuses
+                    .isEmpty(),
+            )
         }
 
-    private class FakeAuthenticationManager(initialMethods: AuthenticationMethods = AuthenticationMethods()) : AuthenticationManager {
+    @Test
+    fun `failed credential remains visible after input cleanup when attempt status refresh fails`() =
+        runTest {
+            var statusReads = 0
+            val failure =
+                AuthenticationFailure(
+                    code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+                    attempts = AttemptStatus(used = 2, limit = 5),
+                )
+            val viewModel =
+                UnlockViewModel(
+                    authenticationManager =
+                        FakeAuthenticationManager(
+                            AuthenticationMethods(setOf(AuthenticationMethod.APP_PASSWORD)),
+                            authentication = { _, _ ->
+                                AuthenticationResult.Failure(failure)
+                            },
+                        ),
+                    attemptStatusProvider =
+                        FakeAttemptStatusProvider { _ ->
+                            statusReads++
+                            throw IOException("attempt status unavailable")
+                        },
+                    kdfParameterSource =
+                        object : AuthenticationKdfParameterSource {
+                            override suspend fun selected() = PARAMETERS
+                        },
+                    methodProvisioner = RecordingAuthenticationMethodProvisioner { error("Unused") },
+                )
+
+            runCurrent()
+            viewModel.onAction(UnlockUiAction.AppPasswordChanged(PASSWORD))
+            viewModel.onAction(UnlockUiAction.AppPasswordSubmitted)
+            runCurrent()
+
+            assertEquals(1, statusReads)
+            assertTrue(viewModel.uiState.value.appPassword.isEmpty)
+            val failed = viewModel.uiState.value.verificationPhase as UnlockVerificationPhase.Failed
+            assertEquals(AuthenticationMethod.APP_PASSWORD, failed.failure.method)
+            assertEquals(UnlockFailureMessage.IncorrectCredential(remainingAttempts = 3), failed.failure.message)
+        }
+
+    private class FakeAuthenticationManager(
+        initialMethods: AuthenticationMethods = AuthenticationMethods(),
+        private val authentication: suspend (AuthenticationRequest, AuthInput) -> AuthenticationResult = { _, _ ->
+            AuthenticationResult.Cancelled(com.aozijx.passly.domain.access.model.CancellationReason.CALLER)
+        },
+    ) : AuthenticationManager {
         override val methods = MutableStateFlow(initialMethods)
         override val state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
 
         override suspend fun authenticate(
             request: AuthenticationRequest,
             input: AuthInput,
-        ) = AuthenticationResult.Cancelled(com.aozijx.passly.domain.access.model.CancellationReason.CALLER)
+        ) = authentication(request, input)
 
         override suspend fun lock(request: SessionLockRequest) = Unit
 

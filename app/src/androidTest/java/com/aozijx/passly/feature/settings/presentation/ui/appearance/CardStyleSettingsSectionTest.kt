@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.ui.appearance
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
@@ -14,12 +14,16 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.model.OtpRuntimePolicy
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
-import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
+import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsUiMapper
 import com.aozijx.passly.presentation.shared.entry.labelRes
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -43,14 +47,21 @@ class CardStyleSettingsSectionTest {
             MaterialTheme {
                 InterfaceDetail(
                     state =
-                        InterfaceUiModel(
-                            hideSystemBars = false,
-                            collapseTopBarOnScroll = false,
-                            collapseQuickFilterBarOnScroll = false,
-                            appCornerRadiusDp = 16f,
-                            appCornerRadiusRange = 0f..48f,
-                            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
-                            entryCardPresentations = emptyList(),
+                        InterfaceSettingsUiMapper.map(
+                            settings =
+                                InterfaceSettings(
+                                    hideSystemBars = false,
+                                    collapseTopBarOnScroll = false,
+                                    collapseQuickFilterBarOnScroll = false,
+                                    appCornerRadiusDp = 16f,
+                                ),
+                            librarySettings =
+                                LibraryViewSettings(
+                                    sort = EntrySort.presets().first(),
+                                    entryCardPresentations = emptyList(),
+                                    entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                                ),
+                            otpPolicy = OtpRuntimePolicy(),
                         ),
                     onAction = actions::add,
                 )

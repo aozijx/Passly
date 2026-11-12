@@ -73,7 +73,9 @@ internal fun PermissionsRoute(
             RuntimePermissionAccess.GRANTED,
             RuntimePermissionAccess.SETTINGS_REQUIRED,
             RuntimePermissionAccess.NOT_APPLICABLE,
-            -> openApplicationSettings()
+            -> {
+                openApplicationSettings()
+            }
 
             RuntimePermissionAccess.REQUESTABLE -> {
                 when (permissionHost.request(permission)) {

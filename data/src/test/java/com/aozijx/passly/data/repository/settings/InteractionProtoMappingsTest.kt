@@ -59,5 +59,4 @@ class InteractionProtoMappingsTest {
             assertEquals(domain, proto.toDomain())
         }
     }
-
 }

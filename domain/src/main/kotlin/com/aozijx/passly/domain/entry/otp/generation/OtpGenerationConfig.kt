@@ -4,6 +4,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 
 /** Non-sensitive OTP parameters required by the generation algorithm. */
 data class OtpGenerationConfig(
@@ -15,11 +17,14 @@ data class OtpGenerationConfig(
     val encoding: OtpSecretEncoding,
 ) {
     init {
-        require(digits in 5..8)
+        val definition = OtpTypeDefinitions[type]
+        require(digits in definition.allowedDigits)
         require(periodSeconds == null || periodSeconds > 0)
         require(counter == null || counter >= 0)
-        require(type != OtpType.HOTP || counter != null)
-        require(type == OtpType.HOTP || periodSeconds != null)
+        require(definition.movingFactor == OtpMovingFactor.COUNTER || periodSeconds != null)
+        require(definition.movingFactor == OtpMovingFactor.TIME || counter != null)
+        require(definition.fixedPeriodSeconds == null || periodSeconds == definition.fixedPeriodSeconds)
+        require(definition.fixedAlgorithm == null || algorithm == definition.fixedAlgorithm)
     }
 }
 

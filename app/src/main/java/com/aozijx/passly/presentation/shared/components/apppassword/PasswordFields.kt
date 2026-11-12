@@ -103,7 +103,10 @@ fun PasswordFields(
     )
 
     when (val strength = strengthUiState) {
-        PasswordStrengthUiState.Hidden -> Unit
+        PasswordStrengthUiState.Hidden -> {
+            Unit
+        }
+
         is PasswordStrengthUiState.Visible -> {
             Spacer(modifier = Modifier.height(4.dp))
             PasswordStrengthIndicator(

@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
@@ -244,7 +244,9 @@ class UnlockViewModel
             expanded: Boolean,
         ) {
             if (expanded) {
-                _uiState.value.inputExpansion?.takeUnless { it == method }?.let(::clearCredential)
+                _uiState.value.inputExpansion
+                    ?.takeUnless { it == method }
+                    ?.let(::clearCredential)
                 mutate(UnlockMutation.InputExpansionChanged(method))
             } else {
                 clearCredential(method)
@@ -415,7 +417,6 @@ class UnlockViewModel
         private fun editablePasswordDraft(): PasswordSetupDraft? =
             when (val setup = _uiState.value.passwordSetup) {
                 is UnlockPasswordSetup.Editing -> setup.draft
-                is UnlockPasswordSetup.Failed -> setup.draft
                 else -> null
             }
 

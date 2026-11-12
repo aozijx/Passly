@@ -1,16 +1,17 @@
 package com.aozijx.passly.feature.settings.presentation.autofill
 
 import com.aozijx.passly.R
+import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
-import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -250,7 +251,7 @@ class AutofillSettingsViewModelTest {
             val model = AutofillSettingsViewModel(repository, AutofillServiceStatusSource { MutableStateFlow(false) })
             model.onPageEntered()
             val effects = mutableListOf<AutofillSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value
@@ -301,7 +302,6 @@ class AutofillSettingsViewModelTest {
         }
 
         override suspend fun setAutofillAuthenticationRequired(required: Boolean) = save()
-
     }
 
     private companion object {

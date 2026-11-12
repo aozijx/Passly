@@ -94,6 +94,7 @@ message VaultViewPreferences {
     optional EntryHierarchyDisplayModePreference hierarchy_display_mode = 2
         [default = ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED];
     repeated EntryCardPresentationPreference entry_card_presentations = 3;
+    optional bool copy_next_totp_near_expiry = 4 [default = true];
 }
 
 message EntryCardPresentationPreference {

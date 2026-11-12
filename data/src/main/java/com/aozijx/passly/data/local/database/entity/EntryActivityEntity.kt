@@ -30,5 +30,7 @@ data class EntryActivityEntity(
     @ColumnInfo(name = "activityType")
     val activityType: ActivityType,
     val revisionVersion: Int? = null,
+    @ColumnInfo(defaultValue = "'[]'")
+    val affectedFieldKeys: Set<String> = emptySet(),
     val createdAt: Long = System.currentTimeMillis(),
 )

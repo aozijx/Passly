@@ -24,6 +24,7 @@ class DatabaseResetViewModel
         val uiState: StateFlow<DatabaseResetUiState> = _uiState.asStateFlow()
         private var nextPageOwner = 0L
         private var activePageOwner: Long? = null
+        private var successFeedbackGeneration = 0L
 
         fun onPageEntered(): Long {
             val owner = ++nextPageOwner
@@ -50,9 +51,12 @@ class DatabaseResetViewModel
             viewModelScope.launch {
                 when (val result = resetDatabase()) {
                     DatabaseResetResult.Completed -> {
+                        val feedbackGeneration = ++successFeedbackGeneration
                         mutate(DatabaseResetMutation.ResetCompleted)
                         delay(SUCCESS_FEEDBACK_DURATION_MILLIS)
-                        mutate(DatabaseResetMutation.ResetSuccessFeedbackElapsed)
+                        if (feedbackGeneration == successFeedbackGeneration) {
+                            mutate(DatabaseResetMutation.ResetSuccessFeedbackElapsed)
+                        }
                     }
 
                     DatabaseResetResult.Cancelled -> {

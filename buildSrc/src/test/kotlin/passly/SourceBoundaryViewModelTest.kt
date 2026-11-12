@@ -841,6 +841,8 @@ class SourceBoundaryViewModelTest {
         val violations = SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
 
         assertEquals(1, violations.count { it.ruleId == "VIEW_MODEL_DEPENDENCY" })
+        assertTrue(violations.single().evidence.contains("class SourceViewModel : Base<Peer>()"))
+        assertTrue(violations.single().message.contains("sample.Peer"))
     }
 
     @Test

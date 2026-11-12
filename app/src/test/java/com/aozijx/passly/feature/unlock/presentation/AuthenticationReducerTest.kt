@@ -1,12 +1,12 @@
 package com.aozijx.passly.feature.unlock.presentation
 
+import com.aozijx.passly.domain.access.model.AttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
-import com.aozijx.passly.domain.access.model.AttemptStatus
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -66,9 +66,9 @@ class AuthenticationReducerTest {
                     UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
                 )
 
-            assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
-            assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
-            assertTrue((matching.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
+            assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).canSubmit)
+            assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).canSubmit)
+            assertTrue((matching.passwordSetup as UnlockPasswordSetup.Editing).canSubmit)
         } finally {
             shortPassword.wipe()
             validPassword.wipe()

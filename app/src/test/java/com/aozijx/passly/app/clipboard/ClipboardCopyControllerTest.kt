@@ -4,8 +4,8 @@ import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
 import com.aozijx.passly.core.platform.clipboard.SecureClipboard
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
+import com.aozijx.passly.testing.sampleSecuritySettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow

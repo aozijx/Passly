@@ -58,6 +58,7 @@ private fun BackupExportFormat.securityNoticeResource(): Int =
 private fun BackupExportFormat.securityNoticeIsWarning(): Boolean =
     when (this) {
         BackupExportFormat.ENCRYPTED -> false
+
         BackupExportFormat.JSON,
         BackupExportFormat.TEXT,
         -> true

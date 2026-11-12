@@ -3,6 +3,7 @@ package com.aozijx.passly.security.autofill.inbox
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.autofill.port.AutofillInboxDraftImporter
@@ -38,40 +39,55 @@ internal class AutofillInboxKeyProvisioner
 
         override suspend fun provisionAfterUnlock() =
             mutex.withLock {
-                var validatingExistingKey = false
+                var failureReason: ReasonCode = Reasons.StorageFailure
                 try {
                     val current = bootstrapStore.loadAutofillInboxKeyMaterial()
                     if (current != null) {
-                        validatingExistingKey = true
                         val pending = recordStore.pending(current.keyId)
                         try {
+                            failureReason = Reasons.UnknownFailure
                             val decoded =
                                 withContext(Dispatchers.Default) {
                                     dekManager.withDek { dek ->
-                                        keyMaterialCodec.withPrivateKey(current, dek) { privateKey ->
-                                            pending.mapNotNull { record ->
-                                                try {
-                                                    record to recordCodec.open(current, privateKey, record.encodedRecord)
-                                                } catch (_: Exception) {
-                                                    null
+                                        try {
+                                            keyMaterialCodec.withPrivateKey(current, dek) { privateKey ->
+                                                pending.mapNotNull { record ->
+                                                    try {
+                                                        record to recordCodec.open(current, privateKey, record.encodedRecord)
+                                                    } catch (cancelled: CancellationException) {
+                                                        throw cancelled
+                                                    } catch (_: Exception) {
+                                                        null
+                                                    }
                                                 }
                                             }
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (failure: Exception) {
+                                            throw ExistingKeyMaterialIntegrityFailure(failure)
                                         }
                                     }
                                 }
+                            failureReason = Reasons.UnknownFailure
                             for (record in pending) {
                                 val draft = decoded.firstOrNull { it.first.draftId == record.draftId }?.second
                                 if (draft == null) {
+                                    failureReason = Reasons.StorageFailure
                                     recordStore.quarantine(current.keyId, record.draftId)
+                                    failureReason = Reasons.UnknownFailure
                                     continue
                                 }
                                 when (draftImporter.get().import(draft)) {
                                     AutofillInboxImportOutcome.Imported -> {
+                                        failureReason = Reasons.StorageFailure
                                         recordStore.remove(current.keyId, record.draftId)
+                                        failureReason = Reasons.UnknownFailure
                                     }
 
                                     AutofillInboxImportOutcome.Invalid -> {
+                                        failureReason = Reasons.StorageFailure
                                         recordStore.quarantine(current.keyId, record.draftId)
+                                        failureReason = Reasons.UnknownFailure
                                     }
 
                                     AutofillInboxImportOutcome.Retry -> {
@@ -85,31 +101,22 @@ internal class AutofillInboxKeyProvisioner
                         return@withLock
                     }
 
+                    failureReason = Reasons.UnknownFailure
                     val material =
                         withContext(Dispatchers.Default) {
                             dekManager.withDek(keyMaterialCodec::generateAndWrap)
                         }
+                    failureReason = Reasons.StorageFailure
                     bootstrapStore.saveAutofillInboxKeyMaterial(material)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (failure: Exception) {
+                    val integrityFailure = failure as? ExistingKeyMaterialIntegrityFailure
                     logger.inSpan(Operations.AutofillInboxKeyProvision) {
                         logger.log(
                             LogStatements.Security.vaultOperationFailed(
-                                throwable =
-                                    IllegalStateException(
-                                        if (validatingExistingKey) {
-                                            "Autofill Inbox key material failed integrity validation"
-                                        } else {
-                                            "Autofill Inbox key provisioning failed"
-                                        },
-                                    ),
-                                reason =
-                                    if (validatingExistingKey) {
-                                        Reasons.IntegrityFailure
-                                    } else {
-                                        Reasons.UnknownFailure
-                                    },
+                                throwable = integrityFailure?.cause ?: failure,
+                                reason = integrityFailure?.let { Reasons.IntegrityFailure } ?: failureReason,
                                 degraded = true,
                             ),
                         )
@@ -117,3 +124,7 @@ internal class AutofillInboxKeyProvisioner
                 }
             }
     }
+
+private class ExistingKeyMaterialIntegrityFailure(
+    cause: Exception,
+) : Exception(cause)

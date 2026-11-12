@@ -3,8 +3,8 @@ package com.aozijx.passly.app.message.runtime
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
+import com.aozijx.passly.testing.sampleMessageSettings
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi

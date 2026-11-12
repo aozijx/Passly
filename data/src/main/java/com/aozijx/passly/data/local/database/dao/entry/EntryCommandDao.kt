@@ -99,5 +99,4 @@ interface EntryCommandDao {
 
     @Query("DELETE FROM entries WHERE deletedAt IS NOT NULL")
     suspend fun deleteAllDeleted(): Int
-
 }

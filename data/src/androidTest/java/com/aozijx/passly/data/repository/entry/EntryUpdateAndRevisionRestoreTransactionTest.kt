@@ -6,8 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
-import com.aozijx.passly.data.testing.NoCallSensitiveFieldCryptor
-import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
@@ -24,6 +22,8 @@ import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.repository.entry.command.EntryContentUpdate
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.data.repository.entry.command.EntryUpdateTransaction
+import com.aozijx.passly.data.testing.NoCallSensitiveFieldCryptor
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
@@ -96,7 +96,14 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
                 }
             assertEquals(EntryContentUpdate.Unchanged, update)
             assertEquals(2, database.entryQueryDao().getById(ENTRY_ID)!!.version)
-            assertEquals(2, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
+            assertEquals(
+                2,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ID)
+                    .first()
+                    .size,
+            )
             assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
         }
 
@@ -114,7 +121,12 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
                 )
             }
             assertEquals(3, database.entryQueryDao().getById(ENTRY_ID)!!.version)
-            val latest = database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().first()
+            val latest =
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ID)
+                    .first()
+                    .first()
             assertEquals(3, latest.version)
             val activity = database.entryActivityQueryDao().getByEntryId(ENTRY_ID).single()
             assertEquals(ActivityType.UPDATE, activity.activityType)
@@ -211,7 +223,12 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
             val restoredRows = database.secretFieldQueryDao().getAll(ENTRY_ID)
             val restoredBundle = restoredRows.single { it.fieldKey == SecretBundleCodec.FIELD_KEY }
             val restoredPassword = restoredRows.single { it.fieldKey == SensitiveFieldKey.PASSWORD.name }
-            val latest = database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().first()
+            val latest =
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ID)
+                    .first()
+                    .first()
 
             assertEquals(3, restoredVersion.value)
             assertEquals(3, restored.version)
@@ -229,7 +246,14 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
             assertArrayEquals(HISTORICAL_PASSWORD_CIPHER, restoredPassword.valueCipher)
             assertEquals(3, latest.version)
             assertEquals(RevisionChange.VERSION_RESTORED.name, latest.changeType)
-            assertEquals(3, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
+            assertEquals(
+                3,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ID)
+                    .first()
+                    .size,
+            )
             val latestContent = contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID, EntryType.LOGIN)
             assertEquals("Historical", latestContent.summary.title)
             assertEquals("historical notes", latestContent.secret.notes)
@@ -339,7 +363,14 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
                 assertEquals(before.keyVersion, after.keyVersion)
                 assertEquals(before.updatedAt, after.updatedAt)
             }
-            assertEquals(2, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
+            assertEquals(
+                2,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ID)
+                    .first()
+                    .size,
+            )
             assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
         }
 
@@ -415,41 +446,41 @@ class EntryUpdateAndRevisionRestoreTransactionTest {
                 },
             )
         listOf(
-                EntryRevisionEntity(
-                    revisionId = REVISION_ID,
-                    entryId = ENTRY_ID,
-                    version = 1,
-                    entryContentCipher = historicalContent,
-                    sensitiveFieldCipherSet = historicalSensitive,
-                    changeType = RevisionChange.VALUE_CHANGED.name,
-                    createdAt = 1L,
-                ),
-                EntryRevisionEntity(
-                    revisionId = "revision-current",
-                    entryId = ENTRY_ID,
-                    version = 2,
-                    entryContentCipher =
-                        contentCodec.encrypt(
-                            summary = EntryProfile(title = "Current"),
-                            bundleSecret =
-                                EntrySecret(
-                                    credential = LoginCredential(),
-                                    notes = "current notes",
-                                ),
-                            entryId = ENTRY_ID,
-                            expectedType = EntryType.LOGIN,
-                            links = emptyList(),
-                        ),
-                    sensitiveFieldCipherSet =
-                        sensitiveCodec.encode(
-                            database
-                                .secretFieldQueryDao()
-                                .getAll(ENTRY_ID)
-                                .filter { it.fieldKey != SecretBundleCodec.FIELD_KEY },
-                        ),
-                    changeType = RevisionChange.VALUE_CHANGED.name,
-                    createdAt = 2L,
-                ),
+            EntryRevisionEntity(
+                revisionId = REVISION_ID,
+                entryId = ENTRY_ID,
+                version = 1,
+                entryContentCipher = historicalContent,
+                sensitiveFieldCipherSet = historicalSensitive,
+                changeType = RevisionChange.VALUE_CHANGED.name,
+                createdAt = 1L,
+            ),
+            EntryRevisionEntity(
+                revisionId = "revision-current",
+                entryId = ENTRY_ID,
+                version = 2,
+                entryContentCipher =
+                    contentCodec.encrypt(
+                        summary = EntryProfile(title = "Current"),
+                        bundleSecret =
+                            EntrySecret(
+                                credential = LoginCredential(),
+                                notes = "current notes",
+                            ),
+                        entryId = ENTRY_ID,
+                        expectedType = EntryType.LOGIN,
+                        links = emptyList(),
+                    ),
+                sensitiveFieldCipherSet =
+                    sensitiveCodec.encode(
+                        database
+                            .secretFieldQueryDao()
+                            .getAll(ENTRY_ID)
+                            .filter { it.fieldKey != SecretBundleCodec.FIELD_KEY },
+                    ),
+                changeType = RevisionChange.VALUE_CHANGED.name,
+                createdAt = 2L,
+            ),
         ).forEach { database.entryRevisionCommandDao().insertStrict(it) }
     }
 

@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.unlock.presentation
 
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -62,14 +62,23 @@ sealed interface UnlockVerificationPhase {
 sealed interface UnlockPasswordSetup {
     data object Closed : UnlockPasswordSetup
 
-    data class Editing(val draft: PasswordSetupDraft) : UnlockPasswordSetup
+    data object Saving : UnlockPasswordSetup
 
-    data class Saving(val draft: PasswordSetupDraft) : UnlockPasswordSetup
+    data class Editing(
+        val draft: PasswordSetupDraft,
+        val feedback: PasswordSetupFeedback = PasswordSetupFeedback.None,
+    ) : UnlockPasswordSetup {
+        val canSubmit: Boolean
+            get() = draft.canSubmit()
+    }
+}
+
+sealed interface PasswordSetupFeedback {
+    data object None : PasswordSetupFeedback
 
     data class Failed(
-        val draft: PasswordSetupDraft,
         val message: UnlockFailureMessage,
-    ) : UnlockPasswordSetup
+    ) : PasswordSetupFeedback
 }
 
 sealed interface KdfInitializationUiState {

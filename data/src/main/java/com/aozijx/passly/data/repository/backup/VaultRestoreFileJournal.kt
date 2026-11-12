@@ -10,11 +10,18 @@ import kotlinx.coroutines.CancellationException
 internal class VaultRestoreFileJournal(
     private val operations: VaultRestoreFileOperations = SystemVaultRestoreFileOperations,
 ) {
-    private data class Change(val target: File, val temporary: File, val previous: File?)
+    private data class Change(
+        val target: File,
+        val temporary: File,
+        val previous: File?,
+    )
 
     private val changes = mutableListOf<Change>()
 
-    fun replace(target: File, content: ByteArray) {
+    fun replace(
+        target: File,
+        content: ByteArray,
+    ) {
         val parent = requireNotNull(target.parentFile) { "恢复目标没有父目录" }
         require(operations.isDirectory(parent) || operations.mkdirs(parent)) { "无法创建恢复目录: ${parent.name}" }
         val token = UUID.randomUUID().toString()
@@ -48,7 +55,10 @@ internal class VaultRestoreFileJournal(
 
     fun rollback() = completeChanges(::undo, reverse = true)
 
-    private fun completeChanges(action: (Change) -> Unit, reverse: Boolean = false) {
+    private fun completeChanges(
+        action: (Change) -> Unit,
+        reverse: Boolean = false,
+    ) {
         var failure: Throwable? = null
         val pending = if (reverse) changes.asReversed().toList() else changes.toList()
         pending.forEach { change ->
@@ -63,22 +73,40 @@ internal class VaultRestoreFileJournal(
     }
 
     private fun discardPrevious(change: Change) {
-        if (operations.exists(change.temporary) && !operations.delete(change.temporary)) throw IOException("无法清理恢复临时文件: ${change.temporary.name}")
+        if (operations.exists(change.temporary) &&
+            !operations.delete(change.temporary)
+        ) {
+            throw IOException("无法清理恢复临时文件: ${change.temporary.name}")
+        }
         change.previous?.let { if (operations.exists(it) && !operations.delete(it)) throw IOException("无法清理恢复备份文件: ${it.name}") }
     }
 
     private fun undo(change: Change) {
-        if (operations.exists(change.temporary) && !operations.delete(change.temporary)) throw IOException("无法清理恢复临时文件: ${change.temporary.name}")
+        if (operations.exists(change.temporary) &&
+            !operations.delete(change.temporary)
+        ) {
+            throw IOException("无法清理恢复临时文件: ${change.temporary.name}")
+        }
         if (change.previous == null) {
-            if (operations.exists(change.target) && !operations.delete(change.target)) throw IOException("无法删除未提交的恢复文件: ${change.target.name}")
+            if (operations.exists(change.target) &&
+                !operations.delete(change.target)
+            ) {
+                throw IOException("无法删除未提交的恢复文件: ${change.target.name}")
+            }
             return
         }
+        if (!operations.exists(change.previous)) throw IOException("无法恢复原有文件: ${change.target.name}")
         if (operations.exists(change.target) && !operations.delete(change.target)) throw IOException("无法移除待回滚文件: ${change.target.name}")
-        if (!operations.exists(change.previous) || !operations.rename(change.previous, change.target)) throw IOException("无法恢复原有文件: ${change.target.name}")
+        if (!operations.rename(change.previous, change.target)) {
+            throw IOException("无法恢复原有文件: ${change.target.name}")
+        }
     }
 }
 
-internal fun preferVaultRestoreFailure(first: Throwable, second: Throwable): Throwable {
+internal fun preferVaultRestoreFailure(
+    first: Throwable,
+    second: Throwable,
+): Throwable {
     if (first === second) return first
     if (second.restorePriority() > first.restorePriority()) {
         second.addSuppressed(first)
@@ -88,28 +116,51 @@ internal fun preferVaultRestoreFailure(first: Throwable, second: Throwable): Thr
     return first
 }
 
-private fun Throwable.restorePriority(): Int = when (this) {
-    is Error -> 2
-    is CancellationException -> 1
-    else -> 0
-}
+private fun Throwable.restorePriority(): Int =
+    when (this) {
+        is Error -> 2
+        is CancellationException -> 1
+        else -> 0
+    }
 
 internal interface VaultRestoreFileOperations {
     fun exists(file: File): Boolean
+
     fun isDirectory(file: File): Boolean
+
     fun mkdirs(file: File): Boolean
-    fun writeAndSync(file: File, content: ByteArray)
-    fun rename(source: File, target: File): Boolean
+
+    fun writeAndSync(
+        file: File,
+        content: ByteArray,
+    )
+
+    fun rename(
+        source: File,
+        target: File,
+    ): Boolean
+
     fun delete(file: File): Boolean
 }
 
 internal object SystemVaultRestoreFileOperations : VaultRestoreFileOperations {
     override fun exists(file: File) = file.exists()
+
     override fun isDirectory(file: File) = file.isDirectory
+
     override fun mkdirs(file: File) = file.mkdirs()
-    override fun rename(source: File, target: File) = source.renameTo(target)
+
+    override fun rename(
+        source: File,
+        target: File,
+    ) = source.renameTo(target)
+
     override fun delete(file: File) = file.delete()
-    override fun writeAndSync(file: File, content: ByteArray) {
+
+    override fun writeAndSync(
+        file: File,
+        content: ByteArray,
+    ) {
         FileOutputStream(file).use { output ->
             output.write(content)
             output.flush()

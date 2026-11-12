@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.entry.favicon
 
-import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import com.aozijx.passly.core.platform.media.FaviconProcessingException
+import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CancellationException

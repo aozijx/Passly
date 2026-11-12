@@ -56,6 +56,7 @@ internal class AutofillFillViewModel
             get() = resultClaim.isClaimed
 
         private var currentRequest: AutofillFillRequest? = null
+
         @Volatile private var abandoned = false
 
         fun commitPlatformResult(deliver: (markPlatformCommitted: () -> Unit) -> Unit): Boolean {
@@ -319,7 +320,9 @@ internal class AutofillFillViewModel
                         includeOtp = includeOtp,
                     )
             ) {
-                is AutofillSelectionOutcome.Filled -> returnDataset(request, outcome)
+                is AutofillSelectionOutcome.Filled -> {
+                    returnDataset(request, outcome)
+                }
 
                 AutofillSelectionOutcome.Cancelled,
                 AutofillSelectionOutcome.Unauthorized,

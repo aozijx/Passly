@@ -6,6 +6,7 @@ import android.view.autofill.AutofillManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -13,7 +14,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDatasetFactory
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.presentation.AutofillEntryPoint
 import com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion
@@ -25,6 +28,7 @@ internal fun LegacyAutofillEntry(
     launch: AutofillLaunch.Legacy,
     activity: ComponentActivity,
     dependencies: AutofillEntryPoint,
+    entryIcon: @Composable (EntryListItem, Modifier) -> Unit,
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -33,6 +37,7 @@ internal fun LegacyAutofillEntry(
 
     DisposableEffect(activity, lifecycleOwner, launch) {
         var hostAbandoned = false
+
         fun abandonPendingResult() {
             if (hostAbandoned || viewModel.hasClaimedPlatformResult) return
             hostAbandoned = true
@@ -54,6 +59,7 @@ internal fun LegacyAutofillEntry(
     AutofillFillRoute(
         request = launch.request,
         viewModel = viewModel,
+        entryIcon = entryIcon,
         onResult = { result ->
             deliverLegacyResult(
                 launch.request,
@@ -84,12 +90,15 @@ private fun deliverLegacyResult(
             when (result) {
                 is AutofillFillResult.Discovery -> {
                     val response =
-                        responseFactory.buildAuthenticationResponse(
-                            activity,
-                            result.outcome,
-                            request.toParsedStructure(),
-                            request.inlineRequest,
-                        )
+                        responseFactory
+                            .buildResult(
+                                activity,
+                                result.outcome,
+                                packageName = request.packageName,
+                                webDomain = request.webDomain,
+                                editableIds = request.editableIds,
+                                inlineRequest = request.inlineRequest,
+                            ).response
                     if (response == null) {
                         viewModel.cancel()
                         onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
@@ -106,7 +115,15 @@ private fun deliverLegacyResult(
                 }
 
                 is AutofillFillResult.SelectedCredential -> {
-                    val dataset = responseFactory.buildDataset(result.payload, request.usernameIds, request.passwordIds, request.otpIds)
+                    val dataset =
+                        LegacyDatasetFactory.createFillDatasetForRoles(
+                            usernameIds = request.usernameIds,
+                            passwordIds = request.passwordIds,
+                            otpIds = request.otpIds,
+                            username = result.payload.username,
+                            password = result.payload.password,
+                            totpCode = result.payload.otpCode,
+                        )
                     if (dataset == null) {
                         viewModel.cancel()
                         onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))

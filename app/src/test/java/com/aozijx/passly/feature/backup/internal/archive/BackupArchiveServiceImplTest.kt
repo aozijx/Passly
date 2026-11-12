@@ -3,12 +3,19 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.LogValue
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
@@ -33,12 +40,13 @@ import com.aozijx.passly.testing.testLogger
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.io.IOException
 import java.io.OutputStream
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -46,6 +54,183 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BackupArchiveServiceImplTest {
+    @Test
+    fun resourceIntegrityFailureIsReportedWithoutRestoring() =
+        runTest {
+            val snapshotGateway = FakeSnapshotGateway()
+            val logger = RecordingTestLogger()
+            val importer = FakeImportAdapter(decodeFailure = BackupIntegrityException(Reasons.BackupResourceDigestMismatch))
+            val service = service(
+                snapshotGateway, FakeBackupFileStore(), RecordingErrorReporter(), FakeExportAdapter(),
+                setOf(importer), UnconfinedTestDispatcher(testScheduler), logger,
+            )
+
+            val result = service.import(
+                BackupImportRequest("content://backup/import", ImportMode.OVERWRITE, format = importer.formatId, password = charArrayOf('p')),
+            )
+
+            assertEquals(
+                Reasons.BackupResourceDigestMismatch.value,
+                ((result as AppResult.Failure).error as BackupFailed).reasonCode,
+            )
+            assertEquals(null, snapshotGateway.restoredBundle)
+            assertEquals(
+                LogValue.ReasonCodeValue(Reasons.BackupResourceDigestMismatch),
+                logger.events.last { it.event == Events.Backup.Phase }.fields.values[LogFieldKeys.Backup.FailureReason],
+            )
+        }
+
+    @Test
+    fun importInputCloseFailureDoesNotRestoreAndClearsDecodedResources() =
+        runTest {
+            val resource = byteArrayOf(1, 2, 3)
+            val snapshotGateway = FakeSnapshotGateway()
+            val importer = FakeImportAdapter(bundle = backupBundle(resource))
+            val service =
+                service(
+                    snapshotGateway,
+                    FakeBackupFileStore(inputCloseFailure = IOException("close failed")),
+                    RecordingErrorReporter(),
+                    FakeExportAdapter(),
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val result = service.import(
+                BackupImportRequest("content://backup/import", ImportMode.OVERWRITE, format = importer.formatId, password = charArrayOf('p')),
+            )
+
+            assertTrue(result is AppResult.Failure)
+            assertEquals(null, snapshotGateway.restoredBundle)
+            assertTrue(resource.all { it == 0.toByte() })
+        }
+
+    @Test
+    fun importCompletionLogFailureDoesNotChangeCommittedResult() =
+        runTest {
+            val snapshotGateway = FakeSnapshotGateway(restoreResult = BackupRestoreResult(1, 0))
+            val reporter = RecordingErrorReporter()
+            val importer = FakeImportAdapter()
+            val logger =
+                object : Logger by testLogger() {
+                    override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
+                    override fun info(event: EventKey, fields: LogFields) {
+                        if (event == Events.Backup.ImportCompleted) throw IOException("logger unavailable")
+                    }
+                }
+            val service =
+                service(
+                    snapshotGateway,
+                    FakeBackupFileStore(),
+                    reporter,
+                    FakeExportAdapter(),
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                    logger,
+                )
+
+            val result =
+                service.import(
+                    BackupImportRequest(
+                        sourceUri = "content://backup/import",
+                        mode = ImportMode.APPEND,
+                        format = importer.formatId,
+                        password = charArrayOf('p'),
+                    ),
+                )
+
+            assertEquals(BackupImportResult(1, 0, 0, 0, 0, 0), (result as AppResult.Success).data)
+            assertTrue(snapshotGateway.restoredBundle != null)
+            assertTrue(reporter.reports.isEmpty())
+        }
+
+    @Test
+    fun importCompletionLogCancellationStillPropagatesAfterRestore() =
+        runTest {
+            val cancellation = CancellationException("logger cancelled")
+            val snapshotGateway = FakeSnapshotGateway()
+            val importer = FakeImportAdapter()
+            val logger =
+                object : Logger by testLogger() {
+                    override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
+                    override fun info(event: EventKey, fields: LogFields) {
+                        if (event == Events.Backup.ImportCompleted) throw cancellation
+                    }
+                }
+            val service =
+                service(
+                    snapshotGateway,
+                    FakeBackupFileStore(),
+                    RecordingErrorReporter(),
+                    FakeExportAdapter(),
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                    logger,
+                )
+
+            val propagated =
+                try {
+                    service.import(
+                        BackupImportRequest(
+                            sourceUri = "content://backup/import",
+                            mode = ImportMode.APPEND,
+                            format = importer.formatId,
+                            password = charArrayOf('p'),
+                        ),
+                    )
+                    null
+                } catch (error: CancellationException) {
+                    error
+                }
+
+            assertSame(cancellation, propagated)
+            assertTrue(snapshotGateway.restoredBundle != null)
+        }
+
+    @Test
+    fun importCompletionLogFatalErrorStillPropagatesAfterRestore() =
+        runTest {
+            val fatal = AssertionError("logger failed")
+            val snapshotGateway = FakeSnapshotGateway()
+            val importer = FakeImportAdapter()
+            val logger =
+                object : Logger by testLogger() {
+                    override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
+
+                    override fun info(event: EventKey, fields: LogFields) {
+                        if (event == Events.Backup.ImportCompleted) throw fatal
+                    }
+                }
+            val service =
+                service(
+                    snapshotGateway,
+                    FakeBackupFileStore(),
+                    RecordingErrorReporter(),
+                    FakeExportAdapter(),
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                    logger,
+                )
+
+            val propagated =
+                try {
+                    service.import(
+                        BackupImportRequest(
+                            sourceUri = "content://backup/import",
+                            mode = ImportMode.APPEND,
+                            format = importer.formatId,
+                            password = charArrayOf('p'),
+                        ),
+                    )
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, propagated)
+            assertTrue(snapshotGateway.restoredBundle != null)
+        }
+
     @Test
     fun exportClampsRequestedOptionsByAdapterCapabilitiesAndClearsOwnedBuffers() =
         runTest {
@@ -59,15 +244,16 @@ class BackupArchiveServiceImplTest {
             val importer = FakeImportAdapter()
             val password = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
             val requestedTypes = setOf(EntryType.ACCOUNT)
-            val service = service(
-                snapshotGateway,
-                fileStore,
-                reporter,
-                exporter,
-                setOf(importer),
-                UnconfinedTestDispatcher(testScheduler),
-                logger,
-            )
+            val service =
+                service(
+                    snapshotGateway,
+                    fileStore,
+                    reporter,
+                    exporter,
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                    logger,
+                )
 
             exporter.supportsIcons = false
             exporter.includesAttachments = false
@@ -100,8 +286,33 @@ class BackupArchiveServiceImplTest {
             assertTrue(firstResult is AppResult.Success)
             assertTrue(secondResult is AppResult.Success)
             assertEquals(
-                listOf(Events.Backup.ExportStarted, Events.Backup.ExportCompleted, Events.Backup.ExportStarted, Events.Backup.ExportCompleted),
+                listOf(
+                    Events.Backup.ExportStarted,
+                    Events.Backup.Phase,
+                    Events.Backup.Phase,
+                    Events.Backup.Phase,
+                    Events.Backup.ExportCompleted,
+                    Events.Backup.ExportStarted,
+                    Events.Backup.Phase,
+                    Events.Backup.Phase,
+                    Events.Backup.Phase,
+                    Events.Backup.ExportCompleted,
+                ),
                 logger.events.map { it.event },
+            )
+            assertEquals(
+                listOf(
+                    LogStatements.Backup.Stage.EXPORT_SNAPSHOT_READY,
+                    LogStatements.Backup.Stage.EXPORT_WRITE_STARTED,
+                    LogStatements.Backup.Stage.EXPORT_WRITE_COMPLETED,
+                    LogStatements.Backup.Stage.EXPORT_SNAPSHOT_READY,
+                    LogStatements.Backup.Stage.EXPORT_WRITE_STARTED,
+                    LogStatements.Backup.Stage.EXPORT_WRITE_COMPLETED,
+                ).map { it.name },
+                logger.events.filter { it.event == Events.Backup.Phase }.map { event ->
+                    val value = event.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue
+                    value.value.value
+                },
             )
             assertEquals(
                 listOf(
@@ -130,7 +341,8 @@ class BackupArchiveServiceImplTest {
             val reporter = RecordingErrorReporter()
             val exporter = FakeExportAdapter(encoded = byteArrayOf(4, 5, 6))
             val encoded = exporter.encoded
-            val service = service(snapshotGateway, fileStore, reporter, exporter, setOf(FakeImportAdapter()), UnconfinedTestDispatcher(testScheduler))
+            val service =
+                service(snapshotGateway, fileStore, reporter, exporter, setOf(FakeImportAdapter()), UnconfinedTestDispatcher(testScheduler))
 
             val result =
                 service.export(
@@ -143,7 +355,12 @@ class BackupArchiveServiceImplTest {
             assertTrue(result is AppResult.Failure)
             assertTrue(resource.all { it == 0.toByte() })
             assertEquals(1, reporter.reports.size)
-            assertEquals("backup_export", reporter.reports.single().second.operation.value)
+            assertEquals(
+                "backup_export",
+                reporter.reports
+                    .single()
+                    .second.operation.value,
+            )
         }
 
     @Test
@@ -234,11 +451,21 @@ class BackupArchiveServiceImplTest {
             assertTrue(exportResult is AppResult.Failure)
             assertTrue(exportSnapshot.readOptions.isEmpty())
             assertTrue(requiredExporter.passwords.isEmpty())
-            assertEquals("backup_export", exportReporter.reports.single().second.operation.value)
+            assertEquals(
+                "backup_export",
+                exportReporter.reports
+                    .single()
+                    .second.operation.value,
+            )
             assertTrue(importResult is AppResult.Failure)
             assertTrue(importSnapshot.restoredBundle == null)
             assertTrue(requiredImporter.decodedPayload == null)
-            assertEquals("backup_import", importReporter.reports.single().second.operation.value)
+            assertEquals(
+                "backup_import",
+                importReporter.reports
+                    .single()
+                    .second.operation.value,
+            )
         }
 
     @Test
@@ -266,6 +493,7 @@ class BackupArchiveServiceImplTest {
             val importer = FakeImportAdapter(bundle = bundle)
             val otherImporter = FakeImportAdapter(formatId = BackupFormats.BITWARDEN_JSON)
             val password = charArrayOf('p', 'a', 's', 's')
+            val logger = RecordingTestLogger()
             val service =
                 service(
                     snapshotGateway,
@@ -274,6 +502,7 @@ class BackupArchiveServiceImplTest {
                     exporter,
                     setOf(importer, otherImporter),
                     UnconfinedTestDispatcher(testScheduler),
+                    logger,
                 )
 
             val result =
@@ -292,6 +521,26 @@ class BackupArchiveServiceImplTest {
                 BackupImportResult(11, 7, 2, 3, 4, 5),
                 (result as AppResult.Success).data,
             )
+            assertEquals(
+                listOf(
+                    LogStatements.Backup.Stage.IMPORT_FORMAT_SELECTED,
+                    LogStatements.Backup.Stage.IMPORT_DECODE_COMPLETED,
+                    LogStatements.Backup.Stage.IMPORT_RESTORE_STARTED,
+                    LogStatements.Backup.Stage.IMPORT_RESTORE_COMMITTED,
+                ).map { it.name },
+                logger.events.filter { it.event == Events.Backup.Phase }.map { event ->
+                    val value = event.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue
+                    value.value.value
+                },
+            )
+            assertEquals(
+                setOf(LogFieldKeys.Backup.Stage, LogFieldKeys.Backup.EntryCount, LogFieldKeys.Backup.ResourceCount),
+                logger.events.single {
+                    it.event == Events.Backup.Phase &&
+                        (it.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue).value.value ==
+                        LogStatements.Backup.Stage.IMPORT_DECODE_COMPLETED.name
+                }.fields.values.keys,
+            )
             assertEquals("content://backup/import", fileStore.readUri)
             assertEquals(payload.toList(), importer.decodedPayload?.toList())
             assertSame(password, importer.decodedPassword)
@@ -309,6 +558,7 @@ class BackupArchiveServiceImplTest {
             val fileStore = FakeBackupFileStore(readBytes = payload)
             val reporter = RecordingErrorReporter()
             val importer = FakeImportAdapter(decodeFailure = IllegalArgumentException("invalid document"))
+            val logger = RecordingTestLogger()
             val service =
                 service(
                     FakeSnapshotGateway(),
@@ -317,6 +567,7 @@ class BackupArchiveServiceImplTest {
                     FakeExportAdapter(),
                     setOf(importer),
                     UnconfinedTestDispatcher(testScheduler),
+                    logger,
                 )
 
             val result =
@@ -330,8 +581,18 @@ class BackupArchiveServiceImplTest {
                 )
 
             assertTrue(result is AppResult.Failure)
+            val phase = logger.events.single { it.event == Events.Backup.Phase }
+            assertEquals(
+                LogStatements.Backup.Stage.IMPORT_FORMAT_SELECTED.name,
+                (phase.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue).value.value,
+            )
             assertEquals(1, reporter.reports.size)
-            assertEquals("backup_import", reporter.reports.single().second.operation.value)
+            assertEquals(
+                "backup_import",
+                reporter.reports
+                    .single()
+                    .second.operation.value,
+            )
         }
 
     @Test
@@ -403,8 +664,14 @@ class BackupArchiveServiceImplTest {
                 val failure = (result as AppResult.Failure).error
                 assertTrue(failure is BackupFailed)
                 assertEquals("EOFException", failure.throwableType)
+                assertEquals(Reasons.BackupTerminalMissing.value, (failure as BackupFailed).reasonCode)
                 assertEquals(1, reporter.reports.size)
-                assertEquals("backup_import", reporter.reports.single().second.operation.value)
+                assertEquals(
+                    "backup_import",
+                    reporter.reports
+                        .single()
+                        .second.operation.value,
+                )
             } finally {
                 password.fill('\u0000')
                 completeBackup.fill(0)
@@ -443,7 +710,12 @@ class BackupArchiveServiceImplTest {
 
             assertTrue(result is AppResult.Failure)
             assertTrue(resource.all { it == 0.toByte() })
-            assertEquals("backup_import", reporter.reports.single().second.operation.value)
+            assertEquals(
+                "backup_import",
+                reporter.reports
+                    .single()
+                    .second.operation.value,
+            )
         }
 
     @Test
@@ -494,25 +766,26 @@ class BackupArchiveServiceImplTest {
         importers: Set<BackupImportAdapter>,
         dispatcher: CoroutineDispatcher,
         logger: com.aozijx.passly.core.observability.Logger = testLogger(),
-    ) =
-        BackupArchiveServiceImpl(
-            snapshotGateway = snapshotGateway,
-            formatRegistry =
-                BackupFormatRegistry(
-                    setOf(exporter),
-                    importers,
-                    com.aozijx.passly.feature.backup.internal.archive.format.json.JsonFormatDispatcher(
-                        com.aozijx.passly.feature.backup.internal.archive.format.json.JsonBackupImporter(),
-                        com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonImportAdapter(
-                            com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonParser(),
-                        ),
+    ) = BackupArchiveServiceImpl(
+        snapshotGateway = snapshotGateway,
+        formatRegistry =
+            BackupFormatRegistry(
+                setOf(exporter),
+                importers,
+                com.aozijx.passly.feature.backup.internal.archive.format.json.JsonFormatDispatcher(
+                    com.aozijx.passly.feature.backup.internal.archive.format.json
+                        .JsonBackupImporter(),
+                    com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonImportAdapter(
+                        com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
+                            .BitwardenJsonParser(),
                     ),
                 ),
-            fileStore = fileStore,
-            errorReporter = reporter,
-            logger = logger,
-            ioDispatcher = dispatcher,
-        )
+            ),
+        fileStore = fileStore,
+        errorReporter = reporter,
+        logger = logger,
+        ioDispatcher = dispatcher,
+    )
 
     private class FakeSnapshotGateway(
         var readBundle: BackupBundle = backupBundle(byteArrayOf()),
@@ -530,7 +803,10 @@ class BackupArchiveServiceImplTest {
             return readBundle
         }
 
-        override suspend fun restore(bundle: BackupBundle, mode: ImportMode): BackupRestoreResult {
+        override suspend fun restore(
+            bundle: BackupBundle,
+            mode: ImportMode,
+        ): BackupRestoreResult {
             restoredBundle = bundle
             restoredMode = mode
             restoreFailure?.let { throw it }
@@ -541,17 +817,29 @@ class BackupArchiveServiceImplTest {
     private class FakeBackupFileStore(
         var readBytes: ByteArray = byteArrayOf(0x41, 0x42),
         var writeFailure: Throwable? = null,
+        var inputCloseFailure: IOException? = null,
     ) : BackupFileStore {
         var readUri: String? = null
         val writtenUris = mutableListOf<String>()
         val writtenCopies = mutableListOf<ByteArray>()
 
-        override fun openInput(uri: String, maxBytes: Long): InputStream {
+        override fun openInput(
+            uri: String,
+            maxBytes: Long,
+        ): InputStream {
             readUri = uri
-            return ByteArrayInputStream(readBytes.copyOf())
+            return object : ByteArrayInputStream(readBytes.copyOf()) {
+                override fun close() {
+                    super.close()
+                    inputCloseFailure?.let { throw it }
+                }
+            }
         }
 
-        override fun openOutput(uri: String, maxBytes: Long): OutputStream {
+        override fun openOutput(
+            uri: String,
+            maxBytes: Long,
+        ): OutputStream {
             writeFailure?.let { throw it }
             writtenUris += uri
             return object : ByteArrayOutputStream() {
@@ -572,7 +860,11 @@ class BackupArchiveServiceImplTest {
         override var supportsIcons = true
         val passwords = mutableListOf<CharArray?>()
 
-        override fun encode(bundle: BackupBundle, password: CharArray?, output: OutputStream) {
+        override fun encode(
+            bundle: BackupBundle,
+            password: CharArray?,
+            output: OutputStream,
+        ) {
             passwords += password
             try {
                 output.write(encoded)
@@ -592,7 +884,11 @@ class BackupArchiveServiceImplTest {
         var decodedPassword: CharArray? = null
         var decodedStrategy: BackupImportStrategy? = null
 
-        override fun decode(input: InputStream, password: CharArray?, strategy: BackupImportStrategy): BackupBundle {
+        override fun decode(
+            input: InputStream,
+            password: CharArray?,
+            strategy: BackupImportStrategy,
+        ): BackupBundle {
             val payload = input.readBytes()
             decodedPayload = payload
             decodedPassword = password
@@ -612,7 +908,6 @@ class BackupArchiveServiceImplTest {
             reports += error to context
         }
     }
-
 }
 
 private fun backupBundle(resource: ByteArray) =

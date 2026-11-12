@@ -1,8 +1,13 @@
 package com.aozijx.passly.presentation.shared.components.group
 
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 
 /** 导航设置项：点击跳转/执行动作，右侧可显示当前值。 */
 fun navigationSettingsGroupItem(
@@ -13,8 +18,7 @@ fun navigationSettingsGroupItem(
     reserveLeadingIconSpace: Boolean = false,
     title: String,
     subtitle: String? = null,
-    value: String? = null,
-    isLoading: Boolean = false,
+    value: SettingsItemValue = SettingsItemValue.Empty,
     selected: Boolean = false,
     onClick: () -> Unit,
 ): SegmentedSettingsItem =
@@ -26,12 +30,32 @@ fun navigationSettingsGroupItem(
         reserveLeadingIconSpace = reserveLeadingIconSpace,
         title = title,
         subtitle = subtitle,
-        isLoading = isLoading,
         selected = selected,
         onClick = onClick,
-        trailing = {
-            value?.takeIf(String::isNotBlank)?.let {
-                AnimatedSettingValue(value = it, enabled = enabled)
-            }
-        },
+        trailing =
+            when (value) {
+                SettingsItemValue.Empty -> {
+                    null
+                }
+
+                SettingsItemValue.Unavailable -> {
+                    null
+                }
+
+                SettingsItemValue.Loading -> {
+                    {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                is SettingsItemValue.Text -> {
+                    {
+                        AnimatedSettingValue(value = value.value, enabled = enabled)
+                    }
+                }
+            },
     )

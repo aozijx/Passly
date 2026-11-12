@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import java.io.File
 import java.io.FileOutputStream
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -89,17 +90,13 @@ class FaviconBitmapTransformerTest {
     }
 
     @Test
-    fun transform_animatedGifUsesFirstFrame() {
+    fun transform_animatedGifWithoutCropPreservesOriginalFrames() {
         val input = temporaryFolder.newFile("animated.gif").apply { writeBytes(twoFrameGif()) }
-        val output = temporaryFolder.newFile("animated.webp")
+        val output = temporaryFolder.newFile("animated.gif")
 
         transformer.transform(input, output, crop = null)
 
-        val decoded = BitmapFactory.decodeFile(output.absolutePath)
-        assertEquals(1, decoded.width)
-        assertEquals(1, decoded.height)
-        assertTrue(Color.red(decoded.getPixel(0, 0)) < 20)
-        decoded.recycle()
+        assertArrayEquals(twoFrameGif(), output.readBytes())
     }
 
     private fun pngFile(

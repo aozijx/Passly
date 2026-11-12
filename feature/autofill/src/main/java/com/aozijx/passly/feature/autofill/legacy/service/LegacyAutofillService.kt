@@ -7,24 +7,25 @@ import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.observability.AutofillLogSnapshot
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
-import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.interactionIdOrNull
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
-import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyInlinePresentationFactory
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.legacy.service.mapping.toAutofillRequest
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import com.aozijx.passly.feature.autofill.runtime.launchAutofillServiceCleanup
 import dagger.hilt.android.AndroidEntryPoint
@@ -48,7 +49,7 @@ class LegacyAutofillService : AutofillService() {
     internal lateinit var discoverCandidates: DiscoverAutofillCandidates
 
     @Inject
-    internal lateinit var adapter: LegacyPlatformAdapter
+    internal lateinit var responseFactory: LegacyResponseFactory
 
     @Inject
     internal lateinit var diagnostics: LegacyAutofillDiagnostics
@@ -85,7 +86,7 @@ class LegacyAutofillService : AutofillService() {
                             request.fillContexts.size,
                             AutofillLogSnapshot.Legacy.Structure.Stage.FILL,
                         )
-                        val internalRequest = adapter.buildRequest(parsed)
+                        val internalRequest = parsed.toAutofillRequest()
                         val discoveryStartedAt = monotonicTimeMs()
                         val discoveryLog = diagnostics.beginDiscovery(internalRequest.packageName)
                         discovery = discoveryLog
@@ -100,10 +101,12 @@ class LegacyAutofillService : AutofillService() {
                             )
                         }
                         val result =
-                            adapter.buildResponseResult(
-                                outcome = outcome,
-                                parsed = parsed,
+                            responseFactory.buildResult(
                                 context = this@LegacyAutofillService,
+                                outcome = outcome,
+                                packageName = parsed.packageName,
+                                webDomain = parsed.webDomain,
+                                editableIds = parsed.allIds,
                                 inlineRequest = request.inlineSuggestionsRequest,
                             )
                         diagnostics.responseBuilt(internalRequest.packageName, result)
@@ -162,7 +165,7 @@ class LegacyAutofillService : AutofillService() {
                         request.fillContexts.size,
                         AutofillLogSnapshot.Legacy.Structure.Stage.SAVE,
                     )
-                    when (val result = legacySaveFlow.prepare(adapter.buildRequest(parsed))) {
+                    when (val result = legacySaveFlow.prepare(parsed.toAutofillRequest())) {
                         LegacySavePreparation.Saved -> {
                             diagnostics.saveCompleted()
                             if (completion.compareAndSet(false, true)) callback.onSuccess()

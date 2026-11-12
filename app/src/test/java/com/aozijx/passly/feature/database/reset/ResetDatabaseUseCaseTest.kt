@@ -93,14 +93,19 @@ class ResetDatabaseUseCaseTest {
             authorizeCalled = true
             this.scope = scope
             when (decision) {
-                AuthorizationDecision.CANCEL -> return AuthorizationResult.Cancelled
+                AuthorizationDecision.CANCEL -> {
+                    return AuthorizationResult.Cancelled
+                }
+
                 AuthorizationDecision.DENY -> {
                     return AuthorizationResult.Denied(
                         AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT),
                     )
                 }
 
-                AuthorizationDecision.ALLOW -> Unit
+                AuthorizationDecision.ALLOW -> {
+                    Unit
+                }
             }
             insideAuthorization = true
             return try {

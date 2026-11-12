@@ -48,12 +48,13 @@ class AttachmentReferenceLifecycleDaoTest {
 
             assertDatabaseFailureContaining(
                 expectedMessage = "FOREIGN KEY constraint failed",
-                failure = runCatching {
-                    database.openHelper.writableDatabase.execSQL(
-                        "DELETE FROM attachment_resources WHERE resourceId = ?",
-                        arrayOf(RESOURCE_ID),
-                    )
-                }.exceptionOrNull(),
+                failure =
+                    runCatching {
+                        database.openHelper.writableDatabase.execSQL(
+                            "DELETE FROM attachment_resources WHERE resourceId = ?",
+                            arrayOf(RESOURCE_ID),
+                        )
+                    }.exceptionOrNull(),
             )
             database.attachmentRefCommandDao().deleteById("attachment-a")
             assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
@@ -106,9 +107,10 @@ class AttachmentReferenceLifecycleDaoTest {
             database.attachmentResourceDao().insertStrict(resource())
             assertDatabaseFailureContaining(
                 expectedMessage = "FOREIGN KEY constraint failed",
-                failure = runCatching {
-                    database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
-                }.exceptionOrNull(),
+                failure =
+                    runCatching {
+                        database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
+                    }.exceptionOrNull(),
             )
 
             val pendingResourceId = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
@@ -117,11 +119,12 @@ class AttachmentReferenceLifecycleDaoTest {
             )
             assertDatabaseFailureContaining(
                 expectedMessage = "invalid attachment ref state",
-                failure = runCatching {
-                    database.attachmentRefCommandDao().insertStrict(
-                        currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
-                    )
-                }.exceptionOrNull(),
+                failure =
+                    runCatching {
+                        database.attachmentRefCommandDao().insertStrict(
+                            currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
+                        )
+                    }.exceptionOrNull(),
             )
         }
 

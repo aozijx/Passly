@@ -6,7 +6,8 @@ import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 internal enum class AppPasswordDialog {
     ACTION,
     SET,
-    CHANGE;
+    CHANGE,
+    ;
 
     val acceptsPasswordDraftChanges: Boolean
         get() = this == SET || this == CHANGE

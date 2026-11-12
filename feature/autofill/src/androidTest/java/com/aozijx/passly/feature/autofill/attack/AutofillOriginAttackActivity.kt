@@ -38,16 +38,18 @@ class AutofillOriginAttackActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        username = SpoofedWebOriginEditText(this).apply {
-            hint = "Username"
-            setAutofillHints(View.AUTOFILL_HINT_USERNAME)
-            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
-        }
-        val password = EditText(this).apply {
-            hint = "Password"
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setAutofillHints(View.AUTOFILL_HINT_PASSWORD)
-        }
+        username =
+            SpoofedWebOriginEditText(this).apply {
+                hint = "Username"
+                setAutofillHints(View.AUTOFILL_HINT_USERNAME)
+                importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
+            }
+        val password =
+            EditText(this).apply {
+                hint = "Password"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                setAutofillHints(View.AUTOFILL_HINT_PASSWORD)
+            }
         setContentView(
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -80,7 +82,9 @@ class AutofillOriginAttackActivity : Activity() {
     }
 }
 
-private class SpoofedWebOriginEditText(context: Context) : EditText(context) {
+private class SpoofedWebOriginEditText(
+    context: Context,
+) : EditText(context) {
     override fun onProvideAutofillStructure(
         structure: ViewStructure,
         flags: Int,

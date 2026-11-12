@@ -7,6 +7,7 @@ import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
@@ -25,10 +26,11 @@ internal class RoomActivityRecorder
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             require(type.isUsage) { "Usage recorder only accepts usage events" }
             val persist: suspend AppDatabase.() -> Unit = {
-                activityWriter.recordActivity(this, entryId, type, clock.now(), EntryActivityContext.Usage)
+                activityWriter.recordActivity(this, entryId, type, clock.now(), EntryActivityContext.Usage, affectedFields)
             }
             return if (type == ActivityType.AUTOFILL) {
                 databaseTransactions.writeForAutofill("activity_record_usage", persist)

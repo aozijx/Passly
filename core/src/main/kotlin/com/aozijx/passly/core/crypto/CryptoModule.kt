@@ -12,5 +12,4 @@ internal abstract class CryptoModule {
     @Binds
     @Singleton
     abstract fun bindCryptoEngine(implementation: AesGcmCryptoEngine): CryptoEngine
-
 }

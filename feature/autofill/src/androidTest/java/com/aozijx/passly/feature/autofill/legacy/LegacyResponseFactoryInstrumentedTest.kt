@@ -132,7 +132,9 @@ class LegacyResponseFactoryInstrumentedTest {
             pendingIntentFactory.createPickerIntent(
                 context = context,
                 interactionId = interactionId,
-                parsed = parsed,
+                packageName = parsed.packageName,
+                webDomain = parsed.webDomain,
+                editableIds = parsed.allIds,
                 uiMode = AutofillPresentation.BOTTOM_SHEET,
                 roleIds = roleIds,
             )
@@ -140,7 +142,9 @@ class LegacyResponseFactoryInstrumentedTest {
             pendingIntentFactory.createUnlockIntent(
                 context = context,
                 interactionId = interactionId,
-                parsed = parsed,
+                packageName = parsed.packageName,
+                webDomain = parsed.webDomain,
+                editableIds = parsed.allIds,
                 uiMode = AutofillPresentation.BOTTOM_SHEET,
                 roleIds = roleIds,
                 resultTarget = LegacyAutofillResultTarget.forLockedPresentation(AutofillPresentation.BOTTOM_SHEET),
@@ -149,7 +153,9 @@ class LegacyResponseFactoryInstrumentedTest {
             pendingIntentFactory.createUnlockIntent(
                 context = context,
                 interactionId = interactionId,
-                parsed = parsed,
+                packageName = parsed.packageName,
+                webDomain = parsed.webDomain,
+                editableIds = parsed.allIds,
                 uiMode = AutofillPresentation.SYSTEM_INLINE,
                 roleIds = roleIds,
                 resultTarget = LegacyAutofillResultTarget.forLockedPresentation(AutofillPresentation.SYSTEM_INLINE),
@@ -198,7 +204,9 @@ class LegacyResponseFactoryInstrumentedTest {
                         AutofillPresentation.BOTTOM_SHEET,
                     ),
                 ),
-                parsed,
+                parsed.packageName,
+                parsed.webDomain,
+                parsed.allIds,
             )
 
         assertEquals(1, result.summary.datasetCount)
@@ -223,7 +231,9 @@ class LegacyResponseFactoryInstrumentedTest {
                         AutofillPresentation.SYSTEM_INLINE,
                     ),
                 ),
-                parsed,
+                parsed.packageName,
+                parsed.webDomain,
+                parsed.allIds,
             )
 
         assertEquals(0, result.summary.datasetCount)
@@ -246,11 +256,9 @@ class LegacyResponseFactoryInstrumentedTest {
                     interaction,
                     discoveryContext(mapOf(passwordId.toString() to FieldRole.PASSWORD)),
                 ),
-                ParsedStructure(
-                    packageName = "com.example.browser",
-                    webDomain = "example.com",
-                    editableFields = listOf(EditableFieldInfo(passwordId)),
-                ),
+                "com.example.browser",
+                "example.com",
+                listOf(passwordId),
             )
 
         assertEquals(0, result.summary.datasetCount)
@@ -274,7 +282,9 @@ class LegacyResponseFactoryInstrumentedTest {
                     snapshot(),
                     discoveryContext(mapOf(passwordId.toString() to FieldRole.PASSWORD)),
                 ),
-                parsed,
+                parsed.packageName,
+                parsed.webDomain,
+                parsed.allIds,
             )
 
         assertNotNull(result.response)
@@ -301,7 +311,9 @@ class LegacyResponseFactoryInstrumentedTest {
                         snapshot(),
                         discoveryContext(mapOf(usernameId.toString() to FieldRole.USERNAME)),
                     ),
-                    parsed,
+                    parsed.packageName,
+                    parsed.webDomain,
+                    parsed.allIds,
                 ).response
 
         assertNull(response)
@@ -316,7 +328,9 @@ class LegacyResponseFactoryInstrumentedTest {
                     snapshot().copy(state = AutofillInteractionState.RequiresUnlock),
                     discoveryContext(emptyMap()),
                 ),
-                ParsedStructure(),
+                null,
+                null,
+                emptyList(),
             )
 
         assertNull(result.response)
@@ -335,7 +349,7 @@ class LegacyResponseFactoryInstrumentedTest {
             )
 
         cases.forEach { (outcome, reason) ->
-            val result = factory.buildResult(context, outcome, parsed)
+            val result = factory.buildResult(context, outcome, parsed.packageName, parsed.webDomain, parsed.allIds)
 
             assertNull("$outcome must not advertise a response", result.response)
             assertEquals(LegacyDiscoveryObservation.Unavailable(reason), result.observation)

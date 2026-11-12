@@ -31,6 +31,7 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.AppearanceUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import kotlinx.coroutines.launch
@@ -91,13 +92,15 @@ internal fun AppearanceDetail(
                         icon = Icons.Default.Palette,
                         title = stringResource(R.string.settings_theme_scheme),
                         value =
-                            if (state.isDynamicColor) {
-                                stringResource(R.string.settings_dynamic_color)
-                            } else {
-                                AppThemeSchemes.find(state.themeKey)?.let { scheme ->
-                                    stringResource(scheme.nameRes)
-                                } ?: stringResource(R.string.settings_theme_scheme_default)
-                            },
+                            SettingsItemValue.Text(
+                                if (state.isDynamicColor) {
+                                    stringResource(R.string.settings_dynamic_color)
+                                } else {
+                                    AppThemeSchemes.find(state.themeKey)?.let { scheme ->
+                                        stringResource(scheme.nameRes)
+                                    } ?: stringResource(R.string.settings_theme_scheme_default)
+                                },
+                            ),
                         onClick = { showThemeColorSheet = true },
                     ),
                 ),
@@ -113,7 +116,7 @@ internal fun AppearanceDetail(
                         key = "appearance.language",
                         icon = Icons.Default.Translate,
                         title = stringResource(R.string.settings_language),
-                        value = state.languageLabel,
+                        value = SettingsItemValue.Text(state.languageLabel),
                         onClick = { showLanguageSheet = true },
                     ),
                     switchSettingsGroupItem(

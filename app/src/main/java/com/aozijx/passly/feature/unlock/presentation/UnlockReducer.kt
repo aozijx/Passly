@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.unlock.presentation
 
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
-import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
@@ -147,7 +147,8 @@ internal object UnlockReducer {
                 val failure = mutation.failure
                 val attemptStatuses =
                     if (mutation.method != AuthenticationMethod.BIOMETRIC &&
-                        failure.code in setOf(
+                        failure.code in
+                        setOf(
                             AuthenticationFailureCode.CREDENTIAL_INCORRECT,
                             AuthenticationFailureCode.RATE_LIMITED,
                         )
@@ -217,12 +218,12 @@ internal object UnlockReducer {
             }
 
             UnlockMutation.PasswordSetupOpened -> {
-                if (state.passwordSetup is UnlockPasswordSetup.Saving) return state
+                if (state.passwordSetup == UnlockPasswordSetup.Saving) return state
                 state.copy(passwordSetup = UnlockPasswordSetup.Editing(PasswordSetupDraft()))
             }
 
             UnlockMutation.PasswordSetupClosed -> {
-                if (state.passwordSetup is UnlockPasswordSetup.Saving) return state
+                if (state.passwordSetup == UnlockPasswordSetup.Saving) return state
                 state.copy(passwordSetup = UnlockPasswordSetup.Closed)
             }
 
@@ -243,30 +244,49 @@ internal object UnlockReducer {
             }
 
             UnlockMutation.PasswordSetupStarted -> {
-                state.updateEditableSetup {
-                    UnlockPasswordSetup.Saving(PasswordSetupDraft())
+                when (state.passwordSetup) {
+                    is UnlockPasswordSetup.Editing -> {
+                        state.copy(passwordSetup = UnlockPasswordSetup.Saving)
+                    }
+
+                    UnlockPasswordSetup.Closed,
+                    UnlockPasswordSetup.Saving,
+                    -> {
+                        state
+                    }
                 }
             }
 
             is UnlockMutation.PasswordSetupFailed -> {
-                when (val setup = state.passwordSetup) {
-                    is UnlockPasswordSetup.Saving ->
+                when (state.passwordSetup) {
+                    UnlockPasswordSetup.Saving -> {
                         state.copy(
                             passwordSetup =
-                                UnlockPasswordSetup.Failed(
-                                    setup.draft,
-                                    mutation.failure.toSetupMessage(),
+                                UnlockPasswordSetup.Editing(
+                                    draft = PasswordSetupDraft(),
+                                    feedback =
+                                        PasswordSetupFeedback.Failed(
+                                            mutation.failure.toSetupMessage(),
+                                        ),
                                 ),
                         )
-                    else -> state
+                    }
+
+                    else -> {
+                        state
+                    }
                 }
             }
 
             UnlockMutation.PasswordSetupFinished -> {
-                when (val setup = state.passwordSetup) {
-                    is UnlockPasswordSetup.Saving ->
-                        state.copy(passwordSetup = UnlockPasswordSetup.Editing(setup.draft))
-                    else -> state
+                when (state.passwordSetup) {
+                    UnlockPasswordSetup.Saving -> {
+                        state.copy(passwordSetup = UnlockPasswordSetup.Editing(PasswordSetupDraft()))
+                    }
+
+                    else -> {
+                        state
+                    }
                 }
             }
         }
@@ -385,20 +405,19 @@ private inline fun UnlockUiState.updateEditableDraft(
             value.wipe()
             this
         }
-        is UnlockPasswordSetup.Saving -> {
+
+        UnlockPasswordSetup.Saving -> {
             value.wipe()
             this
         }
-        is UnlockPasswordSetup.Editing -> copy(passwordSetup = UnlockPasswordSetup.Editing(setup.draft.transform()))
-        is UnlockPasswordSetup.Failed -> copy(passwordSetup = UnlockPasswordSetup.Editing(setup.draft.transform()))
-    }
 
-private inline fun UnlockUiState.updateEditableSetup(
-    transform: (PasswordSetupDraft) -> UnlockPasswordSetup,
-): UnlockUiState =
-    when (val setup = passwordSetup) {
-        UnlockPasswordSetup.Closed -> this
-        is UnlockPasswordSetup.Editing -> copy(passwordSetup = transform(setup.draft))
-        is UnlockPasswordSetup.Failed -> copy(passwordSetup = transform(setup.draft))
-        is UnlockPasswordSetup.Saving -> this
+        is UnlockPasswordSetup.Editing -> {
+            copy(
+                passwordSetup =
+                    UnlockPasswordSetup.Editing(
+                        draft = setup.draft.transform(),
+                        feedback = PasswordSetupFeedback.None,
+                    ),
+            )
+        }
     }

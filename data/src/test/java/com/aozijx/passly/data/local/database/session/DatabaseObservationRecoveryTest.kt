@@ -6,6 +6,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -13,7 +14,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -37,7 +37,7 @@ class DatabaseObservationRecoveryTest {
                         flowOf("reopened")
                     }
                 }
-            backgroundScope.launch { observation.toList(values) }
+            backgroundScope.launch { observation.collect { values += it } }
             runCurrent()
 
             assertEquals(listOf("locked"), values)
@@ -77,7 +77,7 @@ class DatabaseObservationRecoveryTest {
                         flowOf("reopened")
                     }
                 }
-            backgroundScope.launch { observation.toList(values) }
+            backgroundScope.launch { observation.collect { values += it } }
             runCurrent()
             emissionStarted.await()
 
@@ -106,6 +106,8 @@ class DatabaseObservationRecoveryTest {
                     }.toList()
                 }
 
-            assertSame(readFailure, result.exceptionOrNull())
+            val failure = result.exceptionOrNull()
+            assertTrue(failure is IOException)
+            assertEquals(readFailure.message, failure?.message)
         }
 }

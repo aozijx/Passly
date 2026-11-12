@@ -15,8 +15,10 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.otp.OtpGenerator
-import com.aozijx.passly.domain.entry.otp.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -69,7 +71,7 @@ internal class RoomAutofillCredentialResolver
                                         ).otp
                                         ?.config
                                 val secret =
-                                    secretFieldStore.readField(
+                                    secretFieldStore.readFieldBytes(
                                         db = this,
                                         entryId = linkedEntryId,
                                         key = SensitiveFieldKey.OTP_SECRET,
@@ -106,19 +108,21 @@ internal fun findLinkedOtpEntryId(
 internal fun generateAutofillOtpCode(
     includeOtp: Boolean,
     config: OtpConfig?,
-    secret: String?,
+    secret: ByteArray?,
     timestampSeconds: Long = System.currentTimeMillis() / 1000,
 ): String? {
-    if (!includeOtp || config == null || secret.isNullOrBlank()) return null
-    return when (
-        val result =
-            OtpGenerator.generate(
-                config = config.copy(secret = secret),
-                timestamp = timestampSeconds,
-            )
-    ) {
-        is OtpResult.Success -> result.code
-        is OtpResult.Failure -> null
+    if (!includeOtp || config == null || secret == null) {
+        secret?.fill(0)
+        return null
+    }
+    val material = OtpGenerationMaterial(config.toGenerationConfig(), secret)
+    return try {
+        when (val result = OtpGenerator.generate(material, timestamp = timestampSeconds)) {
+            is OtpResult.Success -> result.code
+            is OtpResult.Failure -> null
+        }
+    } finally {
+        material.close()
     }
 }
 

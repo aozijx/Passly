@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.repository.settings
 
 import com.aozijx.passly.data.preferences.proto.AppPreferences
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageTopic

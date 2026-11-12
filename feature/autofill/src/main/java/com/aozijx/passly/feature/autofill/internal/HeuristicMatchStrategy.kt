@@ -54,7 +54,7 @@ internal class HeuristicMatchStrategy
                 }
 
                 // 3. Track state for weak-target synthesis
-                // LegacyPlatformAdapter only exposes fields accepted by the structure parser.
+                // The structure parser exposes only editable fields for legacy requests.
                 if (field.isFocused) {
                     focusedEditable = field
                 }

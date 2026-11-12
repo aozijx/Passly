@@ -15,6 +15,7 @@ internal enum class LegacyAutofillResultTarget(
         fun forLockedPresentation(presentation: AutofillPresentation): LegacyAutofillResultTarget =
             when (presentation) {
                 AutofillPresentation.BOTTOM_SHEET -> DATASET
+
                 AutofillPresentation.FLOATING,
                 AutofillPresentation.SYSTEM_INLINE,
                 -> RESPONSE

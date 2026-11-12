@@ -7,9 +7,9 @@ import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
-import com.aozijx.passly.testing.sampleInteractionSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleInteractionSettings
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -18,8 +18,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -74,8 +74,8 @@ class InteractionSettingsViewModelTest {
             val model = InteractionSettingsViewModel(repository)
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
-            backgroundScope.launch { model.uiState.toList() }
+            backgroundScope.launch { model.effects.collect { effects += it } }
+            backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeEnabled(true))
             model.onAction(InteractionSettingsAction.SetPullToSearchEnabled(true))
@@ -95,8 +95,8 @@ class InteractionSettingsViewModelTest {
             val model = InteractionSettingsViewModel(repository)
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
-            backgroundScope.launch { model.uiState.toList() }
+            backgroundScope.launch { model.effects.collect { effects += it } }
+            backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeEnabled(true))
             model.onAction(InteractionSettingsAction.SetPullToSearchEnabled(true))
@@ -126,7 +126,7 @@ class InteractionSettingsViewModelTest {
                 val model = InteractionSettingsViewModel(repository)
                 model.onPageEntered()
                 val effects = mutableListOf<InteractionSettingsEffect>()
-                backgroundScope.launch { model.effects.toList(effects) }
+                backgroundScope.launch { model.effects.collect { effects += it } }
                 model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
                 runCurrent()
                 ViewModelStore().apply {
@@ -145,7 +145,7 @@ class InteractionSettingsViewModelTest {
             val model = InteractionSettingsViewModel(Repository { throw CancellationException() })
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
             runCurrent()
             assertEquals(emptyList<InteractionSettingsEffect>(), effects)
@@ -158,7 +158,7 @@ class InteractionSettingsViewModelTest {
             val model = InteractionSettingsViewModel(repository)
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
@@ -197,6 +197,5 @@ class InteractionSettingsViewModelTest {
             save()
             currentInteraction.value = currentInteraction.value.copy(isPullToSearchEnabled = enabled)
         }
-
     }
 }

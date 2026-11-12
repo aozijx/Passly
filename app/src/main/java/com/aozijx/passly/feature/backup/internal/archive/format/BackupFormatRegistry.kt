@@ -1,11 +1,12 @@
 package com.aozijx.passly.feature.backup.internal.archive.format
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
-import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupContainerHeader
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupContainerV1Spec
 import com.aozijx.passly.feature.backup.internal.archive.format.json.JsonFormatDispatcher
+import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupFormats
 import java.io.InputStream
 import java.io.PushbackInputStream
 import javax.inject.Inject
@@ -27,14 +28,20 @@ internal class BackupFormatRegistry
     ) {
         private val exportersById = exporters.associateUnique("export")
         private val importersById = importers.associateUnique("import")
-        fun exporter(formatId: BackupFormatId): BackupExportAdapter = exportersById[formatId] ?: throw BackupFailed()
+
+        fun exporter(formatId: BackupFormatId): BackupExportAdapter =
+            exportersById[formatId] ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value)
 
         fun selectImporter(
             requestedFormat: BackupFormatId?,
             source: InputStream,
         ): BackupImportSelection {
             if (requestedFormat != null) {
-                return BackupImportSelection(importersById[requestedFormat] ?: throw BackupFailed(), source)
+                return BackupImportSelection(
+                    importersById[requestedFormat]
+                        ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value),
+                    source,
+                )
             }
             val input = PushbackInputStream(source, BackupContainerV1Spec.MAGIC_LENGTH)
             val prefix = ByteArray(BackupContainerV1Spec.MAGIC_LENGTH)
@@ -53,7 +60,8 @@ internal class BackupFormatRegistry
             if (length > 0) input.unread(prefix, 0, length)
             val adapter =
                 if (BackupContainerHeader.hasMagic(prefix, length)) {
-                    importersById[BackupFormats.PASSLY_ENCRYPTED] ?: throw BackupFailed()
+                    importersById[BackupFormats.PASSLY_ENCRYPTED]
+                        ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value)
                 } else {
                     jsonDispatcher
                 }

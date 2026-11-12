@@ -4,8 +4,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.autofill.model.FieldRole
-import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 
 internal fun AutofillFillRequest.roleMap(): Map<String, FieldRole> =
     buildMap {
@@ -32,10 +30,3 @@ internal fun AutofillFillRequest.toDomainRequest(): AutofillRequest {
         source = AutofillSource.AUTOFILL_SERVICE,
     )
 }
-
-internal fun AutofillFillRequest.toParsedStructure(): ParsedStructure =
-    ParsedStructure(
-        packageName = packageName,
-        webDomain = webDomain,
-        editableFields = editableIds.map(::EditableFieldInfo),
-    )

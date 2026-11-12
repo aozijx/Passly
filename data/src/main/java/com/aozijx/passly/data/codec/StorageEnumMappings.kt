@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.codec
 
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
@@ -55,8 +56,9 @@ internal fun entryTypeFromStorageKey(key: String): EntryType =
 internal fun ActivityType.toStorageKey(): String =
     when (this) {
         ActivityType.VIEW -> "VIEW"
-        ActivityType.COPY_USERNAME -> "COPY_USERNAME"
-        ActivityType.COPY_PASSWORD -> "COPY_PASSWORD"
+        ActivityType.REVEAL_FIELDS -> "REVEAL_FIELDS"
+        ActivityType.COPY_FIELD -> "COPY_FIELD"
+        ActivityType.COPY_OTP_CODE -> "COPY_OTP_CODE"
         ActivityType.AUTOFILL -> "AUTOFILL"
         ActivityType.EXPORT -> "EXPORT"
         ActivityType.IMPORT -> "IMPORT"
@@ -70,8 +72,9 @@ internal fun ActivityType.toStorageKey(): String =
 internal fun activityTypeFromStorageKey(key: String): ActivityType =
     when (key) {
         "VIEW" -> ActivityType.VIEW
-        "COPY_USERNAME" -> ActivityType.COPY_USERNAME
-        "COPY_PASSWORD" -> ActivityType.COPY_PASSWORD
+        "REVEAL_FIELDS" -> ActivityType.REVEAL_FIELDS
+        "COPY_FIELD" -> ActivityType.COPY_FIELD
+        "COPY_OTP_CODE" -> ActivityType.COPY_OTP_CODE
         "AUTOFILL" -> ActivityType.AUTOFILL
         "EXPORT" -> ActivityType.EXPORT
         "IMPORT" -> ActivityType.IMPORT
@@ -81,6 +84,115 @@ internal fun activityTypeFromStorageKey(key: String): ActivityType =
         "DELETE" -> ActivityType.DELETE
         "RESTORE" -> ActivityType.RESTORE
         else -> invalidStorageKey("activity type", key)
+    }
+
+internal fun FieldKey.toStorageKey(): String =
+    when (this) {
+        FieldKey.TITLE -> "TITLE"
+        FieldKey.USERNAME -> "USERNAME"
+        FieldKey.EMAIL -> "EMAIL"
+        FieldKey.PASSWORD -> "PASSWORD"
+        FieldKey.NOTES -> "NOTES"
+        FieldKey.TAGS -> "TAGS"
+        FieldKey.PRIMARY_URL -> "PRIMARY_URL"
+        FieldKey.DOMAINS -> "DOMAINS"
+        FieldKey.APPLICATION_IDS -> "APPLICATION_IDS"
+        FieldKey.EXPIRES_AT -> "EXPIRES_AT"
+        FieldKey.FAVORITE -> "FAVORITE"
+        FieldKey.CUSTOM_FIELDS -> "CUSTOM_FIELDS"
+        FieldKey.OTP_TYPE -> "OTP_TYPE"
+        FieldKey.OTP_SECRET -> "OTP_SECRET"
+        FieldKey.OTP_ISSUER -> "OTP_ISSUER"
+        FieldKey.OTP_ACCOUNT_NAME -> "OTP_ACCOUNT_NAME"
+        FieldKey.OTP_PERIOD -> "OTP_PERIOD"
+        FieldKey.OTP_COUNTER -> "OTP_COUNTER"
+        FieldKey.OTP_DIGITS -> "OTP_DIGITS"
+        FieldKey.OTP_ALGORITHM -> "OTP_ALGORITHM"
+        FieldKey.OTP_ENCODING -> "OTP_ENCODING"
+        FieldKey.PASSKEY_CREDENTIAL_ID -> "PASSKEY_CREDENTIAL_ID"
+        FieldKey.PASSKEY_RELYING_PARTY_ID -> "PASSKEY_RELYING_PARTY_ID"
+        FieldKey.PASSKEY_USER_HANDLE -> "PASSKEY_USER_HANDLE"
+        FieldKey.PASSKEY_DATA -> "PASSKEY_DATA"
+        FieldKey.RECOVERY_CODES -> "RECOVERY_CODES"
+        FieldKey.HARDWARE_INFO -> "HARDWARE_INFO"
+        FieldKey.SSH_KEY -> "SSH_KEY"
+        FieldKey.SSH_PUBLIC_KEY -> "SSH_PUBLIC_KEY"
+        FieldKey.SSH_PASSPHRASE -> "SSH_PASSPHRASE"
+        FieldKey.SEED_PHRASE -> "SEED_PHRASE"
+        FieldKey.CARD_TYPE -> "CARD_TYPE"
+        FieldKey.CARD_NUMBER -> "CARD_NUMBER"
+        FieldKey.CARD_EXPIRATION -> "CARD_EXPIRATION"
+        FieldKey.CARD_CVV -> "CARD_CVV"
+        FieldKey.CARD_HOLDER -> "CARD_HOLDER"
+        FieldKey.CARD_ISSUING_BANK -> "CARD_ISSUING_BANK"
+        FieldKey.CARD_BANK_BRANCH -> "CARD_BANK_BRANCH"
+        FieldKey.CARD_PRODUCT -> "CARD_PRODUCT"
+        FieldKey.CARD_CURRENCY -> "CARD_CURRENCY"
+        FieldKey.CARD_BANK_PHONE -> "CARD_BANK_PHONE"
+        FieldKey.PAYMENT_PIN -> "PAYMENT_PIN"
+        FieldKey.PAYMENT_PLATFORM -> "PAYMENT_PLATFORM"
+        FieldKey.BILLING_ADDRESS -> "BILLING_ADDRESS"
+        FieldKey.SECURITY_QUESTION -> "SECURITY_QUESTION"
+        FieldKey.SECURITY_ANSWER -> "SECURITY_ANSWER"
+        FieldKey.ID_NUMBER -> "ID_NUMBER"
+        FieldKey.WIFI_SSID -> "WIFI_SSID"
+        FieldKey.WIFI_SECURITY -> "WIFI_SECURITY"
+        FieldKey.WIFI_HIDDEN -> "WIFI_HIDDEN"
+    }
+
+internal fun fieldKeyFromStorageKey(key: String): FieldKey =
+    when (key) {
+        "TITLE" -> FieldKey.TITLE
+        "USERNAME" -> FieldKey.USERNAME
+        "EMAIL" -> FieldKey.EMAIL
+        "PASSWORD" -> FieldKey.PASSWORD
+        "NOTES" -> FieldKey.NOTES
+        "TAGS" -> FieldKey.TAGS
+        "PRIMARY_URL" -> FieldKey.PRIMARY_URL
+        "DOMAINS" -> FieldKey.DOMAINS
+        "APPLICATION_IDS" -> FieldKey.APPLICATION_IDS
+        "EXPIRES_AT" -> FieldKey.EXPIRES_AT
+        "FAVORITE" -> FieldKey.FAVORITE
+        "CUSTOM_FIELDS" -> FieldKey.CUSTOM_FIELDS
+        "OTP_TYPE" -> FieldKey.OTP_TYPE
+        "OTP_SECRET" -> FieldKey.OTP_SECRET
+        "OTP_ISSUER" -> FieldKey.OTP_ISSUER
+        "OTP_ACCOUNT_NAME" -> FieldKey.OTP_ACCOUNT_NAME
+        "OTP_PERIOD" -> FieldKey.OTP_PERIOD
+        "OTP_COUNTER" -> FieldKey.OTP_COUNTER
+        "OTP_DIGITS" -> FieldKey.OTP_DIGITS
+        "OTP_ALGORITHM" -> FieldKey.OTP_ALGORITHM
+        "OTP_ENCODING" -> FieldKey.OTP_ENCODING
+        "PASSKEY_CREDENTIAL_ID" -> FieldKey.PASSKEY_CREDENTIAL_ID
+        "PASSKEY_RELYING_PARTY_ID" -> FieldKey.PASSKEY_RELYING_PARTY_ID
+        "PASSKEY_USER_HANDLE" -> FieldKey.PASSKEY_USER_HANDLE
+        "PASSKEY_DATA" -> FieldKey.PASSKEY_DATA
+        "RECOVERY_CODES" -> FieldKey.RECOVERY_CODES
+        "HARDWARE_INFO" -> FieldKey.HARDWARE_INFO
+        "SSH_KEY" -> FieldKey.SSH_KEY
+        "SSH_PUBLIC_KEY" -> FieldKey.SSH_PUBLIC_KEY
+        "SSH_PASSPHRASE" -> FieldKey.SSH_PASSPHRASE
+        "SEED_PHRASE" -> FieldKey.SEED_PHRASE
+        "CARD_TYPE" -> FieldKey.CARD_TYPE
+        "CARD_NUMBER" -> FieldKey.CARD_NUMBER
+        "CARD_EXPIRATION" -> FieldKey.CARD_EXPIRATION
+        "CARD_CVV" -> FieldKey.CARD_CVV
+        "CARD_HOLDER" -> FieldKey.CARD_HOLDER
+        "CARD_ISSUING_BANK" -> FieldKey.CARD_ISSUING_BANK
+        "CARD_BANK_BRANCH" -> FieldKey.CARD_BANK_BRANCH
+        "CARD_PRODUCT" -> FieldKey.CARD_PRODUCT
+        "CARD_CURRENCY" -> FieldKey.CARD_CURRENCY
+        "CARD_BANK_PHONE" -> FieldKey.CARD_BANK_PHONE
+        "PAYMENT_PIN" -> FieldKey.PAYMENT_PIN
+        "PAYMENT_PLATFORM" -> FieldKey.PAYMENT_PLATFORM
+        "BILLING_ADDRESS" -> FieldKey.BILLING_ADDRESS
+        "SECURITY_QUESTION" -> FieldKey.SECURITY_QUESTION
+        "SECURITY_ANSWER" -> FieldKey.SECURITY_ANSWER
+        "ID_NUMBER" -> FieldKey.ID_NUMBER
+        "WIFI_SSID" -> FieldKey.WIFI_SSID
+        "WIFI_SECURITY" -> FieldKey.WIFI_SECURITY
+        "WIFI_HIDDEN" -> FieldKey.WIFI_HIDDEN
+        else -> invalidStorageKey("field key", key)
     }
 
 internal fun EntryRelationType.toStorageKey(): String =

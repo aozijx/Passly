@@ -58,7 +58,9 @@ sealed interface BackupUiAction {
         val include: Boolean,
     ) : BackupUiAction
 
-    data class ToggleIncludedEntryType(val type: EntryType) : BackupUiAction
+    data class ToggleIncludedEntryType(
+        val type: EntryType,
+    ) : BackupUiAction
 
     data object SelectAllEntryTypes : BackupUiAction
 

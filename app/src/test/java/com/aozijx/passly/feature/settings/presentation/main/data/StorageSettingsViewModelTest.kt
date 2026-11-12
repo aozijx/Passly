@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.feature.settings.data.AppCacheStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
 import java.util.concurrent.CancellationException
@@ -151,8 +152,8 @@ class StorageSettingsViewModelTest {
             viewModel.onPageEntered()
             runCurrent()
 
-            assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
-            assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
+            assertEquals(SettingsItemValue.Text("2.0 KB"), viewModel.uiState.value.cache)
+            assertEquals(SettingsItemValue.Text("1.0 KB"), viewModel.uiState.value.logs)
         }
 
     @Test
@@ -175,7 +176,7 @@ class StorageSettingsViewModelTest {
 
             assertEquals(StorageSettingsEffect.LogsCleared, effect.await())
             assertEquals(1, store.clearCount)
-            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
+            assertEquals(SettingsItemValue.Text("0 B"), viewModel.uiState.value.logs)
         }
 
     @Test
@@ -198,7 +199,7 @@ class StorageSettingsViewModelTest {
 
             assertEquals(StorageSettingsEffect.CacheCleared, effect.await())
             assertEquals(1, store.clearCount)
-            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.cache)
+            assertEquals(SettingsItemValue.Text("0 B"), viewModel.uiState.value.cache)
         }
 
     @Test
@@ -222,7 +223,7 @@ class StorageSettingsViewModelTest {
             assertEquals(StorageSettingsEffect.CacheClearFailed, effect.await())
             assertEquals(1, store.clearCount)
             assertEquals(2, store.sizeReadCount)
-            assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
+            assertEquals(SettingsItemValue.Text("2.0 KB"), viewModel.uiState.value.cache)
         }
 
     @Test
@@ -271,7 +272,7 @@ class StorageSettingsViewModelTest {
             store.clearResult.completeExceptionally(IOException())
             runCurrent()
 
-            assertEquals(StorageSizeUiState.Available("3.0 KB"), viewModel.uiState.value.cache)
+            assertEquals(SettingsItemValue.Text("3.0 KB"), viewModel.uiState.value.cache)
             assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
         }
 
@@ -295,7 +296,7 @@ class StorageSettingsViewModelTest {
 
             assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
             assertEquals(0, store.clearCount)
-            assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
+            assertEquals(SettingsItemValue.Text("1.0 KB"), viewModel.uiState.value.logs)
         }
 
     @Test
@@ -318,7 +319,7 @@ class StorageSettingsViewModelTest {
 
             assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
             assertEquals(1, store.clearCount)
-            assertEquals(StorageSizeUiState.Unavailable, viewModel.uiState.value.logs)
+            assertEquals(SettingsItemValue.Unavailable, viewModel.uiState.value.logs)
         }
 
     @Test
@@ -342,7 +343,7 @@ class StorageSettingsViewModelTest {
             store.clearResult.complete(LogClearResult.Cleared)
             runCurrent()
 
-            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
+            assertEquals(SettingsItemValue.Text("0 B"), viewModel.uiState.value.logs)
             assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
         }
 

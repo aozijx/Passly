@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetUiState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -54,7 +55,7 @@ internal fun DatabaseResetSheet(
         ) {
             Text(
                 text = stringResource(R.string.settings_database_reset_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = passlySheetTitleStyle(),
             )
             Text(
                 text = stringResource(R.string.database_reset_description),

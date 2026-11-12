@@ -71,8 +71,9 @@ internal class AutofillResultDelivery internal constructor(
                         ?: error("Legacy web Autofill session is no longer authorized")
                 webDeliverySessionAtMs = sessionAtMs
                 val interaction = runBlocking { interactionStore.snapshot(receipt.interactionId) }
-                check(interaction?.scope == webScope &&
-                    (interaction.webConsent as? AutofillWebConsent.Confirmed)?.sessionAtMs == sessionAtMs
+                check(
+                    interaction?.scope == webScope &&
+                        (interaction.webConsent as? AutofillWebConsent.Confirmed)?.sessionAtMs == sessionAtMs,
                 ) {
                     "Legacy web Autofill interaction scope changed before delivery"
                 }

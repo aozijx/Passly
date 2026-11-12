@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.ui.security
 
-import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialog
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogEvent
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogsModel

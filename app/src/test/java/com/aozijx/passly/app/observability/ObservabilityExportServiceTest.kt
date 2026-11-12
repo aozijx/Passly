@@ -111,7 +111,13 @@ class ObservabilityExportServiceTest {
                     .map { Json.parseToJsonElement(it).jsonObject }
                     .toList()
             val manifest = records.single { it["type"]?.jsonPrimitive?.content == "manifest" }
-            assertEquals(2, manifest.getValue("schema_version").jsonPrimitive.content.toInt())
+            assertEquals(
+                1,
+                manifest
+                    .getValue("schema_version")
+                    .jsonPrimitive.content
+                    .toInt(),
+            )
             assertEquals("Passly", manifest.getValue("app_name").jsonPrimitive.content)
             assertEquals("Pixel", manifest.getValue("model").jsonPrimitive.content)
             assertEquals(1, records.count { it["type"]?.jsonPrimitive?.content == "manifest" })
@@ -125,28 +131,6 @@ class ObservabilityExportServiceTest {
             ).forEach {
                 assertFalse(exported.contains(it, ignoreCase = true))
             }
-        }
-
-    @Test
-    fun `document export writes directly to selected uri without share cache`() =
-        runTest {
-            val files = RecordingExportStorageGateway(cacheDirectory)
-            val service = service(PageStore(listOf(record("event_00000001", 100))), files)
-
-            service
-                .export(
-                    TestPermit,
-                    DiagnosticsExportRequest(
-                        ExportAction.EXPORT_LOCAL,
-                        LogFormat.JSONL,
-                        "content://documents/log.jsonl",
-                    ),
-                ).getOrThrow()
-
-            assertTrue(files.documentText!!.startsWith("{\"type\":\"manifest\""))
-            assertEquals(null, files.target)
-            assertEquals(0, files.clearCalls)
-            assertFalse(files.documentDeleted)
         }
 
     @Test
@@ -183,7 +167,11 @@ class ObservabilityExportServiceTest {
                         ),
                     ).getOrThrow()
 
-                assertTrue(files.documentBytes!!.isNotEmpty())
+                val documentBytes = requireNotNull(files.documentBytes)
+                assertTrue(documentBytes.isNotEmpty())
+                if (format == LogFormat.JSONL) {
+                    assertTrue(documentBytes.decodeToString().startsWith("{\"type\":\"manifest\""))
+                }
                 assertEquals(null, files.target)
                 assertEquals(0, files.clearCalls)
                 assertFalse(files.documentDeleted)

@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.autofill.core.CompleteAutofillSelection
@@ -171,6 +172,7 @@ class AutofillResultDeliveryTest {
             assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
             assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
         }
+
     @Test
     fun `platform callback failure releases completion barrier and permits one successful retry`() =
         runTest {
@@ -351,6 +353,7 @@ class AutofillResultDeliveryTest {
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ) = AppResult.Success(Unit)
 
         override suspend fun deleteByEntryId(entryId: String) = Unit
@@ -400,7 +403,6 @@ class AutofillResultDeliveryTest {
         }
 
         override fun captureTraceToken(singleUse: Boolean): TraceToken {
-
             fatalCaptureFailure?.let { throw it }
             if (failTraces) throw IllegalStateException("trace unavailable")
             return delegate.captureTraceToken(singleUse)

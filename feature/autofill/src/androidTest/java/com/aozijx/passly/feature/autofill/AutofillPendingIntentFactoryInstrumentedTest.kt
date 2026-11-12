@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.credential.service.CredentialPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,15 +32,18 @@ class AutofillPendingIntentFactoryInstrumentedTest {
         AutofillPendingIntentFactory(target).createPickerIntent(
             context = context,
             interactionId = interactionId,
-            parsed = ParsedStructure(packageName = "com.example"),
+            packageName = "com.example",
+            webDomain = null,
+            editableIds = emptyList(),
             uiMode = AutofillPresentation.SYSTEM_INLINE,
             roleIds = emptyMap(),
         )
-        CredentialPendingIntentFactory(target).createPasswordGetPendingIntent(
-            context = context,
-            interactionId = interactionId,
-            entryId = EntryId("entry-1"),
-        ).cancel()
+        CredentialPendingIntentFactory(target)
+            .createPasswordGetPendingIntent(
+                context = context,
+                interactionId = interactionId,
+                entryId = EntryId("entry-1"),
+            ).cancel()
 
         assertEquals(
             listOf(
@@ -78,8 +80,7 @@ class AutofillPendingIntentFactoryInstrumentedTest {
             requestId: String,
         ): Intent = intent(context, requestId)
 
-        override fun accessibilityFillIntent(context: Context): Intent =
-            Intent(context, PendingIntentTargetActivity::class.java)
+        override fun accessibilityFillIntent(context: Context): Intent = Intent(context, PendingIntentTargetActivity::class.java)
 
         override fun credentialResponseIntent(
             context: Context,

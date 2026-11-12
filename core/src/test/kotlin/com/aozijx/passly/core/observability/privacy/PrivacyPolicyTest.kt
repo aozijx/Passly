@@ -5,11 +5,13 @@ import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.core.observability.HashedIdentifier
 import com.aozijx.passly.core.observability.IdentifierNamespace
 import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.PendingError
 import com.aozijx.passly.core.observability.PendingLogEvent
@@ -18,7 +20,6 @@ import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
-import com.aozijx.passly.core.observability.fields
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -26,6 +27,44 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrivacyPolicyTest {
+    @Test
+    fun `backup failure reason passes privacy policy`() {
+        val result = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT).sanitize(
+            PendingLogEvent(
+                level = LogLevel.INFO,
+                event = Events.Backup.Phase,
+                fields = fields { reason(LogFieldKeys.Backup.FailureReason, Reasons.BackupRecordDataTruncated) },
+            ),
+            context(),
+        )
+        val accepted = result as SanitizationResult.Accepted
+        assertEquals(
+            LogValue.ReasonCodeValue(Reasons.BackupRecordDataTruncated),
+            accepted.record.fields.values[LogFieldKeys.Backup.FailureReason],
+        )
+    }
+
+    @Test
+    fun `backup phase and counts pass privacy policy`() {
+        val result =
+            PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT).sanitize(
+                PendingLogEvent(
+                    level = LogLevel.INFO,
+                    event = Events.Backup.Phase,
+                    fields = fields {
+                        enum(LogFieldKeys.Backup.Stage, LogStatements.Backup.Stage.IMPORT_DECODE_COMPLETED)
+                        count(LogFieldKeys.Backup.EntryCount, 2)
+                        count(LogFieldKeys.Backup.ResourceCount, 1)
+                    },
+                ),
+                context(),
+            )
+
+        val accepted = result as SanitizationResult.Accepted
+        assertEquals(3, accepted.record.fields.values.size)
+        assertEquals(LogValue.Count(2), accepted.record.fields.values[LogFieldKeys.Backup.EntryCount])
+    }
+
     @Test
     fun `registered entry type enum is accepted for vault create events`() {
         val result =

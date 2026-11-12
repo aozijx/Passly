@@ -20,13 +20,13 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
-import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.authentication.flow.AuthenticationAvailabilityResolver
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.authentication.method.biometric.RotateBiometricKeyUseCase
-import com.aozijx.passly.security.session.finishRecoveryPasswordProvisioning
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.envelope.EnvelopeManager
 import com.aozijx.passly.security.session.VaultSessionController
+import com.aozijx.passly.security.session.finishRecoveryPasswordProvisioning
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -209,11 +209,12 @@ internal class DefaultAuthenticationMethodProvisioner
             return AuthenticationResult.Success(
                 method = AuthenticationMethod.BIOMETRIC,
                 pendingMaintenance =
-                    refreshAvailabilityAfterCommit() + setOfNotNull(
-                        AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
-                            cleanup == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED
-                        },
-                    ),
+                    refreshAvailabilityAfterCommit() +
+                        setOfNotNull(
+                            AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
+                                cleanup == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED
+                            },
+                        ),
             )
         }
 

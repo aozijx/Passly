@@ -22,8 +22,8 @@ import com.aozijx.passly.app.message.model.DeliveryPolicy
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
+import com.aozijx.passly.testing.sampleMessageSettings
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -248,9 +248,7 @@ class DefaultAppNoticeDispatcherTest {
                         codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
                         settingsProvider =
                             MessageSettingsSnapshotProvider {
-                                settingsProvider.current().also {
-                                    if (it == MessageSettingsSnapshot.Loading) firstSettingsRead.countDown()
-                                }
+                                 settingsProvider.current().also { firstSettingsRead.countDown() }
                             },
                         visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                         systemStateProvider = availableSystemState(),

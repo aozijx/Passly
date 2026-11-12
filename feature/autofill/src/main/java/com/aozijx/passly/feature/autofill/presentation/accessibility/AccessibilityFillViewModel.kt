@@ -141,7 +141,8 @@ internal class AccessibilityFillViewModel
                                     interactionId,
                                     request,
                                     outcome.context.roleMap,
-                                    outcome.context.roleMap.values.contains(FieldRole.OTP),
+                                    outcome.context.roleMap.values
+                                        .contains(FieldRole.OTP),
                                 )
                             traceContinuations.capture(interactionId.value)
                             logger.log(

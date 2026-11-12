@@ -83,7 +83,9 @@ class DefaultAppNoticeDispatcher
                         null
                     }
 
-                    is MessageSettingsSnapshot.Ready -> snapshot
+                    is MessageSettingsSnapshot.Ready -> {
+                        snapshot
+                    }
                 }
             val settings = readySettings?.value
             val settingsVersion = readySettings?.version ?: 0L

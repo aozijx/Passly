@@ -3,7 +3,9 @@ package com.aozijx.passly.feature.settings.presentation.backup
 sealed interface BackupDirectoryUiState {
     data object Unconfigured : BackupDirectoryUiState
 
-    data class Configured(val uri: String) : BackupDirectoryUiState {
+    data class Configured(
+        val uri: String,
+    ) : BackupDirectoryUiState {
         init {
             require(uri.isNotBlank())
         }

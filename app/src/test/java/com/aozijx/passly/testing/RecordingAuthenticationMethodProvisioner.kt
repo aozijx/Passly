@@ -18,7 +18,10 @@ internal class RecordingAuthenticationMethodProvisioner(
         return setPassword(password)
     }
 
-    override suspend fun changeAppPassword(currentPassword: CharArray, newPassword: CharArray) = unused()
+    override suspend fun changeAppPassword(
+        currentPassword: CharArray,
+        newPassword: CharArray,
+    ) = unused()
 
     override suspend fun disableAppPassword() = unused()
 

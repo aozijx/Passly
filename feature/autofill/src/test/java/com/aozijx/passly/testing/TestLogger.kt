@@ -14,12 +14,46 @@ import com.aozijx.passly.core.observability.trace.TraceToken
 
 internal fun testLogger(): Logger =
     object : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = Unit
-        override fun info(event: EventKey, fields: LogFields) = Unit
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
-        override fun warn(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun error(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun fatal(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
 
         override suspend fun <T> withRootTrace(
             operation: OperationCode,

@@ -36,7 +36,6 @@ import androidx.paging.compose.itemKey
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
-import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
@@ -50,7 +49,6 @@ internal fun VaultEntryGrid(
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
     otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
-    onAcquireOtp: (String) -> OtpLease,
     gridState: LazyGridState,
     modifier: Modifier = Modifier,
 ) {
@@ -107,7 +105,6 @@ internal fun VaultEntryGrid(
                             onAction = onItemAction,
                             content = content,
                             otpUiStateFlow = otpUiStateFlow,
-                            onAcquireOtp = onAcquireOtp,
                             animateInitialAppearance = playInitialEntryAnimation,
                             modifier =
                                 Modifier

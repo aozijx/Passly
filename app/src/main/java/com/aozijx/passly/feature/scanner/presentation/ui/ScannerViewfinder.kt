@@ -117,7 +117,9 @@ internal fun ScannerViewfinder(
                         )
                     }
 
-                    ScannerCameraState.Idle -> Unit
+                    ScannerCameraState.Idle -> {
+                        Unit
+                    }
                 }
             }
             // Draw the frame after the clipped scan content so its corner marks stay visible.

@@ -33,10 +33,22 @@ class DiagnosticsLogStoreAdapterTest {
 
             assertEquals(listOf(500, 1), store.readLimits)
             assertEquals(501, lines.size)
-            assertEquals(records.first().trace.traceId.value, lines.first().traceId)
+            assertEquals(
+                records
+                    .first()
+                    .trace.traceId.value,
+                lines.first().traceId,
+            )
             assertEquals(records.first().event.value, lines.first().event)
             assertEquals(LogLevel.INFO, lines.first().level)
-            assertEquals(8, lines.first().text.split('\t').size)
+            assertEquals(
+                8,
+                lines
+                    .first()
+                    .text
+                    .split('\t')
+                    .size,
+            )
             assertTrue(lines.first().text.contains(records.first().event.value))
             assertTrue(lines.first().text.contains("trace_id=${records.first().trace.traceId.value}"))
         }
@@ -99,13 +111,18 @@ class DiagnosticsLogStoreAdapterTest {
             readLimits += limit
             val start = cursor?.nextSequence?.toInt() ?: 0
             val pageRecords = records.drop(start).take(limit)
-            val next = (start + pageRecords.size).takeIf { it < records.size }?.let {
-                LogRecordCursor(0, "log_file", it.toLong(), it.toLong())
-            }
+            val next =
+                (start + pageRecords.size).takeIf { it < records.size }?.let {
+                    LogRecordCursor(0, "log_file", it.toLong(), it.toLong())
+                }
             return LogRecordPage(pageRecords, records.size, next)
         }
 
-        override fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int) = emptyList<SanitizedLogRecord>()
+        override fun readBetween(
+            startTimestampMs: Long,
+            endTimestampMs: Long,
+            limit: Int,
+        ) = emptyList<SanitizedLogRecord>()
 
         override fun flush(timeoutMs: Long) = true
 
@@ -121,7 +138,10 @@ class DiagnosticsLogStoreAdapterTest {
             return clearResult
         }
 
-        override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long) = true
+        override fun crashEmergencyWrite(
+            record: SanitizedLogRecord,
+            timeoutMs: Long,
+        ) = true
 
         override fun close() = Unit
     }

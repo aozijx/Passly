@@ -38,193 +38,194 @@ import javax.inject.Singleton
 
 @Singleton
 internal class AutofillInboxKeyMaterialCodec
-@Inject
-constructor() {
-    private val random = SecureRandom()
+    @Inject
+    constructor() {
+        private val random = SecureRandom()
 
-    fun generateAndWrap(dek: ByteArray): AutofillInboxKeyMaterial {
-        require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
+        fun generateAndWrap(dek: ByteArray): AutofillInboxKeyMaterial {
+            require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
 
-        val keyPairGenerator =
-            KeyPairGenerator.getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
-        keyPairGenerator.initialize(RSA_BITS, random)
-        val keyPair = keyPairGenerator.generateKeyPair()
-        val publicKey = keyPair.public.encoded
-        val privateKey = keyPair.private.encoded
-        val keyId = ByteArray(KEY_ID_BYTES).also(random::nextBytes)
-        val fingerprint =
-            MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256).digest(publicKey)
-        var wrappingKey: ByteArray? = null
-        try {
-            wrappingKey = deriveWrappingKey(dek)
-            val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(random::nextBytes)
-            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
-            cipher.init(
-                Cipher.ENCRYPT_MODE,
-                SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
-                GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, nonce),
-            )
-            cipher.updateAAD(associatedData(keyId, fingerprint))
-            val ciphertextAndTag = cipher.doFinal(privateKey)
+            val keyPairGenerator =
+                KeyPairGenerator.getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
+            keyPairGenerator.initialize(RSA_BITS, random)
+            val keyPair = keyPairGenerator.generateKeyPair()
+            val publicKey = keyPair.public.encoded
+            val privateKey = keyPair.private.encoded
+            val keyId = ByteArray(KEY_ID_BYTES).also(random::nextBytes)
+            val fingerprint =
+                MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256).digest(publicKey)
+            var wrappingKey: ByteArray? = null
             try {
-                val ciphertextLength = ciphertextAndTag.size - GCM_TAG_BYTES
-                val envelope =
-                    ByteBuffer
-                        .allocate(ENVELOPE_HEADER_BYTES + ciphertextAndTag.size)
-                        .order(ByteOrder.BIG_ENDIAN)
-                        .put(MAGIC.toByteArray(Charsets.US_ASCII))
-                        .put(ENVELOPE_VERSION)
-                        .put(keyId)
-                        .put(fingerprint)
-                        .put(nonce)
-                        .putInt(ciphertextLength)
-                        .put(ciphertextAndTag)
-                        .array()
-                return AutofillInboxKeyMaterial(
-                    formatVersion = AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT,
-                    keyId = keyId,
-                    publicKey = publicKey,
-                    publicKeySha256 = fingerprint,
-                    privateKeyEnvelope = envelope,
+                wrappingKey = deriveWrappingKey(dek)
+                val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(random::nextBytes)
+                val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
+                cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
+                    GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, nonce),
                 )
+                cipher.updateAAD(associatedData(keyId, fingerprint))
+                val ciphertextAndTag = cipher.doFinal(privateKey)
+                try {
+                    val ciphertextLength = ciphertextAndTag.size - GCM_TAG_BYTES
+                    val envelope =
+                        ByteBuffer
+                            .allocate(ENVELOPE_HEADER_BYTES + ciphertextAndTag.size)
+                            .order(ByteOrder.BIG_ENDIAN)
+                            .put(MAGIC.toByteArray(Charsets.US_ASCII))
+                            .put(ENVELOPE_VERSION)
+                            .put(keyId)
+                            .put(fingerprint)
+                            .put(nonce)
+                            .putInt(ciphertextLength)
+                            .put(ciphertextAndTag)
+                            .array()
+                    return AutofillInboxKeyMaterial(
+                        formatVersion = AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT,
+                        keyId = keyId,
+                        publicKey = publicKey,
+                        publicKeySha256 = fingerprint,
+                        privateKeyEnvelope = envelope,
+                    )
+                } finally {
+                    MemoryCleaner.wipeByteArray(ciphertextAndTag)
+                }
             } finally {
-                MemoryCleaner.wipeByteArray(ciphertextAndTag)
+                MemoryCleaner.wipeByteArray(privateKey)
+                MemoryCleaner.wipeByteArray(wrappingKey)
             }
-        } finally {
-            MemoryCleaner.wipeByteArray(privateKey)
-            MemoryCleaner.wipeByteArray(wrappingKey)
         }
-    }
 
-    fun validatedPublicKey(material: AutofillInboxKeyMaterial): RSAPublicKey {
-        require(material.formatVersion == AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT) {
-            "Unsupported Inbox key material version"
+        fun validatedPublicKey(material: AutofillInboxKeyMaterial): RSAPublicKey {
+            require(material.formatVersion == AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT) {
+                "Unsupported Inbox key material version"
+            }
+            require(material.keyId.size == KEY_ID_BYTES) { "Invalid Inbox key identifier" }
+            require(material.publicKeySha256.size == FINGERPRINT_BYTES) { "Invalid Inbox key fingerprint" }
+
+            val publicKey = decodeAndValidatePublicKey(material.publicKey) as RSAPublicKey
+            val fingerprint =
+                MessageDigest
+                    .getInstance(AutofillInboxCryptoAlgorithms.SHA_256)
+                    .digest(material.publicKey)
+            require(MessageDigest.isEqual(fingerprint, material.publicKeySha256)) {
+                "Inbox public key fingerprint mismatch"
+            }
+            return publicKey
         }
-        require(material.keyId.size == KEY_ID_BYTES) { "Invalid Inbox key identifier" }
-        require(material.publicKeySha256.size == FINGERPRINT_BYTES) { "Invalid Inbox key fingerprint" }
 
-        val publicKey = decodeAndValidatePublicKey(material.publicKey) as RSAPublicKey
-        val fingerprint =
-            MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256)
-                .digest(material.publicKey)
-        require(MessageDigest.isEqual(fingerprint, material.publicKeySha256)) {
-            "Inbox public key fingerprint mismatch"
+        fun <T> withPrivateKey(
+            material: AutofillInboxKeyMaterial,
+            dek: ByteArray,
+            block: (PrivateKey) -> T,
+        ): T {
+            require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
+            val publicKey = validatedPublicKey(material)
+            val fingerprint =
+                MessageDigest
+                    .getInstance(AutofillInboxCryptoAlgorithms.SHA_256)
+                    .digest(material.publicKey)
+
+            val envelope = decodeEnvelope(material.privateKeyEnvelope, material.keyId, fingerprint)
+            var wrappingKey: ByteArray? = null
+            var encodedPrivateKey: ByteArray? = null
+            try {
+                wrappingKey = deriveWrappingKey(dek)
+                val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
+                cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
+                    GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, envelope.nonce),
+                )
+                cipher.updateAAD(associatedData(material.keyId, fingerprint))
+                encodedPrivateKey = cipher.doFinal(envelope.ciphertextAndTag)
+                val privateKey =
+                    KeyFactory
+                        .getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
+                        .generatePrivate(PKCS8EncodedKeySpec(encodedPrivateKey))
+                validateKeyPair(privateKey, publicKey)
+                return block(privateKey)
+            } finally {
+                MemoryCleaner.wipeByteArray(envelope.nonce)
+                MemoryCleaner.wipeByteArray(envelope.ciphertextAndTag)
+                MemoryCleaner.wipeByteArray(encodedPrivateKey)
+                MemoryCleaner.wipeByteArray(wrappingKey)
+            }
         }
-        return publicKey
-    }
 
-    fun <T> withPrivateKey(
-        material: AutofillInboxKeyMaterial,
-        dek: ByteArray,
-        block: (PrivateKey) -> T,
-    ): T {
-        require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
-        val publicKey = validatedPublicKey(material)
-        val fingerprint =
-            MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256)
-                .digest(material.publicKey)
-
-        val envelope = decodeEnvelope(material.privateKeyEnvelope, material.keyId, fingerprint)
-        var wrappingKey: ByteArray? = null
-        var encodedPrivateKey: ByteArray? = null
-        try {
-            wrappingKey = deriveWrappingKey(dek)
-            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
-            cipher.init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
-                GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, envelope.nonce),
-            )
-            cipher.updateAAD(associatedData(material.keyId, fingerprint))
-            encodedPrivateKey = cipher.doFinal(envelope.ciphertextAndTag)
-            val privateKey =
+        private fun decodeAndValidatePublicKey(encoded: ByteArray): PublicKey {
+            require(encoded.size in 1..MAX_PUBLIC_KEY_BYTES) { "Invalid Inbox public key size" }
+            val key =
                 KeyFactory
                     .getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
-                    .generatePrivate(PKCS8EncodedKeySpec(encodedPrivateKey))
-            validateKeyPair(privateKey, publicKey)
-            return block(privateKey)
-        } finally {
-            MemoryCleaner.wipeByteArray(envelope.nonce)
-            MemoryCleaner.wipeByteArray(envelope.ciphertextAndTag)
-            MemoryCleaner.wipeByteArray(encodedPrivateKey)
-            MemoryCleaner.wipeByteArray(wrappingKey)
-        }
-    }
-
-    private fun decodeAndValidatePublicKey(encoded: ByteArray): PublicKey {
-        require(encoded.size in 1..MAX_PUBLIC_KEY_BYTES) { "Invalid Inbox public key size" }
-        val key =
-            KeyFactory
-                .getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
-                .generatePublic(X509EncodedKeySpec(encoded))
-        val rsaKey =
-            key as? RSAPublicKey
-                ?: throw IllegalArgumentException("Inbox key is not RSA")
-        require(rsaKey.modulus.bitLength() == RSA_BITS) { "Inbox key must be RSA-3072" }
+                    .generatePublic(X509EncodedKeySpec(encoded))
+            val rsaKey =
+                key as? RSAPublicKey
+                    ?: throw IllegalArgumentException("Inbox key is not RSA")
+            require(rsaKey.modulus.bitLength() == RSA_BITS) { "Inbox key must be RSA-3072" }
             require(rsaKey.publicExponent == RSA_PUBLIC_EXPONENT) { "Invalid Inbox public exponent" }
-        return rsaKey
+            return rsaKey
+        }
+
+        private fun validateKeyPair(
+            privateKey: PrivateKey,
+            publicKey: RSAPublicKey,
+        ) {
+            val rsaPrivateKey =
+                privateKey as? RSAPrivateCrtKey
+                    ?: throw IllegalArgumentException("Inbox private key is not RSA CRT")
+            require(rsaPrivateKey.modulus.bitLength() == RSA_BITS) { "Inbox key must be RSA-3072" }
+            require(rsaPrivateKey.modulus == publicKey.modulus) { "Inbox key modulus mismatch" }
+            require(rsaPrivateKey.publicExponent == publicKey.publicExponent) {
+                "Inbox key exponent mismatch"
+            }
+        }
+
+        private fun decodeEnvelope(
+            encoded: ByteArray,
+            expectedKeyId: ByteArray,
+            expectedFingerprint: ByteArray,
+        ): DecodedEnvelope {
+            require(encoded.size >= ENVELOPE_HEADER_BYTES + GCM_TAG_BYTES) {
+                "Inbox private key envelope is truncated"
+            }
+            val buffer = ByteBuffer.wrap(encoded).order(ByteOrder.BIG_ENDIAN)
+            val expectedMagic = MAGIC.toByteArray(Charsets.US_ASCII)
+            val magic = ByteArray(expectedMagic.size).also(buffer::get)
+            require(magic.contentEquals(expectedMagic)) { "Invalid Inbox private key envelope" }
+            require(buffer.get() == ENVELOPE_VERSION) { "Unsupported Inbox private key envelope" }
+
+            val keyId = ByteArray(KEY_ID_BYTES).also(buffer::get)
+            val fingerprint = ByteArray(FINGERPRINT_BYTES).also(buffer::get)
+            require(MessageDigest.isEqual(keyId, expectedKeyId)) { "Inbox key identifier mismatch" }
+            require(MessageDigest.isEqual(fingerprint, expectedFingerprint)) {
+                "Inbox private key fingerprint mismatch"
+            }
+
+            val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(buffer::get)
+            val ciphertextLength = buffer.int
+            require(ciphertextLength in MIN_RSA_CIPHERTEXT_BYTES..MAX_RSA_CIPHERTEXT_BYTES) {
+                "Invalid Inbox private key ciphertext length"
+            }
+            require(buffer.remaining() == ciphertextLength + GCM_TAG_BYTES) {
+                "Invalid Inbox private key envelope length"
+            }
+            return DecodedEnvelope(nonce, ByteArray(buffer.remaining()).also(buffer::get))
+        }
+
+        private fun deriveWrappingKey(dek: ByteArray): ByteArray =
+            Mac.getInstance(HMAC_SHA_256).run {
+                init(SecretKeySpec(dek, HMAC_SHA_256))
+                doFinal(WRAP_LABEL.toByteArray(Charsets.UTF_8))
+            }
+
+        private fun associatedData(
+            keyId: ByteArray,
+            fingerprint: ByteArray,
+        ): ByteArray = MAGIC.toByteArray(Charsets.US_ASCII) + byteArrayOf(ENVELOPE_VERSION) + keyId + fingerprint
+
+        private data class DecodedEnvelope(
+            val nonce: ByteArray,
+            val ciphertextAndTag: ByteArray,
+        )
     }
-
-    private fun validateKeyPair(
-        privateKey: PrivateKey,
-        publicKey: RSAPublicKey,
-    ) {
-        val rsaPrivateKey =
-            privateKey as? RSAPrivateCrtKey
-                ?: throw IllegalArgumentException("Inbox private key is not RSA CRT")
-        require(rsaPrivateKey.modulus.bitLength() == RSA_BITS) { "Inbox key must be RSA-3072" }
-        require(rsaPrivateKey.modulus == publicKey.modulus) { "Inbox key modulus mismatch" }
-        require(rsaPrivateKey.publicExponent == publicKey.publicExponent) {
-            "Inbox key exponent mismatch"
-        }
-    }
-
-    private fun decodeEnvelope(
-        encoded: ByteArray,
-        expectedKeyId: ByteArray,
-        expectedFingerprint: ByteArray,
-    ): DecodedEnvelope {
-        require(encoded.size >= ENVELOPE_HEADER_BYTES + GCM_TAG_BYTES) {
-            "Inbox private key envelope is truncated"
-        }
-        val buffer = ByteBuffer.wrap(encoded).order(ByteOrder.BIG_ENDIAN)
-        val expectedMagic = MAGIC.toByteArray(Charsets.US_ASCII)
-        val magic = ByteArray(expectedMagic.size).also(buffer::get)
-        require(magic.contentEquals(expectedMagic)) { "Invalid Inbox private key envelope" }
-        require(buffer.get() == ENVELOPE_VERSION) { "Unsupported Inbox private key envelope" }
-
-        val keyId = ByteArray(KEY_ID_BYTES).also(buffer::get)
-        val fingerprint = ByteArray(FINGERPRINT_BYTES).also(buffer::get)
-        require(MessageDigest.isEqual(keyId, expectedKeyId)) { "Inbox key identifier mismatch" }
-        require(MessageDigest.isEqual(fingerprint, expectedFingerprint)) {
-            "Inbox private key fingerprint mismatch"
-        }
-
-        val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(buffer::get)
-        val ciphertextLength = buffer.int
-        require(ciphertextLength in MIN_RSA_CIPHERTEXT_BYTES..MAX_RSA_CIPHERTEXT_BYTES) {
-            "Invalid Inbox private key ciphertext length"
-        }
-        require(buffer.remaining() == ciphertextLength + GCM_TAG_BYTES) {
-            "Invalid Inbox private key envelope length"
-        }
-        return DecodedEnvelope(nonce, ByteArray(buffer.remaining()).also(buffer::get))
-    }
-
-    private fun deriveWrappingKey(dek: ByteArray): ByteArray =
-        Mac.getInstance(HMAC_SHA_256).run {
-            init(SecretKeySpec(dek, HMAC_SHA_256))
-            doFinal(WRAP_LABEL.toByteArray(Charsets.UTF_8))
-        }
-
-    private fun associatedData(
-        keyId: ByteArray,
-        fingerprint: ByteArray,
-    ): ByteArray =
-        MAGIC.toByteArray(Charsets.US_ASCII) + byteArrayOf(ENVELOPE_VERSION) + keyId + fingerprint
-
-    private data class DecodedEnvelope(
-        val nonce: ByteArray,
-        val ciphertextAndTag: ByteArray,
-    )
-}

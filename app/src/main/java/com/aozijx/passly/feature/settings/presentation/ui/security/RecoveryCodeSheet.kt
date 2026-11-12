@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,8 +48,7 @@ fun RecoveryCodeSheet(
         ) {
             Text(
                 text = stringResource(R.string.recovery_code_label),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                style = passlySheetTitleStyle(),
             )
 
             Spacer(modifier = Modifier.height(8.dp))

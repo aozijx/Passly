@@ -2,7 +2,9 @@ package com.aozijx.passly.domain.entry.otp.generation
 
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -14,6 +16,7 @@ object OtpGenerator {
     private const val HMAC_SHA1 = "HmacSHA1"
     private const val HMAC_SHA256 = "HmacSHA256"
     private const val HMAC_SHA512 = "HmacSHA512"
+    private const val DEFAULT_PERIOD_SECONDS = 30
 
     fun generate(
         material: OtpGenerationMaterial,
@@ -22,9 +25,9 @@ object OtpGenerator {
     ): OtpResult =
         try {
             val config = material.config
-            when (config.type) {
-                OtpType.TOTP, OtpType.STEAM -> generateTimed(config, material.secretBytes, timestamp)
-                OtpType.HOTP -> generateCounterBased(config, material.secretBytes, overrideCounter ?: config.counter)
+            when (OtpTypeDefinitions[config.type].movingFactor) {
+                OtpMovingFactor.TIME -> generateTimed(config, material.secretBytes, timestamp)
+                OtpMovingFactor.COUNTER -> generateCounterBased(config, material.secretBytes, overrideCounter ?: config.counter)
             }
         } catch (e: OtpGenerationError) {
             OtpResult.Failure(e)
@@ -37,15 +40,10 @@ object OtpGenerator {
         secretBytes: ByteArray,
         timestamp: Long,
     ): OtpResult {
-        val period =
-            if (config.type == OtpType.STEAM) {
-                STEAM_PERIOD_SECONDS
-            } else {
-                config.periodSeconds?.coerceAtLeast(1) ?: 30
-            }
+        val definition = OtpTypeDefinitions[config.type]
+        val period = definition.fixedPeriodSeconds ?: config.periodSeconds?.coerceAtLeast(1) ?: DEFAULT_PERIOD_SECONDS
         val timeWindow = timestamp / period
-        val digits = if (config.type == OtpType.STEAM) 5 else config.digits
-        return computeOtp(config, secretBytes, timeWindow, digits)
+        return computeOtp(config, secretBytes, timeWindow, config.digits)
     }
 
     private fun generateCounterBased(
@@ -72,7 +70,8 @@ object OtpGenerator {
     ): OtpResult {
         val decoded = OtpSecretCodec.decode(secretBytes, config.encoding)
         try {
-            val algorithm = if (config.type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else config.algorithm
+            val definition = OtpTypeDefinitions[config.type]
+            val algorithm = definition.fixedAlgorithm ?: config.algorithm
             val hmacAlgo =
                 when (algorithm) {
                     OtpHashAlgorithm.SHA1 -> HMAC_SHA1
@@ -97,7 +96,7 @@ object OtpGenerator {
                             ((hash[offset + 2].toInt() and 0xff) shl 8) or
                             (hash[offset + 3].toInt() and 0xff)
                     val code =
-                        if (config.type == OtpType.STEAM) {
+                        if (definition.outputFormat == OtpOutputFormat.STEAM_ALPHABET) {
                             formatSteamCode(binary)
                         } else {
                             val divisor = POWERS_OF_10[digits.coerceIn(1, POWERS_OF_10.size - 1)]
@@ -140,7 +139,6 @@ object OtpGenerator {
             1000000000L,
         )
 
-    private const val STEAM_PERIOD_SECONDS = 30
 }
 
 sealed class OtpResult {

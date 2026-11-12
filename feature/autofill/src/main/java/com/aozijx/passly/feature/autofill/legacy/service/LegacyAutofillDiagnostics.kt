@@ -128,30 +128,28 @@ internal class LegacyAutofillDiagnostics
         private fun ParsedStructure.diagnostics(
             fillContextCount: Int,
             stage: AutofillLogSnapshot.Legacy.Structure.Stage,
-        ) =
-            AutofillLogSnapshot.Legacy.Structure(
-                stage = stage,
-                fillContextCount = fillContextCount,
-                traversal =
-                    AutofillLogSnapshot.Legacy.Structure.Traversal(
-                        windowCount = traversal.windowCount,
-                        visitedNodeCount = traversal.visitedNodeCount,
-                        truncated = traversal.truncated,
-                    ),
-                fields =
-                    AutofillLogSnapshot.Legacy.Structure.Fields(
-                        editableCount = editableFields.size,
-                        hintedCount = editableFields.count { it.autofillHints.isNotEmpty() },
-                        focusedCount = editableFields.count { it.isFocused },
-                        passwordInputTypeCount = editableFields.count { it.inputType?.contains("PASSWORD") == true },
-                    ),
-                target =
-                    AutofillLogSnapshot.Legacy.Structure.Target(
-                        hasPackage = !packageName.isNullOrBlank(),
-                        hasWebDomain = !webDomain.isNullOrBlank(),
-                    ),
-            )
+        ) = AutofillLogSnapshot.Legacy.Structure(
+            stage = stage,
+            fillContextCount = fillContextCount,
+            traversal =
+                AutofillLogSnapshot.Legacy.Structure.Traversal(
+                    windowCount = traversal.windowCount,
+                    visitedNodeCount = traversal.visitedNodeCount,
+                    truncated = traversal.truncated,
+                ),
+            fields =
+                AutofillLogSnapshot.Legacy.Structure.Fields(
+                    editableCount = editableFields.size,
+                    hintedCount = editableFields.count { it.autofillHints.isNotEmpty() },
+                    focusedCount = editableFields.count { it.isFocused },
+                    passwordInputTypeCount = editableFields.count { it.inputType?.contains("PASSWORD") == true },
+                ),
+            target =
+                AutofillLogSnapshot.Legacy.Structure.Target(
+                    hasPackage = !packageName.isNullOrBlank(),
+                    hasWebDomain = !webDomain.isNullOrBlank(),
+                ),
+        )
 
-        private fun List<FillContext>.targetPackage(): String? =
-            lastOrNull()?.structure?.activityComponent?.packageName
+        private fun List<FillContext>.targetPackage(): String? = lastOrNull()?.structure?.activityComponent?.packageName
     }

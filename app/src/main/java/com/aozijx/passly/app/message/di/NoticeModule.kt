@@ -21,6 +21,8 @@ import com.aozijx.passly.app.message.runtime.DefaultNoticeDeduplicator
 import com.aozijx.passly.app.message.runtime.DefaultNoticeRouter
 import com.aozijx.passly.app.message.runtime.ProcessAppVisibilityProvider
 import com.aozijx.passly.app.message.system.AndroidSystemNotificationGateway
+import com.aozijx.passly.app.message.system.AndroidSystemNotificationPlatform
+import com.aozijx.passly.app.message.system.SystemNotificationPlatform
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -67,6 +69,10 @@ abstract class NoticeModule {
     @Binds
     @Singleton
     abstract fun bindSystemStateProvider(impl: AndroidSystemNotificationGateway): SystemNotificationStateProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindSystemNotificationPlatform(impl: AndroidSystemNotificationPlatform): SystemNotificationPlatform
 
     @Binds
     @Singleton

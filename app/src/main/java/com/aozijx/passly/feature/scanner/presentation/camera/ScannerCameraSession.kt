@@ -32,11 +32,12 @@ internal class ScannerCameraSession {
         this.imageAnalysis = imageAnalysis
 
         if (!bindWhenReady(provider, previewView, lifecycleOwner, preview, imageAnalysis, isDisposed, onFailure)) {
-            val listener = android.view.View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                if (bindWhenReady(provider, previewView, lifecycleOwner, preview, imageAnalysis, isDisposed, onFailure)) {
-                    removeLayoutListener()
+            val listener =
+                android.view.View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    if (bindWhenReady(provider, previewView, lifecycleOwner, preview, imageAnalysis, isDisposed, onFailure)) {
+                        removeLayoutListener()
+                    }
                 }
-            }
             layoutChangeListener = listener
             previewView.addOnLayoutChangeListener(listener)
         }
@@ -69,11 +70,13 @@ internal class ScannerCameraSession {
         val viewPort = previewView.viewPort ?: return false
         if (previewView.width <= 0 || previewView.height <= 0 || isDisposed()) return false
         return try {
-            val useCaseGroup = UseCaseGroup.Builder()
-                .addUseCase(preview)
-                .addUseCase(imageAnalysis)
-                .setViewPort(viewPort)
-                .build()
+            val useCaseGroup =
+                UseCaseGroup
+                    .Builder()
+                    .addUseCase(preview)
+                    .addUseCase(imageAnalysis)
+                    .setViewPort(viewPort)
+                    .build()
             provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, useCaseGroup)
             true
         } catch (cancelled: CancellationException) {

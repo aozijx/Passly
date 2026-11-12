@@ -18,9 +18,10 @@ data class DiagnosticsUiState(
     val visibleLines: DiagnosticsVisibleLines
         get() {
             val query = searchQuery.trim()
-            val matches = retainedLines.filter { line ->
-                line.matchesSelectedLevel() && (query.isEmpty() || line.matches(query))
-            }
+            val matches =
+                retainedLines.filter { line ->
+                    line.matchesSelectedLevel() && (query.isEmpty() || line.matches(query))
+                }
             return matches
                 .takeIf { it.isNotEmpty() }
                 ?.let(DiagnosticsVisibleLines::Items)
@@ -45,7 +46,9 @@ data class DiagnosticsUiState(
 sealed interface DiagnosticsVisibleLines {
     data object Empty : DiagnosticsVisibleLines
 
-    data class Items(val lines: List<DiagnosticsLogLine>) : DiagnosticsVisibleLines {
+    data class Items(
+        val lines: List<DiagnosticsLogLine>,
+    ) : DiagnosticsVisibleLines {
         init {
             require(lines.isNotEmpty())
         }
@@ -55,11 +58,17 @@ sealed interface DiagnosticsVisibleLines {
 sealed interface DiagnosticsLoadState {
     val retainedLines: List<DiagnosticsLogLine>
 
-    data class Loading(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+    data class Loading(
+        override val retainedLines: List<DiagnosticsLogLine>,
+    ) : DiagnosticsLoadState
 
-    data class Ready(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+    data class Ready(
+        override val retainedLines: List<DiagnosticsLogLine>,
+    ) : DiagnosticsLoadState
 
-    data class RefreshFailed(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+    data class RefreshFailed(
+        override val retainedLines: List<DiagnosticsLogLine>,
+    ) : DiagnosticsLoadState
 
     data object SessionRestricted : DiagnosticsLoadState {
         override val retainedLines: List<DiagnosticsLogLine> = emptyList()
@@ -71,7 +80,9 @@ sealed interface DiagnosticsClearState {
 
     data object Confirmation : DiagnosticsClearState
 
-    data class Clearing(val confirmationVisible: Boolean) : DiagnosticsClearState
+    data class Clearing(
+        val confirmationVisible: Boolean,
+    ) : DiagnosticsClearState
 }
 
 val DiagnosticsClearState.isConfirmationVisible: Boolean
@@ -83,9 +94,13 @@ val DiagnosticsClearState.isClearing: Boolean
 sealed interface DiagnosticsExportState {
     data object None : DiagnosticsExportState
 
-    data class SelectingFormat(val action: ExportAction) : DiagnosticsExportState
+    data class SelectingFormat(
+        val action: ExportAction,
+    ) : DiagnosticsExportState
 
-    data class SelectingLocalDocument(val format: LogFormat) : DiagnosticsExportState
+    data class SelectingLocalDocument(
+        val format: LogFormat,
+    ) : DiagnosticsExportState
 }
 
 sealed interface DiagnosticsAction {

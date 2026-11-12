@@ -93,5 +93,4 @@ class RecoveryModeBoundaryTest {
 
         override fun isUnlocked(): Boolean = true
     }
-
 }

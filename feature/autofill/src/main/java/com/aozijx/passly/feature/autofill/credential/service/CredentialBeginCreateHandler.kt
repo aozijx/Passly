@@ -9,12 +9,12 @@ import androidx.credentials.provider.BeginCreateCredentialRequest
 import androidx.credentials.provider.BeginCreateCredentialResponse
 import androidx.credentials.provider.BeginCreatePasswordCredentialRequest
 import androidx.credentials.provider.CreateEntry
-import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
+import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -79,21 +79,21 @@ internal class CredentialBeginCreateHandler
             return BeginCreateCredentialResponse(createEntries = listOf(entry))
         }
 
-    private fun resolveCallingAppIcon(
-        context: Context,
-        packageName: String,
-    ): Icon? {
-        val iconResourceId =
-            try {
-                context.packageManager.getApplicationInfo(packageName, 0).icon
+        private fun resolveCallingAppIcon(
+            context: Context,
+            packageName: String,
+        ): Icon? {
+            val iconResourceId =
+                try {
+                    context.packageManager.getApplicationInfo(packageName, 0).icon
+                } catch (_: Exception) {
+                    return null
+                }
+            if (iconResourceId == 0) return null
+            return try {
+                Icon.createWithResource(packageName, iconResourceId)
             } catch (_: Exception) {
-                return null
+                null
             }
-        if (iconResourceId == 0) return null
-        return try {
-            Icon.createWithResource(packageName, iconResourceId)
-        } catch (_: Exception) {
-            null
         }
-    }
     }

@@ -17,9 +17,11 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 
 /** Pure conversion with input checks; callers own complete credential validation, identity creation, access and persistence. */
 class EntryDraftMaterializer {
@@ -92,9 +94,20 @@ class EntryDraftMaterializer {
         val type = draft.otpType()
         val algorithm = draft.otpAlgorithm()
         val encoding = draft.otpEncoding()
-        val digits = draft.number(FieldKey.OTP_DIGITS) ?: if (type == OtpType.STEAM) 5 else 6
-        val period = if (type == OtpType.HOTP) null else draft.number(FieldKey.OTP_PERIOD) ?: 30
-        val counter = if (type == OtpType.HOTP) draft.longNumber(FieldKey.OTP_COUNTER) ?: 0L else null
+        val typeDefinition = OtpTypeDefinitions[type]
+        val digits = draft.number(FieldKey.OTP_DIGITS) ?: typeDefinition.defaultDigits
+        val period =
+            if (typeDefinition.movingFactor == OtpMovingFactor.COUNTER) {
+                null
+            } else {
+                draft.number(FieldKey.OTP_PERIOD) ?: typeDefinition.defaultPeriodSeconds
+            }
+        val counter =
+            if (typeDefinition.movingFactor == OtpMovingFactor.COUNTER) {
+                draft.longNumber(FieldKey.OTP_COUNTER) ?: typeDefinition.defaultCounter
+            } else {
+                null
+            }
         val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, period, counter)
         if (invalidParameters.isNotEmpty()) throw InvalidEntryDraft(invalidParameters)
         val config =
@@ -188,13 +201,9 @@ class EntryDraftMaterializer {
     private fun EntryDraft.toggle(key: FieldKey): Boolean = (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
 
     private fun EntryDraft.otpType(): OtpType =
-        when (text(FieldKey.OTP_TYPE)) {
-            null -> OtpType.TOTP
-            "TOTP" -> OtpType.TOTP
-            "HOTP" -> OtpType.HOTP
-            "STEAM" -> OtpType.STEAM
-            else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_TYPE))
-        }
+        text(FieldKey.OTP_TYPE)?.let { key ->
+            OtpTypeDefinitions.fromKey(key)?.type ?: throw InvalidEntryDraft(setOf(FieldKey.OTP_TYPE))
+        } ?: OtpType.TOTP
 
     private fun EntryDraft.otpAlgorithm(): OtpHashAlgorithm =
         when (text(FieldKey.OTP_ALGORITHM)) {

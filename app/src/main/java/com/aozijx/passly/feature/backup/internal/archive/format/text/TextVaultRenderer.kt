@@ -59,7 +59,6 @@ class TextVaultRenderer
                     )
                 }
             }
-
         }
 
         private fun renderEntry(

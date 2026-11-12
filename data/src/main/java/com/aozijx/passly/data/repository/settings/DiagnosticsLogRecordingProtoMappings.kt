@@ -43,9 +43,8 @@ internal fun DiagnosticsLogRecordingPreference.toDomain(): DiagnosticsLogRecordi
 
         DiagnosticsLogRecordingPreference.DIAGNOSTICS_LOG_RECORDING_UNSPECIFIED,
         -> {
-            throw IllegalArgumentException("Unsupported diagnostics log recording mode: $this")
+            DiagnosticsLogRecordingMode.INFO_AND_ABOVE
         }
     }
 
-internal fun readDiagnosticsLogRecordingMode(proto: DiagnosticsPreferences): DiagnosticsLogRecordingMode =
-    proto.logRecordingMode.toDomain()
+internal fun readDiagnosticsLogRecordingMode(proto: DiagnosticsPreferences): DiagnosticsLogRecordingMode = proto.logRecordingMode.toDomain()

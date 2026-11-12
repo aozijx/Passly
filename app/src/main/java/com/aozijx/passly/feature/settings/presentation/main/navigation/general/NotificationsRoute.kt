@@ -22,6 +22,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.aozijx.passly.R
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
@@ -97,7 +98,7 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
 
                     is NotificationSettingsEffect.RequestRuntimeNotificationPermission -> {
                         if (!viewModel.canLaunchRuntimePermissionRequest(effect.request)) {
-                            viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(effect.request))
+                            viewModel.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(effect.request))
                             return@collect
                         }
                         permissionLaunch = NotificationPermissionLaunch.Pending(effect.request)
@@ -114,10 +115,26 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
                             }
 
                             PermissionRequestStart.Busy,
-                            PermissionRequestStart.HostUnavailable,
                             -> {
                                 permissionLaunch = NotificationPermissionLaunch.Idle
-                                viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(effect.request))
+                                viewModel.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(effect.request))
+                                Toast
+                                    .makeText(
+                                        context,
+                                        resources.getString(R.string.settings_permissions_request_busy),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            }
+
+                            PermissionRequestStart.HostUnavailable -> {
+                                permissionLaunch = NotificationPermissionLaunch.Idle
+                                viewModel.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(effect.request))
+                                Toast
+                                    .makeText(
+                                        context,
+                                        resources.getString(R.string.settings_permissions_request_unavailable),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
                             }
                         }
                     }

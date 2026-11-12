@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
 import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
-import java.io.EOFException
 import java.io.InputStream
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
@@ -79,10 +79,10 @@ internal class ChunkedBackupInputStream(
 
     private fun readNextRecord() {
         val firstType = input.read()
-        if (firstType < 0) throw EOFException("加密备份缺少 terminal record")
+        if (firstType < 0) throw BackupTruncatedException(Reasons.BackupTerminalMissing)
         val recordHeader = ByteArray(BackupContainerV1Spec.RECORD_HEADER_LENGTH)
         recordHeader[0] = firstType.toByte()
-        BackupRecordCrypto.readFully(input, recordHeader, 1, recordHeader.size - 1, "record header")
+        BackupRecordCrypto.readFully(input, recordHeader, 1, recordHeader.size - 1, Reasons.BackupRecordHeaderTruncated)
         val fields = ByteBuffer.wrap(recordHeader)
         val type = fields.get().toInt() and 0xff
         val recordSequence = fields.long
@@ -101,7 +101,7 @@ internal class ChunkedBackupInputStream(
         val nonce = BackupRecordCrypto.nonce(containerHeader.noncePrefix, sequence)
         val aad = BackupRecordCrypto.aad(containerHeader.authenticatedBytes, recordHeader)
         try {
-            BackupRecordCrypto.readFully(input, ciphertext, field = "record ciphertext")
+            BackupRecordCrypto.readFully(input, ciphertext, reason = Reasons.BackupRecordDataTruncated)
             val decoded = BackupRecordCrypto.crypt(Cipher.DECRYPT_MODE, keyBytes, nonce, aad, ciphertext, ciphertext.size)
             if (type == BackupContainerV1Spec.DATA_RECORD_TYPE) {
                 plaintext = decoded
@@ -144,5 +144,4 @@ internal class ChunkedBackupInputStream(
         containerHeader.salt.fill(0)
         containerHeader.noncePrefix.fill(0)
     }
-
 }

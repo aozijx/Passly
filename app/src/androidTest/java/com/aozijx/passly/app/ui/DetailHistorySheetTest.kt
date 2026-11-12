@@ -21,38 +21,46 @@ import androidx.compose.ui.test.swipeDown
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.history.RevisionChange
-import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionListUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailHistoryFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionSheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryAffectedFieldsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryDescriptionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryIcon
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryItemUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryListUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryLoadState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryRevisionReference
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistorySheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonContentUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceContentUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionFieldLabelUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionRevealActionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailHistorySheet
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-class RevisionHistorySheetTest {
+class DetailHistorySheetTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
     fun emptyHistoryAndComparisonWrapTheirContentAndKeepRestoreAvailable() {
         val model =
-            mutableStateOf<DetailRevisionSheetUiModel>(
-                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.ReadyEmpty),
+            mutableStateOf<DetailHistorySheetUiModel>(
+                DetailHistorySheetUiModel.ListPage(historyList()),
             )
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
             MaterialTheme {
-                RevisionHistorySheet(
+                DetailHistorySheet(
                     model.value,
                     onAction = actions::add,
                 )
@@ -63,9 +71,9 @@ class RevisionHistorySheetTest {
         assertSheetWrapsContent("Empty history")
 
         model.value =
-            DetailRevisionSheetUiModel.ComparisonPage(
+            DetailHistorySheetUiModel.ComparisonPage(
                 "revision-1",
-                DetailRevisionComparisonUiState.Ready(emptyList(), DetailRevisionRestorePhase.Idle),
+                DetailRevisionComparisonUiState.Ready(DetailRevisionComparisonContentUiState.NoChanges, DetailRevisionRestorePhase.Idle),
             )
         compose.waitForIdle()
         compose
@@ -80,34 +88,51 @@ class RevisionHistorySheetTest {
     fun longHistorySelectionOpensScrollableComparisonWithRestoreAvailable() {
         val revisions =
             (1..50).map {
-                DetailRevisionItemUiModel("revision-$it", it, 1L, RevisionChange.VALUE_CHANGED)
+                DetailHistoryItemUiModel(
+                    id = "revision:revision-$it",
+                    description =
+                        DetailHistoryDescriptionUiState.Snapshot(
+                            version = it,
+                            changeLabelRes = R.string.revision_change_changed,
+                        ),
+                    icon = DetailHistoryIcon.SNAPSHOT,
+                    filter = DetailHistoryFilter.CONTENT_CHANGES,
+                    affectedFields = DetailHistoryAffectedFieldsUiState.None,
+                    createdAtMs = it.toLong(),
+                    revision = DetailHistoryRevisionReference.Linked(it, "revision-$it"),
+                )
             }
         val differences =
             (1..30).map {
                 DetailRevisionDifferenceUiModel(
-                    RevisionFieldId.CustomField(it, "Field $it"),
-                    RevisionDifferenceKind.CHANGED,
-                    DetailRevisionValueUiModel.Text("Before $it"),
-                    DetailRevisionValueUiModel.Text("After $it"),
+                    field = RevisionFieldId.CustomField(it, "Field $it"),
+                    label = DetailRevisionFieldLabelUiState.Named(R.string.revision_custom_field_label, "Field $it"),
+                    changeLabelRes = R.string.revision_change_changed,
+                    content =
+                        DetailRevisionDifferenceContentUiState.Values(
+                            before = DetailRevisionValueUiModel.Text("Before $it"),
+                            after = DetailRevisionValueUiModel.Text("After $it"),
+                        ),
+                    revealAction = DetailRevisionRevealActionUiState.Unavailable,
                 )
             }
         val model =
-            mutableStateOf<DetailRevisionSheetUiModel>(
-                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.ReadyItems(revisions)),
+            mutableStateOf<DetailHistorySheetUiModel>(
+                DetailHistorySheetUiModel.ListPage(historyList(revisions)),
             )
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
             MaterialTheme {
-                RevisionHistorySheet(
+                DetailHistorySheet(
                     model.value,
                     onAction = { action ->
                         actions += action
                         if (action is DetailUiAction.SelectRevision) {
                             model.value =
-                                DetailRevisionSheetUiModel.ComparisonPage(
+                                DetailHistorySheetUiModel.ComparisonPage(
                                     action.revisionId,
                                     DetailRevisionComparisonUiState.Ready(
-                                        differences,
+                                        DetailRevisionComparisonContentUiState.Changes(differences),
                                         DetailRevisionRestorePhase.Idle,
                                     ),
                                 )
@@ -116,9 +141,12 @@ class RevisionHistorySheetTest {
                 )
             }
         }
-        compose.onNodeWithTag("revision-history-list").performScrollToIndex(49)
+        compose.onNodeWithTag("detail-history-list").performScrollToIndex(51)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        compose.onAllNodesWithText(context.getString(R.string.revision_compare_action)).onLast().performClick()
+        compose
+            .onNodeWithText(context.getString(R.string.revision_version_format, 50))
+            .assertIsDisplayed()
+            .performClick()
         assertEquals(DetailUiAction.SelectRevision("revision-50"), actions.last())
         compose.waitForIdle()
         compose.onNodeWithText(context.getString(R.string.revision_restore_action)).assertIsDisplayed()
@@ -135,28 +163,31 @@ class RevisionHistorySheetTest {
                 Column {
                     RevisionDifferenceRow(
                         DetailRevisionDifferenceUiModel(
-                            RevisionFieldId.ProtectedField(FieldKey.PASSWORD),
-                            RevisionDifferenceKind.CHANGED,
-                            DetailRevisionValueUiModel.Absent,
-                            DetailRevisionValueUiModel.Absent,
+                            field = RevisionFieldId.ProtectedField(FieldKey.PASSWORD),
+                            label = DetailRevisionFieldLabelUiState.Resource(R.string.password_label),
+                            changeLabelRes = R.string.revision_change_changed,
+                            content = DetailRevisionDifferenceContentUiState.ProtectedHidden,
+                            revealAction = DetailRevisionRevealActionUiState.Unavailable,
                         ),
                         actions::add,
                     )
                     RevisionDifferenceRow(
                         DetailRevisionDifferenceUiModel(
-                            RevisionFieldId.Sensitive(SensitiveFieldKey.PASSWORD),
-                            RevisionDifferenceKind.ADDED,
-                            DetailRevisionValueUiModel.Absent,
-                            DetailRevisionValueUiModel.Absent,
+                            field = RevisionFieldId.Sensitive(SensitiveFieldKey.PASSWORD),
+                            label = DetailRevisionFieldLabelUiState.Resource(R.string.password_label),
+                            changeLabelRes = R.string.revision_change_added,
+                            content = DetailRevisionDifferenceContentUiState.ProtectedHidden,
+                            revealAction = DetailRevisionRevealActionUiState.Unavailable,
                         ),
                         actions::add,
                     )
                     RevisionDifferenceRow(
                         DetailRevisionDifferenceUiModel(
-                            RevisionFieldId.Sensitive(SensitiveFieldKey.CARD_CVV),
-                            RevisionDifferenceKind.REMOVED,
-                            DetailRevisionValueUiModel.Absent,
-                            DetailRevisionValueUiModel.Absent,
+                            field = RevisionFieldId.Sensitive(SensitiveFieldKey.CARD_CVV),
+                            label = DetailRevisionFieldLabelUiState.Resource(R.string.card_cvv),
+                            changeLabelRes = R.string.revision_change_removed,
+                            content = DetailRevisionDifferenceContentUiState.ProtectedHidden,
+                            revealAction = DetailRevisionRevealActionUiState.Available(SensitiveFieldKey.CARD_CVV),
                         ),
                         actions::add,
                     )
@@ -177,11 +208,11 @@ class RevisionHistorySheetTest {
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
             MaterialTheme {
-                RevisionHistorySheet(
-                    DetailRevisionSheetUiModel.ComparisonPage(
+                DetailHistorySheet(
+                    DetailHistorySheetUiModel.ComparisonPage(
                         "revision-1",
                         DetailRevisionComparisonUiState.Ready(
-                            emptyList(),
+                            DetailRevisionComparisonContentUiState.NoChanges,
                             DetailRevisionRestorePhase.Restoring,
                         ),
                     ),
@@ -192,17 +223,25 @@ class RevisionHistorySheetTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
         compose.onNodeWithContentDescription(context.getString(R.string.back)).assertIsNotEnabled()
-        compose.onNodeWithTag("revision-history-sheet").performTouchInput { swipeDown() }
+        compose.onNodeWithTag("detail-history-sheet").performTouchInput { swipeDown() }
 
         assertTrue(actions.isEmpty())
     }
 
     private fun assertSheetWrapsContent(description: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val sheet = compose.onNodeWithTag("revision-history-sheet").getUnclippedBoundsInRoot()
+        val sheet = compose.onNodeWithTag("detail-history-sheet").getUnclippedBoundsInRoot()
         assertTrue(
             "$description should wrap its content: $sheet",
             (sheet.bottom.value - sheet.top.value) < context.resources.configuration.screenHeightDp * 0.6f,
         )
     }
+
+    private fun historyList(items: List<DetailHistoryItemUiModel> = emptyList()) =
+        DetailHistoryListUiState(
+            filter = DetailHistoryFilter.ALL,
+            items = items,
+            activitySource = DetailHistoryLoadState.READY,
+            revisionSource = DetailHistoryLoadState.READY,
+        )
 }

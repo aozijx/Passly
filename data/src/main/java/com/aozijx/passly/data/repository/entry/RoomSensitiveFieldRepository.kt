@@ -76,8 +76,9 @@ internal class RoomSensitiveFieldRepository
                 buildSensitiveResults(
                     keys = keys,
                     create = { key ->
-                        val entity = secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
-                            ?: return@buildSensitiveResults null
+                        val entity =
+                            secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
+                                ?: return@buildSensitiveResults null
                         OwnedChars.fromString(codec.decrypt(entryId.value, key, entity.valueCipher))
                     },
                     assemble = { key, value -> RevealedSensitiveField(entryId, key, value) },

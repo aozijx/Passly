@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
 import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.observability.Reasons
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.EOFException
@@ -13,6 +14,22 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ChunkedBackupStreamsTest {
+    @Test
+    fun truncatedRecordsIdentifyTheIncompletePart() {
+        val encoded = encode(byteArrayOf(1, 2, 3))
+        val cases = listOf(
+            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + 1) to Reasons.BackupRecordHeaderTruncated,
+            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1) to Reasons.BackupRecordDataTruncated,
+            encoded.copyOf(encoded.size - BackupContainerV1Spec.RECORD_HEADER_LENGTH - 32) to Reasons.BackupTerminalMissing,
+        )
+        cases.forEach { (bytes, reason) ->
+            val failure = assertThrows(BackupTruncatedException::class.java) {
+                ChunkedBackupInputStream(ByteArrayInputStream(bytes), password, ::deriveKey).use { it.readBytes() }
+            }
+            assertEquals(reason, failure.reasonCode)
+        }
+    }
+
     @Test
     fun chunkedStreams_roundTripAcrossRecords() {
         val plain = ByteArray(BackupContainerV1Spec.CHUNK_SIZE + 37) { (it % 239).toByte() }
@@ -96,15 +113,16 @@ class ChunkedBackupStreamsTest {
 
         val duplicate = twoRecords.clone().also { putLong(it, secondSequenceOffset, 0L) }
         val skipped = encode(byteArrayOf(1, 2, 3)).also { putLong(it, BackupContainerV1Spec.HEADER_LENGTH + 1, 2L) }
-        val reordered = twoRecords.clone().also { bytes ->
-            val first = bytes.copyOfRange(recordsStart, recordsStart + firstRecordSize)
-            val secondStart = recordsStart + firstRecordSize
-            val second = bytes.copyOfRange(secondStart, secondStart + firstRecordSize)
-            second.copyInto(bytes, recordsStart)
-            first.copyInto(bytes, secondStart)
-            first.fill(0)
-            second.fill(0)
-        }
+        val reordered =
+            twoRecords.clone().also { bytes ->
+                val first = bytes.copyOfRange(recordsStart, recordsStart + firstRecordSize)
+                val secondStart = recordsStart + firstRecordSize
+                val second = bytes.copyOfRange(secondStart, secondStart + firstRecordSize)
+                second.copyInto(bytes, recordsStart)
+                first.copyInto(bytes, secondStart)
+                first.fill(0)
+                second.fill(0)
+            }
 
         for (invalid in listOf(duplicate, skipped, reordered)) {
             assertThrows(IllegalArgumentException::class.java) {
@@ -118,14 +136,15 @@ class ChunkedBackupStreamsTest {
         val encoded = encode(byteArrayOf(1, 2, 3))
         val unknownType = encoded.clone().also { it[BackupContainerV1Spec.HEADER_LENGTH] = 9 }
         val invalidLength = encoded.clone().also { putInt(it, BackupContainerV1Spec.HEADER_LENGTH + 9, 0) }
-        val invalidTerminalLength = encoded.clone().also {
-            val terminalHeaderOffset =
-                it.size -
-                    BackupContainerV1Spec.RECORD_HEADER_LENGTH -
-                    BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH -
-                    BackupContainerV1Spec.TAG_LENGTH
-            putInt(it, terminalHeaderOffset + 9, BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH - 1)
-        }
+        val invalidTerminalLength =
+            encoded.clone().also {
+                val terminalHeaderOffset =
+                    it.size -
+                        BackupContainerV1Spec.RECORD_HEADER_LENGTH -
+                        BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH -
+                        BackupContainerV1Spec.TAG_LENGTH
+                putInt(it, terminalHeaderOffset + 9, BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH - 1)
+            }
 
         for (invalid in listOf(unknownType, invalidLength, invalidTerminalLength)) {
             assertThrows(IllegalArgumentException::class.java) {
@@ -144,10 +163,11 @@ class ChunkedBackupStreamsTest {
                 BackupContainerV1Spec.TAG_LENGTH
         val wrongCount = rewriteTerminal(encoded) { putLong(it, 0, 2L) }
         val wrongTotal = rewriteTerminal(encoded) { putLong(it, 8, 4L) }
-        val damagedTag = encoded.clone().also {
-            val terminalTagOffset = it.size - BackupContainerV1Spec.TAG_LENGTH
-            it[terminalTagOffset + 1] = (it[terminalTagOffset + 1].toInt() xor 1).toByte()
-        }
+        val damagedTag =
+            encoded.clone().also {
+                val terminalTagOffset = it.size - BackupContainerV1Spec.TAG_LENGTH
+                it[terminalTagOffset + 1] = (it[terminalTagOffset + 1].toInt() xor 1).toByte()
+            }
 
         for (invalid in listOf(wrongCount, wrongTotal)) {
             assertThrows(IllegalArgumentException::class.java) {
@@ -232,11 +252,19 @@ class ChunkedBackupStreamsTest {
         return rewritten
     }
 
-    private fun putLong(bytes: ByteArray, offset: Int, value: Long) {
+    private fun putLong(
+        bytes: ByteArray,
+        offset: Int,
+        value: Long,
+    ) {
         ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).putLong(offset, value)
     }
 
-    private fun putInt(bytes: ByteArray, offset: Int, value: Int) {
+    private fun putInt(
+        bytes: ByteArray,
+        offset: Int,
+        value: Int,
+    ) {
         ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).putInt(offset, value)
     }
 
@@ -244,9 +272,10 @@ class ChunkedBackupStreamsTest {
         password: CharArray,
         salt: ByteArray,
         parameters: KeyDerivation.Argon2idParameters,
-    ): ByteArray = ByteArray(parameters.keyLengthBits / Byte.SIZE_BITS) { index ->
-        (password[index % password.size].code + salt[index % salt.size]).toByte()
-    }
+    ): ByteArray =
+        ByteArray(parameters.keyLengthBits / Byte.SIZE_BITS) { index ->
+            (password[index % password.size].code + salt[index % salt.size]).toByte()
+        }
 
     companion object {
         private val password = "stream-password".toCharArray()

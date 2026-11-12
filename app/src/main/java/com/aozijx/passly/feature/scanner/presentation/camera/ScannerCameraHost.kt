@@ -39,11 +39,12 @@ internal fun ScannerCameraHost(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember {
-        PreviewView(context).apply {
-            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+    val previewView =
+        remember {
+            PreviewView(context).apply {
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            }
         }
-    }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     val cameraSession = remember { ScannerCameraSession() }
@@ -52,16 +53,20 @@ internal fun ScannerCameraHost(
     val currentOnPermissionDenied by rememberUpdatedState(onPermissionDenied)
     val currentOnFailure by rememberUpdatedState(onFailure)
     val currentViewfinderFrame by rememberUpdatedState(viewfinderFrame)
-    val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
-        if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
-        when (result) {
-            PermissionRequestOutcome.Granted -> permissionState.value = ScannerCameraPermissionState.Granted
-            is PermissionRequestOutcome.Denied -> {
-                permissionState.value = ScannerCameraPermissionState.Denied
-                currentOnPermissionDenied()
+    val permissionHost =
+        rememberPermissionRequestHost("scanner.camera") { permission, result ->
+            if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
+            when (result) {
+                PermissionRequestOutcome.Granted -> {
+                    permissionState.value = ScannerCameraPermissionState.Granted
+                }
+
+                is PermissionRequestOutcome.Denied -> {
+                    permissionState.value = ScannerCameraPermissionState.Denied
+                    currentOnPermissionDenied()
+                }
             }
         }
-    }
 
     LaunchedEffect(permissionHost) {
         when (permissionHost.status(RuntimePermission.CAMERA)) {
@@ -83,12 +88,17 @@ internal fun ScannerCameraHost(
         val disposed = AtomicBoolean(false)
         cameraSession.stop()
         when (cameraState) {
-            ScannerCameraState.Idle -> Unit
-            ScannerCameraState.Active ->
+            ScannerCameraState.Idle -> {
+                Unit
+            }
+
+            ScannerCameraState.Active -> {
                 when (permissionState.value) {
                     ScannerCameraPermissionState.Checking,
                     ScannerCameraPermissionState.Denied,
-                    -> Unit
+                    -> {
+                        Unit
+                    }
 
                     ScannerCameraPermissionState.Granted -> {
                         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -101,15 +111,16 @@ internal fun ScannerCameraHost(
                                             previewView = previewView,
                                             lifecycleOwner = lifecycleOwner,
                                             cameraSession = cameraSession,
-                                            imageAnalysis = createScannerImageAnalysis(
-                                                executor = cameraExecutor,
-                                                scanner = barcodeScanner,
-                                                previewView = previewView,
-                                                viewfinderBounds = { currentViewfinderFrame.boundsInPreview },
-                                                isDisposed = disposed::get,
-                                                onBarcodeDetected = { currentOnBarcodeDetected(it) },
-                                                onFailure = { currentOnFailure(it) },
-                                            ),
+                                            imageAnalysis =
+                                                createScannerImageAnalysis(
+                                                    executor = cameraExecutor,
+                                                    scanner = barcodeScanner,
+                                                    previewView = previewView,
+                                                    viewfinderBounds = { currentViewfinderFrame.boundsInPreview },
+                                                    isDisposed = disposed::get,
+                                                    onBarcodeDetected = { currentOnBarcodeDetected(it) },
+                                                    onFailure = { currentOnFailure(it) },
+                                                ),
                                             isDisposed = disposed::get,
                                             onFailure = { currentOnFailure(it) },
                                         )
@@ -124,6 +135,7 @@ internal fun ScannerCameraHost(
                         )
                     }
                 }
+            }
         }
 
         onDispose {
@@ -156,9 +168,10 @@ private fun bindScannerCamera(
     onFailure: (Throwable) -> Unit,
 ) {
     try {
-        val preview = Preview.Builder().build().apply {
-            surfaceProvider = previewView.surfaceProvider
-        }
+        val preview =
+            Preview.Builder().build().apply {
+                surfaceProvider = previewView.surfaceProvider
+            }
         cameraSession.bind(
             provider = provider,
             previewView = previewView,

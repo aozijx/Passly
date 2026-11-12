@@ -9,14 +9,15 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.testing.sampleCardPresentation
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.model.OtpRuntimePolicy
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicyRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleCardPresentation
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,8 +25,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -67,7 +68,7 @@ class InterfaceSettingsViewModelTest {
                     entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
                     entryCardPresentations = cardPresentations,
                 )
-            val model = InterfaceSettingsViewModel(repository, repository)
+            val model = InterfaceSettingsViewModel(repository, repository, repository)
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
@@ -76,31 +77,27 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(
-                RecoverableReadState.Ready(
-                    InterfaceUiModel(
-                        hideSystemBars = true,
-                        collapseTopBarOnScroll = false,
-                        collapseQuickFilterBarOnScroll = true,
-                        appCornerRadiusDp = 24f,
-                        appCornerRadiusRange = 0f..48f,
-                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
-                        entryCardPresentations = cardPresentations,
-                    ),
-                ),
-                model.uiState.value,
-            )
+            val state =
+                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiState>).value
+            assertEquals(true, state.hideSystemBars)
+            assertEquals(false, state.collapseTopBarOnScroll)
+            assertEquals(true, state.collapseQuickFilterBarOnScroll)
+            assertEquals(24f, state.appCornerRadiusDp)
+            assertEquals(0f..48f, state.appCornerRadiusRange)
+            assertEquals(true, state.copyNextTotpNearExpiry)
+            assertEquals(EntryHierarchyDisplayMode.EXPANDED, state.entryHierarchyDisplayMode)
+            assertEquals(cardPresentations, state.cardStylePresentations)
         }
 
     @Test
     fun `all interface writes report storage failures and retain repository state`() =
         runTest {
             val repository = Repository { throw IOException("synthetic private diagnostic") }
-            val model = InterfaceSettingsViewModel(repository, repository)
+            val model = InterfaceSettingsViewModel(repository, repository, repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
-            backgroundScope.launch { model.uiState.toList() }
+            backgroundScope.launch { model.errors.collect { errors += it } }
+            backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value
             val actions =
@@ -111,6 +108,7 @@ class InterfaceSettingsViewModelTest {
                     InterfaceSettingsAction.SetAppCornerRadius(24f),
                     InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED),
                     InterfaceSettingsAction.SetEntryCardPresentation(sampleCardPresentation("login", "password")),
+                    InterfaceSettingsAction.SetCopyNextTotpNearExpiry(false),
                 )
             actions.forEach(model::onAction)
             runCurrent()
@@ -123,11 +121,11 @@ class InterfaceSettingsViewModelTest {
         runTest {
             val stored = CompletableDeferred<Unit>()
             val repository = Repository { stored.await() }
-            val model = InterfaceSettingsViewModel(repository, repository)
+            val model = InterfaceSettingsViewModel(repository, repository, repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
-            backgroundScope.launch { model.uiState.toList() }
+            backgroundScope.launch { model.errors.collect { errors += it } }
+            backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value
             model.onAction(InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED))
@@ -143,7 +141,7 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
             assertEquals(
                 EntryHierarchyDisplayMode.EXPANDED,
-                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiModel>).value.entryHierarchyDisplayMode,
+                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiState>).value.entryHierarchyDisplayMode,
             )
             assertEquals(emptyList<UiErrorMessage>(), errors)
         }
@@ -152,7 +150,7 @@ class InterfaceSettingsViewModelTest {
     fun `card style selection is saved and follows repository state`() =
         runTest {
             val repository = Repository(save = {})
-            val model = InterfaceSettingsViewModel(repository, repository)
+            val model = InterfaceSettingsViewModel(repository, repository, repository)
             model.onPageEntered()
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
@@ -167,7 +165,8 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
             assertEquals(
                 listOf(presentation),
-                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiModel>).value.entryCardPresentations,
+                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiState>)
+                    .value.cardStylePresentations,
             )
         }
 
@@ -180,10 +179,11 @@ class InterfaceSettingsViewModelTest {
                     withContext(NonCancellable) { release.await() }
                     throw IOException("synthetic late failure")
                 }
-            val model = InterfaceSettingsViewModel(repository, repository)
+            val model = InterfaceSettingsViewModel(repository, repository, repository)
             model.onPageEntered()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
+            backgroundScope.launch { model.uiState.collect {} }
             model.onAction(InterfaceSettingsAction.SetHideSystemBars(true))
             runCurrent()
             ViewModelStore().apply {
@@ -207,7 +207,8 @@ class InterfaceSettingsViewModelTest {
             ),
         private val save: suspend () -> Unit,
     ) : InterfaceSettingsRepository,
-        LibraryViewSettingsRepository {
+        LibraryViewSettingsRepository,
+        OtpRuntimePolicyRepository {
         val savedCardPresentations = mutableListOf<EntryCardPresentation>()
 
         override val libraryViewSettings =
@@ -218,10 +219,16 @@ class InterfaceSettingsViewModelTest {
                     entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
                 ),
             )
+        override val otpRuntimePolicy = MutableStateFlow(OtpRuntimePolicy())
 
         override suspend fun setHideSystemBars(enabled: Boolean) = save()
 
         override suspend fun setTopBarCollapsible(enabled: Boolean) = save()
+
+        override suspend fun setCopyNextTotpNearExpiry(enabled: Boolean) {
+            save()
+            otpRuntimePolicy.value = OtpRuntimePolicy(copyNextTotpNearExpiry = enabled)
+        }
 
         override suspend fun setQuickFilterBarCollapsible(enabled: Boolean) = save()
 

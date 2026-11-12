@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.app.message.model.ArgumentKey
 import com.aozijx.passly.app.message.model.ArgumentValue
 import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
 import org.junit.Assert.assertEquals
@@ -21,6 +22,10 @@ class BackupNoticeMapperTest {
                 BackupNoticeEffect.Failed(BackupOperation.EXPORT) to NoticeCode.BACKUP_EXPORT_FAILED,
                 BackupNoticeEffect.ExportCleanupFailed to NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED,
                 BackupNoticeEffect.Failed(BackupOperation.IMPORT) to NoticeCode.BACKUP_IMPORT_FAILED,
+                BackupNoticeEffect.Failed(
+                    BackupOperation.IMPORT,
+                    Reasons.BackupAuthenticationFailed,
+                ) to NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED,
                 BackupNoticeEffect.Failed(BackupOperation.DIRECTORY_CHECK) to
                     NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED,
             )

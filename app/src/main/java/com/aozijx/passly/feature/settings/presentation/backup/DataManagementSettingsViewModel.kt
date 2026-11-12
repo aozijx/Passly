@@ -35,7 +35,8 @@ class DataManagementSettingsViewModel
             RecoverableRead(
                 source =
                     directorySource.backupDirectoryUri.map { uri ->
-                        uri?.takeIf(String::isNotBlank)
+                        uri
+                            ?.takeIf(String::isNotBlank)
                             ?.let(BackupDirectoryUiState::Configured)
                             ?: BackupDirectoryUiState.Unconfigured
                     },
@@ -97,7 +98,9 @@ class DataManagementSettingsViewModel
         ) {
             try {
                 when (directorySettings.select(uri)) {
-                    BackupDirectorySelectionResult.Saved -> Unit
+                    BackupDirectorySelectionResult.Saved -> {
+                        Unit
+                    }
 
                     BackupDirectorySelectionResult.Cancelled -> {
                         pageEffects.tryEmit(

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.paging.PagingSource
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
@@ -12,6 +13,7 @@ import com.aozijx.passly.data.local.database.query.buildEntryCategoryQuery
 import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
@@ -62,7 +64,7 @@ class EntryPagingDaoTest {
             val activities =
                 listOf(
                     activity("view", "mail", ActivityType.VIEW, 100L),
-                    activity("copy", "mail", ActivityType.COPY_PASSWORD, 200L),
+                    activity("copy", "mail", ActivityType.COPY_FIELD, 200L, setOf(FieldKey.PASSWORD)),
                     activity("update", "mail", ActivityType.UPDATE, 300L),
                 )
             for (activity in activities) {
@@ -142,7 +144,7 @@ class EntryPagingDaoTest {
             cases.forEach { (_, entry) -> insert(entry) }
 
             cases.forEach { (search, expectedEntry) ->
-                val rows = load(EntryListQuery(searchText = search.uppercase()))
+                val rows = load(EntryListQuery(searchText = search.uppercase(), sort = titleAscending()))
 
                 assertEquals(listOf(expectedEntry.entryId), rows.map { it.entry.entryId })
             }
@@ -217,15 +219,15 @@ class EntryPagingDaoTest {
 
             assertEquals(
                 listOf("percent-literal"),
-                load(EntryListQuery(searchText = "literal%needle")).map { it.entry.entryId },
+                load(EntryListQuery(searchText = "literal%needle", sort = titleAscending())).map { it.entry.entryId },
             )
             assertEquals(
                 listOf("underscore-literal"),
-                load(EntryListQuery(searchText = "under_score")).map { it.entry.entryId },
+                load(EntryListQuery(searchText = "under_score", sort = titleAscending())).map { it.entry.entryId },
             )
             assertEquals(
                 listOf("backslash-literal"),
-                load(EntryListQuery(searchText = "back\\slash")).map { it.entry.entryId },
+                load(EntryListQuery(searchText = "back\\slash", sort = titleAscending())).map { it.entry.entryId },
             )
         }
 
@@ -241,30 +243,38 @@ class EntryPagingDaoTest {
                 activity("a-update-2", "a", ActivityType.UPDATE, 300L),
                 activity("a-update-3", "a", ActivityType.UPDATE, 400L),
                 activity("b-view-1", "b", ActivityType.VIEW, 500L),
-                activity("b-view-2", "b", ActivityType.COPY_PASSWORD, 600L),
+                activity("b-view-2", "b", ActivityType.COPY_FIELD, 600L, setOf(FieldKey.PASSWORD)),
             ).forEach { activity -> database.entryActivityCommandDao().insertIdempotent(activity) }
+            database.entryActivityCommandDao().insertIdempotent(
+                activity(
+                    "b-copy-password",
+                    "b",
+                    ActivityType.COPY_FIELD,
+                    700L,
+                    setOf(FieldKey.PASSWORD),
+                ),
+            )
 
             suspend fun ids(
                 field: EntrySortField,
                 direction: SortDirection,
                 pinFavorites: Boolean = false,
-            ) =
-                load(
-                    EntryListQuery(
-                        sort =
-                            EntrySort(
-                                field,
-                                direction,
-                                pinFavorites = pinFavorites,
-                                tieBreaker =
-                                    if (field == EntrySortField.ID) {
-                                        EntrySortField.CREATED_AT
-                                    } else {
-                                        EntrySortField.ID
-                                    },
-                            ),
-                    ),
-                ).map { it.entry.entryId }
+            ) = load(
+                EntryListQuery(
+                    sort =
+                        EntrySort(
+                            field,
+                            direction,
+                            pinFavorites = pinFavorites,
+                            tieBreaker =
+                                if (field == EntrySortField.ID) {
+                                    EntrySortField.CREATED_AT
+                                } else {
+                                    EntrySortField.ID
+                                },
+                        ),
+                ),
+            ).map { it.entry.entryId }
 
             assertEquals(listOf("a", "b", "c"), ids(EntrySortField.TITLE, SortDirection.ASC))
             assertEquals(listOf("c", "b", "a"), ids(EntrySortField.TITLE, SortDirection.DESC))
@@ -504,10 +514,14 @@ class EntryPagingDaoTest {
         entryId: String,
         type: ActivityType,
         createdAt: Long,
+        affectedFields: Set<FieldKey> = emptySet(),
     ) = EntryActivityEntity(
         activityId = id,
         entryId = entryId,
         activityType = type,
+        affectedFieldKeys = affectedFields.map(FieldKey::toStorageKey).toSet(),
         createdAt = createdAt,
     )
+
+    private fun titleAscending() = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
 }

@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillCredentialResolutionTest {
@@ -82,22 +83,24 @@ class AutofillCredentialResolutionTest {
     @Test
     fun otpCodeIsGeneratedOnlyWhenRequested() {
         val config = OtpConfig(secret = null)
+        val otpSeed = "JBSWY3DPEHPK3PXP".toByteArray()
 
         assertEquals(
             "282760",
             generateAutofillOtpCode(
                 includeOtp = true,
                 config = config,
-                secret = "JBSWY3DPEHPK3PXP",
+                secret = otpSeed,
                 timestampSeconds = 0L,
             ),
         )
+        assertTrue(otpSeed.all { it == 0.toByte() })
         assertEquals(
             null,
             generateAutofillOtpCode(
                 includeOtp = false,
                 config = config,
-                secret = "JBSWY3DPEHPK3PXP",
+                secret = "JBSWY3DPEHPK3PXP".toByteArray(),
                 timestampSeconds = 0L,
             ),
         )

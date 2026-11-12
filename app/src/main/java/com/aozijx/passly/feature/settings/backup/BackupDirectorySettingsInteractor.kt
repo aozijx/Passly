@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.settings.backup
 
-import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -165,7 +165,9 @@ class BackupDirectorySettingsInteractor
                             throw failure
                         }
 
-                        else -> if (failure !== primaryFailure) primaryFailure.addSuppressed(failure)
+                        else -> {
+                            if (failure !== primaryFailure) primaryFailure.addSuppressed(failure)
+                        }
                     }
                 }
             }

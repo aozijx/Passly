@@ -7,10 +7,10 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SpanId
+import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
-import com.aozijx.passly.core.observability.trace.TraceToken
 
 internal fun testLogger(): Logger =
     object : Logger {

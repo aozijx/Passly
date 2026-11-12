@@ -7,12 +7,12 @@ import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.io.LimitedOutputStream
 import com.aozijx.passly.feature.backup.internal.archive.io.WipingByteArrayOutputStream
 import com.aozijx.passly.feature.backup.internal.archive.io.copyCurrentValueTo
-import com.aozijx.passly.feature.backup.internal.archive.io.forEachObjectField
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
+import com.aozijx.passly.feature.backup.internal.archive.io.forEachObjectField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
-import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonToken
 import java.io.InputStream
 import javax.inject.Inject
@@ -55,8 +55,13 @@ class JsonBackupImporter
                                 resources.putAll(parser.readBase64Resources())
                             }
 
-                            "items" -> throw IllegalArgumentException("JSON 根对象格式不明确")
-                            else -> parser.skipChildren()
+                            "items" -> {
+                                throw IllegalArgumentException("JSON 根对象格式不明确")
+                            }
+
+                            else -> {
+                                parser.skipChildren()
+                            }
                         }
                     }
                     require(parser.currentToken == JsonToken.END_OBJECT) { "备份 JSON 根对象未闭合" }
@@ -86,7 +91,6 @@ class JsonBackupImporter
             val document = BackupJson.decodeFromString<BackupDocument>(documentJson.decodeStrictUtf8("备份 document"))
             return BackupImportPlanner.plan(BackupBundle(document, resources), strategy).bundle
         }
-
     }
 
 internal fun com.fasterxml.jackson.core.JsonParser.readBase64Resources(): LinkedHashMap<String, ByteArray> {
@@ -97,11 +101,13 @@ internal fun com.fasterxml.jackson.core.JsonParser.readBase64Resources(): Linked
         forEachObjectField { id ->
             require(BackupBundleValidator.isSafeArchiveId(id)) { "备份资源 ID 无效" }
             require(resources.size < BackupBundleValidator.MAX_RESOURCES) { "备份资源数量过多" }
+            require(id !in resources) { "备份包含重复资源 ID: $id" }
             require(currentToken == JsonToken.VALUE_STRING) { "备份资源 Base64 无效: $id" }
             val output = WipingByteArrayOutputStream()
             try {
                 readBinaryValue(
-                    com.fasterxml.jackson.core.Base64Variants.getDefaultVariant(),
+                    com.fasterxml.jackson.core.Base64Variants
+                        .getDefaultVariant(),
                     LimitedOutputStream(output, BackupBundleValidator.MAX_RESOURCE_BYTES.toLong()),
                 )
                 val bytes = output.toByteArray()
@@ -109,10 +115,6 @@ internal fun com.fasterxml.jackson.core.JsonParser.readBase64Resources(): Linked
                 require(totalBytes <= BackupBundleValidator.MAX_TOTAL_RESOURCE_BYTES) {
                     bytes.fill(0)
                     "备份资源总量过大"
-                }
-                if (id in resources) {
-                    bytes.fill(0)
-                    throw IllegalArgumentException("备份包含重复资源 ID: $id")
                 }
                 resources[id] = bytes
             } finally {

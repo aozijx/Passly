@@ -226,12 +226,13 @@ class AttachmentResourceGarbageCollectorTest {
         logger: Logger,
     ): Pair<AppDatabaseSession, AuthenticatedAccess> {
         val access = AuthenticatedAccess()
-        val session = AppDatabaseSession(
-            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
-            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
-            eventLogger = DatabaseSessionEventLogger(logger),
-            accessState = Provider { access },
-        )
+        val session =
+            AppDatabaseSession(
+                resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                eventLogger = DatabaseSessionEventLogger(logger),
+                accessState = Provider { access },
+            )
         access.bind(session)
         return session to access
     }

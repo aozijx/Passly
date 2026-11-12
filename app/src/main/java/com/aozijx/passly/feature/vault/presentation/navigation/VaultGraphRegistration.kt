@@ -203,8 +203,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
         val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
         DetailRoute(
             entryId = entryId,
-            otpStates = vaultViewModel.otpStates,
-            onAcquireOtp = vaultViewModel::acquireOtp,
+            otpUiStateFlow = vaultViewModel::otpUiStateFlow,
             onBack = context.navigateBack,
             onOpenRelatedEntry = {
                 context.navigateToRoute(AppRoute.Detail.createRoute(it))

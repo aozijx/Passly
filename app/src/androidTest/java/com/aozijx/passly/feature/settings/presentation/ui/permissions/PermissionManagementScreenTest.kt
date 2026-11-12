@@ -94,23 +94,22 @@ class PermissionManagementScreenTest {
             ),
         backupDirectoryReadState: RecoverableReadState<String?> =
             RecoverableReadState.Ready("content://backup"),
-    ) =
-        PermissionManagementUiState(
-            runtimePermissions =
-                listOf(
-                    RuntimePermissionUiModel(
-                        permission = RuntimePermission.CAMERA,
-                        access = RuntimePermissionAccess.REQUESTABLE,
-                    ),
+    ) = PermissionManagementUiState(
+        runtimePermissions =
+            listOf(
+                RuntimePermissionUiModel(
+                    permission = RuntimePermission.CAMERA,
+                    access = RuntimePermissionAccess.REQUESTABLE,
                 ),
-            backupDirectory = backupDirectory,
-            backupDirectoryReadState = backupDirectoryReadState,
-            manifestCapabilities =
-                listOf(
-                    ManifestCapabilityUiModel(
-                        capability = ManifestCapability.INTERNET,
-                        interactive = false,
-                    ),
+            ),
+        backupDirectory = backupDirectory,
+        backupDirectoryReadState = backupDirectoryReadState,
+        manifestCapabilities =
+            listOf(
+                ManifestCapabilityUiModel(
+                    capability = ManifestCapability.INTERNET,
+                    interactive = false,
                 ),
-        )
+            ),
+    )
 }

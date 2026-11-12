@@ -27,6 +27,9 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                 coreOutputDirectory.set(
                     target.layout.projectDirectory.dir("core/build/generated/source/errorCatalog"),
                 )
+                commonOutputDirectory.set(
+                    target.layout.projectDirectory.dir("core/common/build/generated/source/errorCatalog"),
+                )
                 appOutputDirectory.set(
                     target.layout.projectDirectory.dir("app/build/generated/source/errorCatalog"),
                 )
@@ -39,7 +42,7 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                 group = "documentation"
                 description = "Generates the checked-in error code reference."
                 this.catalogFile.set(catalogFile)
-                markdownOutputFile.set(target.layout.projectDirectory.file("docs/architecture/observability/error-codes.md"))
+                markdownOutputFile.set(target.layout.projectDirectory.file("docs/platform/architecture/observability/error-codes.md"))
                 dependsOn(generateCatalogSources)
             }
         val verifyErrorCodes =
@@ -50,7 +53,7 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                 group = "verification"
                 description = "Verifies catalog uniqueness, messages, and generated documentation."
                 this.catalogFile.set(catalogFile)
-                markdownFile.set(target.layout.projectDirectory.file("docs/architecture/observability/error-codes.md"))
+                markdownFile.set(target.layout.projectDirectory.file("docs/platform/architecture/observability/error-codes.md"))
                 stringResourceFiles.from(
                     target.fileTree("app/src/main/res/values") { include("strings*.xml") },
                     target.fileTree("app/src/main/res/values-en") { include("strings*.xml") },

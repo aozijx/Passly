@@ -19,6 +19,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -88,6 +89,35 @@ class DatabaseResetViewModelTest {
             viewModel.uiState.first { it == DatabaseResetUiState.Completed }
             viewModel.onPageExited(secondOwner)
 
+            assertEquals(2, gateway.resetCount)
+        }
+
+    @Test
+    fun olderSuccessTimerCannotClearNewerResetFeedback() =
+        runTest {
+            val gateway = RecordingDatabaseGateway()
+            val viewModel = viewModel(null, gateway)
+            val firstOwner = viewModel.onPageEntered()
+
+            viewModel.onAction(DatabaseResetUiAction.Reset)
+            runCurrent()
+            assertSame(DatabaseResetUiState.Completed, viewModel.uiState.value)
+            viewModel.onPageExited(firstOwner)
+
+            advanceTimeBy(1_500)
+            runCurrent()
+            viewModel.onPageEntered()
+            viewModel.onAction(DatabaseResetUiAction.Reset)
+            runCurrent()
+            assertSame(DatabaseResetUiState.Completed, viewModel.uiState.value)
+
+            advanceTimeBy(1_500)
+            runCurrent()
+
+            assertSame(DatabaseResetUiState.Completed, viewModel.uiState.value)
+            advanceTimeBy(1_500)
+            runCurrent()
+            assertSame(DatabaseResetUiState.Idle, viewModel.uiState.value)
             assertEquals(2, gateway.resetCount)
         }
 

@@ -1,8 +1,9 @@
 package com.aozijx.passly.feature.backup.presentation
 
 import androidx.lifecycle.ViewModelStore
-import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -13,18 +14,18 @@ import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
 import com.aozijx.passly.testing.MainDispatcherRule
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.io.IOException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import java.io.IOException
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,6 +35,28 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class BackupViewModelLifecycleTest {
     @get:Rule val mainDispatcher = MainDispatcherRule()
+
+    @Test
+    fun `authentication failure emits specific import notice`() =
+        runTest {
+            val model =
+                model {
+                    BackupExecutionResult.Failure(
+                        BackupFailed(reasonCode = Reasons.BackupAuthenticationFailed.value),
+                    )
+                }
+            val owner = model.onPageEntered()
+            model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestImport(model, owner)))
+            val effect = async { model.effects.first() }
+
+            model.onAction(BackupUiAction.SubmitImport)
+
+            assertEquals(
+                BackupNoticeEffect.Failed(BackupOperation.IMPORT, Reasons.BackupAuthenticationFailed),
+                effect.await(),
+            )
+            model.onPageExited(owner)
+        }
 
     @Test
     fun `submitted import owns password through route exit and suppresses old page result`() =
@@ -108,7 +131,9 @@ class BackupViewModelLifecycleTest {
             val requestId = requestImport(model, owner)
             model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestId))
             model.onAction(BackupUiAction.UpdatePassword("secret"))
-            val password = model.uiState.value.workflow.password() as OwnedChars
+            val password =
+                model.uiState.value.workflow
+                    .password() as OwnedChars
             val effect = async { model.effects.first() }
 
             model.onAction(BackupUiAction.SubmitImport)
@@ -225,20 +250,19 @@ class BackupViewModelLifecycleTest {
     private fun model(
         errorReporter: AppErrorReporter = AppErrorReporter { _, _ -> Unit },
         performImport: suspend (BackupImportOperationRequest) -> BackupExecutionResult,
-    ) =
-        BackupViewModel(
-            backupOperationGateway = FakeBackupOperationGateway(performImport),
-            errorReporter = errorReporter,
-            secureSessionAccessState =
-                object : SecureSessionAccessState {
-                    override val authenticationState =
-                        MutableStateFlow<AuthenticationState>(
-                            AuthenticationState.Authenticated(1L),
-                        )
+    ) = BackupViewModel(
+        backupOperationGateway = FakeBackupOperationGateway(performImport),
+        errorReporter = errorReporter,
+        secureSessionAccessState =
+            object : SecureSessionAccessState {
+                override val authenticationState =
+                    MutableStateFlow<AuthenticationState>(
+                        AuthenticationState.Authenticated(1L),
+                    )
 
-                    override fun isUnlocked() = true
-                },
-        )
+                override fun isUnlocked() = true
+            },
+    )
 
     private companion object {
         val IMPORT_RESULT =

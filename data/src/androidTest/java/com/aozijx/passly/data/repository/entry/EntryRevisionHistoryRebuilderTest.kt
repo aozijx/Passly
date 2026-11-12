@@ -6,7 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
-import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
@@ -18,6 +17,7 @@ import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionHistoryRebuilder
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
@@ -108,19 +108,37 @@ class EntryRevisionHistoryRebuilderTest {
             assertBaseline(ENTRY_TWO, version = 3, title = "Deleted", notes = "deleted note")
             assertEquals(
                 2,
-                database.entryRevisionQueryDao().observeByEntryId(ENTRY_ONE).first().size +
-                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_TWO).first().size,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId(ENTRY_ONE)
+                    .first()
+                    .size +
+                    database
+                        .entryRevisionQueryDao()
+                        .observeByEntryId(ENTRY_TWO)
+                        .first()
+                        .size,
             )
             val activeSensitive =
                 sensitiveCodec.decode(
-                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_ONE).first().single().sensitiveFieldCipherSet,
+                    database
+                        .entryRevisionQueryDao()
+                        .observeByEntryId(ENTRY_ONE)
+                        .first()
+                        .single()
+                        .sensitiveFieldCipherSet,
                 )
             assertEquals(listOf(SensitiveFieldKey.PASSWORD), activeSensitive.map { it.key })
             assertArrayEquals(SENSITIVE_CIPHER, activeSensitive.single().valueCipher)
             assertEquals(2, activeSensitive.single().keyVersion)
             val deletedSensitive =
                 sensitiveCodec.decode(
-                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_TWO).first().single().sensitiveFieldCipherSet,
+                    database
+                        .entryRevisionQueryDao()
+                        .observeByEntryId(ENTRY_TWO)
+                        .first()
+                        .single()
+                        .sensitiveFieldCipherSet,
                 )
             assertTrue(deletedSensitive.isEmpty())
         }

@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -22,7 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
-import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
@@ -37,7 +35,6 @@ internal fun VaultEntryRow(
     onAction: (VaultListItemAction) -> Unit,
     content: VaultListContentUiModel,
     otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
-    onAcquireOtp: (String) -> OtpLease,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -47,7 +44,6 @@ internal fun VaultEntryRow(
             otpPresentation = item.otpPresentation,
             otpUiStateFlow = otpUiStateFlow,
             showCode = content.showTotpCode,
-            onAcquireOtp = onAcquireOtp,
         )
     val cardStyle =
         remember(
@@ -129,14 +125,7 @@ internal fun observeVaultOtpState(
     otpPresentation: OtpPresentation,
     otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
     showCode: Boolean,
-    onAcquireOtp: (String) -> OtpLease,
 ): OtpUiState {
-    val shouldAcquireOtp = otpPresentation is OtpPresentation.Applicable && showCode
-    val currentOnAcquireOtp by rememberUpdatedState(onAcquireOtp)
-    DisposableEffect(entryId, shouldAcquireOtp) {
-        val lease = if (shouldAcquireOtp) currentOnAcquireOtp(entryId) else null
-        onDispose { lease?.close() }
-    }
     val stateFlow = remember(entryId, otpPresentation, showCode, otpUiStateFlow) {
         otpUiStateFlow(entryId, otpPresentation, showCode)
     }

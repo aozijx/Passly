@@ -41,7 +41,10 @@ class AutofillOriginAttackInstrumentedTest {
             assertTrue("system never called the capture service", preferences.getBoolean(CAPTURE_RECEIVED, false))
             assertEquals(testContext.packageName, preferences.getString(CAPTURE_PACKAGE, null))
             val applicationInfo = testContext.packageManager.getApplicationInfo(testContext.packageName, PackageManager.GET_META_DATA)
-            assertFalse("the test app manifest must not claim a Digital Asset Links association", applicationInfo.metaData?.containsKey("asset_statements") == true)
+            assertFalse(
+                "the test app manifest must not claim a Digital Asset Links association",
+                applicationInfo.metaData?.containsKey("asset_statements") == true,
+            )
             assertEquals(CLAIMED_WEB_DOMAIN, preferences.getString(CAPTURE_DOMAIN, null))
             assertFalse(preferences.getBoolean(CAPTURE_AMBIGUOUS, true))
             assertTrue("the custom structure must contain both editable test fields", preferences.getInt(CAPTURE_FIELD_COUNT, 0) >= 2)
@@ -60,8 +63,7 @@ class AutofillOriginAttackInstrumentedTest {
         }
     }
 
-    private fun shell(command: String): String =
-        instrumentationOutput(command).trim()
+    private fun shell(command: String): String = instrumentationOutput(command).trim()
 
     private fun instrumentationOutput(command: String): String {
         val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)

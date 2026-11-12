@@ -3,13 +3,13 @@ package com.aozijx.passly.app.database.backup
 import com.aozijx.passly.domain.backup.model.VaultBackupResource
 import com.aozijx.passly.domain.backup.model.VaultBackupResourceKind
 import com.aozijx.passly.domain.backup.model.VaultBackupSnapshot
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.Entry
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -47,16 +47,15 @@ class BackupSnapshotArchiveMapperTest {
         entryId: EntryId,
         id: String,
         content: ByteArray,
-    ) =
-        VaultBackupResource(
-            id = id,
-            entryId = entryId,
-            kind = VaultBackupResourceKind.ICON,
-            fileName = "$id.webp",
-            mimeType = "image/webp",
-            createdAt = null,
-            content = content,
-        )
+    ) = VaultBackupResource(
+        id = id,
+        entryId = entryId,
+        kind = VaultBackupResourceKind.ICON,
+        fileName = "$id.webp",
+        mimeType = "image/webp",
+        createdAt = null,
+        content = content,
+    )
 
     private fun account(id: String) =
         Entry(

@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.recovery.presentation
 
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.CancellationReason
@@ -14,6 +14,7 @@ import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -78,7 +79,7 @@ class RecoveryModeViewModelTest {
             val viewModel = RecoveryModeViewModel(RecoverySession(), provisioner)
             val oldOwner = viewModel.onPageEntered()
             val effects = mutableListOf<RecoveryModeEffect>()
-            backgroundScope.launch { viewModel.effect.toList(effects) }
+            backgroundScope.launch { viewModel.effect.collect { effects += it } }
             runCurrent()
 
             viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked)

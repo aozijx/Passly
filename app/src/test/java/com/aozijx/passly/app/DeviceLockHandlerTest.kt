@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.testing.RecordingTestLogger
+import com.aozijx.passly.testing.sampleSecuritySettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow

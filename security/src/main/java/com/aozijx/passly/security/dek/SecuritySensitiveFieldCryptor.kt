@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.core.crypto.SensitiveFieldCryptor
 import com.aozijx.passly.core.crypto.CryptoConfig
 import com.aozijx.passly.core.crypto.MemoryCleaner
+import com.aozijx.passly.core.crypto.SensitiveFieldCryptor
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -26,7 +26,19 @@ internal class SecuritySensitiveFieldCryptor
         override suspend fun decrypt(
             encryptedData: ByteArray,
             aad: ByteArray,
-        ): String = keyManager.withUnlockedKey { decryptWithKey(encryptedData, aad, it) }
+        ): String {
+            val plaintext = decryptBytes(encryptedData, aad)
+            return try {
+                String(plaintext, Charsets.UTF_8)
+            } finally {
+                MemoryCleaner.wipeByteArray(plaintext)
+            }
+        }
+
+        override suspend fun decryptBytes(
+            encryptedData: ByteArray,
+            aad: ByteArray,
+        ): ByteArray = keyManager.withUnlockedKey { decryptWithKey(encryptedData, aad, it) }
 
         private fun encryptWithKey(
             data: String,
@@ -49,17 +61,13 @@ internal class SecuritySensitiveFieldCryptor
             data: ByteArray,
             aad: ByteArray,
             key: ByteArray,
-        ): String {
+        ): ByteArray {
             require(data.size > CryptoConfig.IV_LENGTH)
             val nonce = data.copyOfRange(0, CryptoConfig.IV_LENGTH)
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, nonce))
             cipher.updateAAD(aad)
             val plaintext = cipher.doFinal(data, CryptoConfig.IV_LENGTH, data.size - CryptoConfig.IV_LENGTH)
-            return try {
-                String(plaintext, Charsets.UTF_8)
-            } finally {
-                MemoryCleaner.wipeByteArray(plaintext)
-            }
+            return plaintext
         }
     }

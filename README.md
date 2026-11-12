@@ -29,7 +29,7 @@ AES-256-GCM 共同保护，认证凭据通过信封解密同一份 Vault DEK。
 ```
 
 Release 构建必须提供完整签名配置；缺少凭据时不会回退到 Debug
-签名。详细环境、验收命令和已知问题见[开发指南](docs/getting-started/development.md)。
+签名。详细环境、验收命令和已知问题见[开发指南](docs/engineering/getting-started/development.md)。
 
 ## 文档
 

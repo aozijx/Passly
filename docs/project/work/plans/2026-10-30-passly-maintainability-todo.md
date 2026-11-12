@@ -60,7 +60,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 ### Task 32：明确 Vault 列表 ViewModel 的工作流边界并补宿主行为覆盖
 - [ ] 补齐授权撤销期间操作及其余 page owner 交接/迟到结果行为；`VaultListUiMapperTest` 与 `VaultQueryGenerationTest` 只覆盖纯列表映射和查询代际转换，不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
-- [ ] 补齐 `VaultRoute` / NavHost 的实际 owner 转场验收：图级 `VaultViewModel` 已提供幂等 OTP lease owner，列表可见行只请求激活；本轮恢复了缺失的 Detail OTP retain effect，要求 route entry 与已加载 content entry 匹配且存在 OTP section 才申请 lease，`DetailOtpRetentionEffectTest` 与 `VaultOtpRequestEffectTest` AndroidTest 源集编译通过。剩余需覆盖 Trash/Detail 转场、owner 替换、撤权时 effect collector 与 Paging/OTP 订阅不重复；设备运行与状态管理文档核对仍待完成。
+- [ ] 补齐 `VaultRoute` / NavHost 的实际 owner 转场验收：图级 `VaultViewModel` 提供幂等 OTP lease owner，列表行和 `DetailRoute` 分别在可见内容匹配时申请 lease，并在 Compose owner 退出或键变化时释放。当前只有 `VaultOtpRequestEffectTest` 源文件；仓库中没有 `DetailOtpRetentionEffectTest`，因此不保留其源集编译通过的旧记录。剩余需覆盖 Trash/Detail 转场、owner 替换、撤权时 effect collector 与 Paging/OTP 订阅不重复；设备运行与状态管理文档核对仍待完成。
 
 当前列表状态、命令和图级 OTP lease 合同见[列表与搜索专题](../../../product/vault/list-and-search.md#代码位置)；实现与历史验证证据见[Vault 列表 owner 审查记录](../../reviews/2026-11-11-vault-list-owner-followup.md)。本 Task 只保留撤权/owner 交接与真实 Route/NavHost 转场验收。
 
@@ -73,7 +73,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 - [ ] 补真实 manager/resolver/store/provisioner 集成覆盖：同一持久快照解析、并发刷新、提交后刷新、调用方取消及恢复事件；同时为启动首次刷新失败提供可观察状态和重试投影。当前 `AuthenticationMethodsStateTest`、`AuthenticationAvailabilityRetryTest` 和 `AuthenticationMethodsMappingTest` 分别只验证状态协调、重试调度和纯 snapshot→methods 映射；测试源码中没有构造 `DefaultAuthenticationManager` 或 `AuthenticationAvailabilityResolver`，不能算 owner 集成覆盖。认证设置变更后的提交后刷新失败已有 Domain pending 状态与页面提示。
 
-认证方式状态协调、manager 重试合同和状态 owner 测试见[认证专题](../../../platform/security/authentication.md#host-与-生物识别)；本 Task 只保留 manager/store/provisioner 集成及启动失败反馈验收。
+认证方式状态协调、manager 重试合同和状态 owner 测试见[认证专题](../../../platform/security/authentication.md#host-与生物识别)；本 Task 只保留 manager/store/provisioner 集成及启动失败反馈验收。
 
 <a id="task-51"></a>
 
@@ -99,7 +99,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 ### Task 83：复核 Repository 覆盖并把业务工作流移出大 ViewModel
 
-- [ ] 继续审查 `DetailViewModel` 中的其余工作流，只有状态 owner、任务组和依赖闭包能一起迁走并实际减少 ViewModel 职责时才拆分。验证修订历史 metadata Flow 后续失败/重订阅、会话锁定、条目或页面 owner 替换后的迟到结果及重复初始化幂等性；再核对其余 Detail owner。已完成迁移及其当前合同与验收证据见[修订历史审查记录](../../reviews/2026-11-08-vault-presentation-boundaries.md)与[修订历史专题](../../../product/vault/entry-revision-history.md)。
+- [ ] 继续审查 `DetailViewModel` 中的其余工作流；只有状态 owner、任务组和依赖闭包能一起迁走并实际减少 ViewModel 职责时才拆分。修订历史已有 metadata 首次失败重试、初始化失败重试、fatal 传播、关闭后重开时隔离旧观察者，以及持久 generation 初始化幂等/并发串行的测试。剩余需验证 metadata Flow 发出数据后再失败的重订阅、修订观察期间会话锁定、条目或 Detail visit owner 替换时的迟到结果，并核对其余 Detail owner。当前合同与测试覆盖边界见[修订历史审查记录](../../reviews/2026-11-08-vault-presentation-boundaries.md)与[修订历史专题](../../../product/vault/entry-revision-history.md)。
 - [ ] 评估 Detail favicon 编辑是否应从 `DetailViewModel` 提取为独立工作流 owner：当前 VM 同时发起 URI/URL staging、裁剪后图片处理、staged image promote、取消/过期结果回收及 `EntryEdit.SetIcon` 持久化；`DetailFaviconSession` 已拥有准备/保存 Job 与资源释放的一部分合同。按职责将图像处理/条目命令放在合适 UseCase，将裁剪输入、临时路径和页面生命周期放在 Feature 工作流 owner；不得把 Android/UI 会话状态塞进通用 UseCase，也不得拆出不能减少 ViewModel 依赖、分支或异步 owner 的薄包装。必须保持过期会话不回写、promote 后失败回收、取消/关闭时敏感与文件资源清理及提交结果一致性。
 - [ ] 同一轮核对 Detail 的其余候选及最大 ViewModel：保留 `ActivityQueryRepository` 等简单只读 Flow 的页面订阅在 VM（包括异常态、重试 owner），已有 `EditEntryUseCase`、revision compare/reveal/restore、copy、QR 等完整动作不要再包一层；对 Backup、Credential Response、Diagnostics、Unlock 等大文件检查是否有跨端口业务决策或事务流程仍留在 VM，再依据证据决定提取或保留。只将有业务意图/不变量、复用价值、跨端口编排或独立取消/重试合同的流程归入专属 UseCase/工作流；UI 草稿、屏幕投影、Action 分发和生命周期任务仍由对应 Presentation owner 管理，防止造出上帝 UseCase。
 - [ ] 对每个实际拆分补充 owner 级行为测试：验证旧 ViewModel 状态与依赖确有减少，UseCase 输入/结果不泄漏敏感值，并覆盖取消、失败重试、session/entry 替换后的迟到结果和资源收尾。同步必要的主题文档与本 TODO 证据；运行受影响测试、`verifyArchitecture` 与 `git diff --check`。本任务是待执行的维护审计与迁移方向，不表示所有大 ViewModel 都需要拆分。

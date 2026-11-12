@@ -349,7 +349,6 @@ class RoomObservationSessionTest {
             val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
-            val access = FixedAuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),

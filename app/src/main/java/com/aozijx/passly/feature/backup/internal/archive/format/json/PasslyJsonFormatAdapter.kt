@@ -1,7 +1,9 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.json
 
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.internal.archive.BackupIntegrityException
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -11,6 +13,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 @Singleton
 internal class PasslyJsonFormatAdapter
@@ -40,9 +43,16 @@ internal class PasslyJsonFormatAdapter
         ): BackupBundle =
             try {
                 importer.import(input, strategy)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: BackupFailed) {
                 throw error
-            } catch (_: Exception) {
-                throw BackupFailed()
+            } catch (error: BackupIntegrityException) {
+                throw BackupFailed(reasonCode = error.reasonCode.value)
+            } catch (error: Exception) {
+                throw BackupFailed(
+                    throwableType = error.javaClass.simpleName,
+                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                )
             }
     }

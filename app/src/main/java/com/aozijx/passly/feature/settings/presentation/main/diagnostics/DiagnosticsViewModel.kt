@@ -168,33 +168,37 @@ class DiagnosticsViewModel
         private fun selectFormat(format: LogFormat) {
             val pageOwner = pageEffects.currentOwner ?: return
             when (val export = _uiState.value.exportState) {
-                is DiagnosticsExportState.SelectingFormat -> when (export.action) {
-                ExportAction.SHARE -> {
-                    mutate(DiagnosticsMutation.FormatSheetDismissed)
-                    authenticateAndExport(DiagnosticsExportRequest(ExportAction.SHARE, format), pageOwner)
-                }
+                is DiagnosticsExportState.SelectingFormat -> {
+                    when (export.action) {
+                        ExportAction.SHARE -> {
+                            mutate(DiagnosticsMutation.FormatSheetDismissed)
+                            authenticateAndExport(DiagnosticsExportRequest(ExportAction.SHARE, format), pageOwner)
+                        }
 
-                ExportAction.EXPORT_LOCAL -> {
-                    mutate(DiagnosticsMutation.LocalFormatSelected(format))
-                    val request = PendingLocalDocument(pageOwner, UUID.randomUUID().toString())
-                    pendingLocalDocument = request
-                    if (!offerEffect(
-                            pageOwner,
-                            DiagnosticsEffect.SelectSaveDocument(
-                                format = format,
-                                mimeType = format.mimeType,
-                                fileName = "passly_logs.${format.extension}",
-                                requestId = request.requestId,
-                            ),
-                        )
-                    ) {
-                        pendingLocalDocument = null
-                        mutate(DiagnosticsMutation.LocalExportConsumed)
+                        ExportAction.EXPORT_LOCAL -> {
+                            mutate(DiagnosticsMutation.LocalFormatSelected(format))
+                            val request = PendingLocalDocument(pageOwner, UUID.randomUUID().toString())
+                            pendingLocalDocument = request
+                            if (!offerEffect(
+                                    pageOwner,
+                                    DiagnosticsEffect.SelectSaveDocument(
+                                        format = format,
+                                        mimeType = format.mimeType,
+                                        fileName = "passly_logs.${format.extension}",
+                                        requestId = request.requestId,
+                                    ),
+                                )
+                            ) {
+                                pendingLocalDocument = null
+                                mutate(DiagnosticsMutation.LocalExportConsumed)
+                            }
+                        }
                     }
                 }
-                }
 
-                else -> Unit
+                else -> {
+                    Unit
+                }
             }
         }
 

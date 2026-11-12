@@ -75,13 +75,6 @@
     <string name="scanner_result_rejected">This content cannot be handled here</string>
     <string name="scanner_result_action_failed">Couldn\'t process this result. Try again.</string>
     <string name="wifi_scanned_seed_unavailable">Scanned content expired. Scan it again.</string>
-    <string name="backup_export_success">Export successful</string>
-    <string name="backup_import_success">Import successful (icons will sync in background)</string>
-    <string name="backup_import_success_summary" tools:ignore="PluralsCandidate">Import complete: %1$d imported, %2$d existing, %3$d skipped, %4$d fields ignored, %5$d links pruned, %6$d resources pruned</string>
-    <string name="backup_error_unknown">Operation failed: Unknown error</string>
-    <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
-    <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
-    <string name="backup_export_cleanup_failed">Export failed and the incomplete file could not be deleted. Check the backup location and remove any partial file.</string>
     <!-- Database errors -->
     <string name="database_open_error_title">Unable to open database</string>
     <string name="database_open_error_message">The database key or schema doesn’t match. Try again; if the problem continues, close the app.</string>
@@ -147,6 +140,14 @@
     <string name="not_set">Not set</string>
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
+    <string name="otp_type_totp">Time-based (TOTP)</string>
+    <string name="otp_type_hotp">Counter-based (HOTP)</string>
+    <string name="otp_type_steam">Steam token</string>
+    <string name="otp_algorithm_sha1">SHA-1</string>
+    <string name="otp_algorithm_sha256">SHA-256</string>
+    <string name="otp_algorithm_sha512">SHA-512</string>
+    <string name="otp_encoding_base32">Base32</string>
+    <string name="otp_encoding_base64">Base64</string>
     <string name="otp_counter">Counter</string>
     <string name="otp_secret_invalid">The secret does not match the selected encoding</string>
     <string name="otp_counter_invalid">Enter a nonnegative integer up to 9223372036854775807</string>
@@ -158,15 +159,14 @@
     <string name="metadata_last_modified">Last modified: %1$s</string>
     <string name="related_entries">Related entries</string>
     <string name="vault_detail_bind_password">Bind password</string>
-    <string name="vault_detail_bind_password_title">Choose a related password</string>
+    <string name="vault_detail_bind_password_title">Select password to link</string>
     <string name="vault_detail_bind_password_search">Search title or username</string>
     <string name="vault_detail_bind_password_empty">No saved passwords available to bind</string>
     <string name="vault_detail_bind_password_no_matches">No matching passwords</string>
-    <string name="vault_detail_bind_password_action">Bind</string>
     <string name="vault_detail_bind_password_load_failed">Could not load passwords. Try again.</string>
     <string name="vault_detail_bind_password_failed">Binding failed. Try again.</string>
     <string name="vault_detail_related_passwords_title">Related passwords</string>
-    <string name="vault_detail_related_passwords_empty">No related passwords yet. Add a saved password to link it.</string>
+    <string name="vault_detail_related_passwords_empty">No linked passwords yet</string>
     <string name="vault_detail_unlink_accessibility_action">Remove related password</string>
     <string name="vault_detail_unlink_title">Remove password link?</string>
     <string name="vault_detail_unlink_message">Only the link to “%1$s” will be removed. Both saved password entries will remain.</string>
@@ -179,11 +179,11 @@
     <string name="app_package_picker_retry">Retry</string>
     <string name="app_package_picker_no_apps">No apps are available.</string>
     <string name="app_package_picker_no_matches">No matching apps.</string>
-    <string name="revision_history_title">Version history</string>
-    <string name="revision_history_empty">No versions available</string>
+    <string name="revision_history_title">History</string>
+    <string name="revision_history_empty">No history items</string>
     <string name="revision_version_format">Version %1$d</string>
-    <string name="revision_compare_action">View changes</string>
     <string name="revision_comparison_title">Version changes</string>
+    <string name="revision_no_changes">This version matches the current content. There are no changes.</string>
     <string name="revision_restore_title">Restore this version?</string>
     <string name="revision_restore_message">The current content will be saved as a new version before restoring the selected version.</string>
     <string name="revision_restore_action">Restore version</string>

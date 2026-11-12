@@ -15,6 +15,7 @@ import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
 import com.aozijx.passly.feature.settings.presentation.main.navigation.registerSettingsGraph
 import com.aozijx.passly.feature.shell.presentation.navigation.PasslyNavHost
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
+import com.aozijx.passly.feature.vault.otp.presentation.ui.ProvideOtpProgressClock
 import com.aozijx.passly.feature.vault.presentation.navigation.registerVaultGraph
 import com.aozijx.passly.feature.vault.presentation.trash.TrashRoute
 
@@ -25,25 +26,27 @@ internal fun PasslyAppNavigation(activity: FragmentActivity) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     var trashSheetVisible by remember { mutableStateOf(false) }
 
-    ProvidePasslyAdaptiveLayout {
-        Box {
-            PasslyNavHost(
-                navController = navController,
-            ) { context, sharedTransitionScope ->
-                registerVaultGraph(
-                    context = context,
+    ProvideOtpProgressClock {
+        ProvidePasslyAdaptiveLayout {
+            Box {
+                PasslyNavHost(
                     navController = navController,
-                    sharedTransitionScope = sharedTransitionScope,
-                    scannedOtpImportViewModel = scannedOtpImportViewModel,
-                )
-                registerSettingsGraph(context) { trashSheetVisible = true }
-            }
+                ) { context, sharedTransitionScope ->
+                    registerVaultGraph(
+                        context = context,
+                        navController = navController,
+                        sharedTransitionScope = sharedTransitionScope,
+                        scannedOtpImportViewModel = scannedOtpImportViewModel,
+                    )
+                    registerSettingsGraph(context) { trashSheetVisible = true }
+                }
 
-            if (trashSheetVisible && currentBackStackEntry != null) {
-                TrashRoute(
-                    viewModelStoreOwner = currentBackStackEntry!!,
-                    onDismiss = { trashSheetVisible = false },
-                )
+                if (trashSheetVisible && currentBackStackEntry != null) {
+                    TrashRoute(
+                        viewModelStoreOwner = currentBackStackEntry!!,
+                        onDismiss = { trashSheetVisible = false },
+                    )
+                }
             }
         }
     }

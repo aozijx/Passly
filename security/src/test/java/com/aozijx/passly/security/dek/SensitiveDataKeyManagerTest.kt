@@ -1,14 +1,9 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
-import com.aozijx.passly.domain.access.model.BiometricBinding
-import com.aozijx.passly.domain.access.model.BiometricBootstrapState
-import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
-import com.aozijx.passly.domain.access.model.KeyEnvelope
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.testing.testLogger
+import javax.crypto.AEADBadTagException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,17 +15,16 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import javax.crypto.AEADBadTagException
 
 class SensitiveDataKeyManagerTest {
-    private lateinit var store: InMemoryVaultBootstrapStore
+    private lateinit var store: InMemoryDekBootstrapStore
     private lateinit var scope: CoroutineScope
     private lateinit var dekManager: DekManager
     private lateinit var manager: SensitiveDataKeyManager
@@ -38,7 +32,7 @@ class SensitiveDataKeyManagerTest {
     @Before
     fun setUp() =
         runBlocking {
-            store = InMemoryVaultBootstrapStore()
+            store = InMemoryDekBootstrapStore()
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             dekManager = DekManager(store, FieldKeyManager(), testLogger())
             val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
@@ -206,68 +200,5 @@ class SensitiveDataKeyManagerTest {
         return indices
             .take(size - candidate.size + 1)
             .any { offset -> candidate.indices.all { this[offset + it] == candidate[it] } }
-    }
-
-    private class InMemoryVaultBootstrapStore : VaultBootstrapStore {
-        private val envelopes = linkedMapOf<EnvelopeType, KeyEnvelope>()
-        private var verificationTag: ByteArray? = null
-        var sensitiveKeyEnvelope: ByteArray? = null
-            private set
-        var sensitiveKeySaveFailure: Throwable? = null
-        private var attachmentKeyEnvelope: ByteArray? = null
-
-        override suspend fun save(envelope: KeyEnvelope) {
-            envelopes[envelope.type] = envelope
-        }
-
-        override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
-
-        override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
-
-        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
-
-        override suspend fun delete(type: EnvelopeType) {
-            envelopes.remove(type)
-        }
-
-        override suspend fun saveVerificationTag(tag: ByteArray) {
-            verificationTag = tag.clone()
-        }
-
-        override suspend fun loadVerificationTag(): ByteArray? = verificationTag?.clone()
-
-        override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) {
-            sensitiveKeySaveFailure?.let { throw it }
-            sensitiveKeyEnvelope = envelope.clone()
-        }
-
-        override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = sensitiveKeyEnvelope?.clone()
-
-        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) {
-            attachmentKeyEnvelope = envelope.clone()
-        }
-
-        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = attachmentKeyEnvelope?.clone()
-
-        override suspend fun loadBiometricState() =
-            BiometricBootstrapState(
-                binding = null,
-                rotation = null,
-                cleanupAliases = emptySet(),
-            )
-
-        override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
-
-        override suspend fun commitBiometricRotation(
-            envelope: KeyEnvelope,
-            binding: BiometricBinding,
-            obsoleteAlias: String?,
-        ) = Unit
-
-        override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
-
-        override suspend fun disableBiometric(activeAlias: String) = Unit
-
-        override suspend fun clearBiometricRotationJournal() = Unit
     }
 }

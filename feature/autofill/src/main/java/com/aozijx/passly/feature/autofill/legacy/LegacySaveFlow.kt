@@ -70,8 +70,7 @@ internal class LegacySaveFlow internal constructor(
         }
     }
 
-    private suspend fun legacySaveEnabled(): Boolean =
-        settingsSource.autofillSettings.first().enabled
+    private suspend fun legacySaveEnabled(): Boolean = settingsSource.autofillSettings.first().enabled
 
     private suspend fun persistImmediately(draft: AutofillSaveDraft): LegacySavePreparation =
         when (saveCredential(draft)) {

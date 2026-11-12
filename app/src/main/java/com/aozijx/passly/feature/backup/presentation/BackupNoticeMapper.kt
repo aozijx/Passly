@@ -3,29 +3,51 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.app.message.model.AppNotice
 import com.aozijx.passly.app.message.model.ArgumentKey
 import com.aozijx.passly.app.message.model.ArgumentValue
-import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
 
 internal fun BackupNoticeEffect.toAppNotice(): AppNotice =
     when (this) {
-        BackupNoticeEffect.DirectoryWritable -> newAppNotice(NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED)
-        BackupNoticeEffect.ExportSucceeded -> newAppNotice(NoticeCode.BACKUP_EXPORT_COMPLETED)
-        is BackupNoticeEffect.ImportSucceeded ->
+        BackupNoticeEffect.DirectoryWritable -> {
+            newAppNotice(NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED)
+        }
+
+        BackupNoticeEffect.ExportSucceeded -> {
+            newAppNotice(NoticeCode.BACKUP_EXPORT_COMPLETED)
+        }
+
+        is BackupNoticeEffect.ImportSucceeded -> {
             newAppNotice(
                 code = NoticeCode.BACKUP_IMPORT_COMPLETED,
                 arguments = result.toNoticeArguments(),
             )
-        is BackupNoticeEffect.Failed ->
+        }
+
+        is BackupNoticeEffect.Failed -> {
             newAppNotice(
-                when (operation) {
-                    BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_FAILED
-                    BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_FAILED
-                    BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED
+                when {
+                    operation == BackupOperation.IMPORT && reasonCode == Reasons.BackupAuthenticationFailed -> {
+                        NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED
+                    }
+
+                    else -> operation.failureNoticeCode()
                 },
             )
-        BackupNoticeEffect.ExportCleanupFailed -> newAppNotice(NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED)
+        }
+
+        BackupNoticeEffect.ExportCleanupFailed -> {
+            newAppNotice(NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED)
+        }
+    }
+
+private fun BackupOperation.failureNoticeCode(): NoticeCode =
+    when (this) {
+        BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_FAILED
+        BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_FAILED
+        BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED
     }
 
 private fun BackupImportResult.toNoticeArguments(): Map<ArgumentKey, ArgumentValue> =

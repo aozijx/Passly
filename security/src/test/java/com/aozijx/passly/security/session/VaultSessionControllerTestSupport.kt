@@ -256,12 +256,13 @@ internal class VaultSessionTestBootstrapStore : VaultBootstrapStore {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal fun runMainTest(block: suspend TestScope.(TestDispatcher) -> Unit) = runTest {
-    val dispatcher = StandardTestDispatcher(testScheduler)
-    Dispatchers.setMain(dispatcher)
-    try {
-        block(dispatcher)
-    } finally {
-        Dispatchers.resetMain()
+internal fun runMainTest(block: suspend TestScope.(TestDispatcher) -> Unit) =
+    runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            block(dispatcher)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
-}

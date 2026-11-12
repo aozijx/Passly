@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
-import java.io.EOFException
+import com.aozijx.passly.core.observability.ReasonCode
 import java.io.InputStream
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
@@ -14,7 +14,8 @@ internal object BackupRecordCrypto {
         sequence: Long,
         plaintextLength: Int,
     ): ByteArray =
-        ByteBuffer.allocate(BackupContainerV1Spec.RECORD_HEADER_LENGTH)
+        ByteBuffer
+            .allocate(BackupContainerV1Spec.RECORD_HEADER_LENGTH)
             .put(type.toByte())
             .putLong(sequence)
             .putInt(plaintextLength)
@@ -23,7 +24,12 @@ internal object BackupRecordCrypto {
     fun nonce(
         prefix: ByteArray,
         sequence: Long,
-    ): ByteArray = ByteBuffer.allocate(12).put(prefix).putLong(sequence).array()
+    ): ByteArray =
+        ByteBuffer
+            .allocate(12)
+            .put(prefix)
+            .putLong(sequence)
+            .array()
 
     fun aad(
         encodedHeader: ByteArray,
@@ -58,13 +64,13 @@ internal object BackupRecordCrypto {
         target: ByteArray,
         offset: Int = 0,
         length: Int = target.size,
-        field: String,
+        reason: ReasonCode,
     ) {
         var position = offset
         val end = offset + length
         while (position < end) {
             val count = input.read(target, position, end - position)
-            if (count < 0) throw EOFException("文件损坏: $field 不完整")
+            if (count < 0) throw BackupTruncatedException(reason)
             if (count == 0) continue
             position += count
         }

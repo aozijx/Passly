@@ -11,12 +11,11 @@ import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteract
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.RecordingTestLogger
 import java.io.IOException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -176,7 +175,13 @@ class DataManagementSettingsViewModelTest {
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
             assertEquals(Reasons.StorageFailure, logger.events.single().reason)
-            assertEquals(IOException::class.java, logger.events.single().throwable?.javaClass)
+            assertEquals(
+                IOException::class.java,
+                logger.events
+                    .single()
+                    .throwable
+                    ?.javaClass,
+            )
         }
 
     @Test
@@ -189,9 +194,7 @@ class DataManagementSettingsViewModelTest {
 
                     override suspend fun setBackupDirectoryUri(uri: String) = Unit
 
-                    override suspend fun clearBackupDirectoryUri() {
-                        throw IOException("settings clear failed")
-                    }
+                    override suspend fun clearBackupDirectoryUri(): Unit = throw IOException("settings clear failed")
                 }
             val logger = RecordingTestLogger()
             val viewModel =
@@ -217,7 +220,13 @@ class DataManagementSettingsViewModelTest {
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
             assertEquals(Reasons.StorageFailure, logger.events.single().reason)
-            assertEquals(IOException::class.java, logger.events.single().throwable?.javaClass)
+            assertEquals(
+                IOException::class.java,
+                logger.events
+                    .single()
+                    .throwable
+                    ?.javaClass,
+            )
         }
 
     private object EmptyRepository : BackupDirectorySettingsRepository {

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
@@ -15,6 +16,24 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BackupImportPlannerTest {
+    @Test
+    fun structuralFailuresHaveSameReasonInBothImportStrategiesAndExportValidation() {
+        val source = bundle(entry("note", listOf(BackupFieldRecord("title", BackupFieldValue.text("entry")))))
+        val cases = listOf(
+            source.copy(document = source.document.copy(format = "unknown")) to Reasons.BackupDocumentFormatUnsupported,
+            source.copy(document = source.document.copy(version = BackupDocument.CURRENT_VERSION + 1)) to Reasons.BackupDocumentVersionUnsupported,
+            source.copy(document = source.document.copy(entries = source.document.entries + source.document.entries)) to Reasons.BackupDocumentDuplicateEntryId,
+        )
+        cases.forEach { (invalid, reason) ->
+            BackupImportStrategy.entries.forEach { strategy ->
+                val failure = assertThrows(BackupIntegrityException::class.java) { BackupImportPlanner.plan(invalid, strategy) }
+                assertEquals(reason, failure.reasonCode)
+            }
+            val failure = assertThrows(BackupIntegrityException::class.java) { BackupBundleValidator.validate(invalid, false) }
+            assertEquals(reason, failure.reasonCode)
+        }
+    }
+
     @Test
     fun candidateValidationSkipsOnlyExpectedValidationExceptions() {
         assertFalse(

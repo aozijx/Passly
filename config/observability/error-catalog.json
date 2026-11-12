@@ -44,7 +44,29 @@
     {"symbol":"CallbackFailed","code":"CALLBACK_FAILED","description":"A controlled application callback failed."},
     {"symbol":"NotFound","code":"NOT_FOUND","description":"The requested vault object no longer exists."},
     {"symbol":"Conflict","code":"CONFLICT","description":"The operation conflicted with a newer vault state."},
-    {"symbol":"KeyStoreUnavailable","code":"KEYSTORE_UNAVAILABLE","description":"The Android keystore biometric key operation failed."}
+    {"symbol":"KeyStoreUnavailable","code":"KEYSTORE_UNAVAILABLE","description":"The Android keystore biometric key operation failed."},
+    {"symbol":"BackupAuthenticationFailed","code":"BACKUP_AUTHENTICATION_FAILED","description":"Encrypted backup authentication failed; the password may be incorrect or the file may be damaged."},
+    {"symbol":"BackupContainerHeaderTruncated","code":"BACKUP_CONTAINER_HEADER_TRUNCATED","description":"The encrypted backup container header ended before all required bytes were read."},
+    {"symbol":"BackupRecordHeaderTruncated","code":"BACKUP_RECORD_HEADER_TRUNCATED","description":"An encrypted backup record header ended before all required bytes were read."},
+    {"symbol":"BackupRecordDataTruncated","code":"BACKUP_RECORD_DATA_TRUNCATED","description":"An encrypted backup record payload ended before all required bytes were read."},
+    {"symbol":"BackupTerminalMissing","code":"BACKUP_TERMINAL_MISSING","description":"The encrypted backup is missing its authenticated terminal record."},
+    {"symbol":"BackupResourceManifestMismatch","code":"BACKUP_RESOURCE_MANIFEST_MISMATCH","description":"Declared backup resources do not match the resources present in the archive."},
+    {"symbol":"BackupResourceReferenceMismatch","code":"BACKUP_RESOURCE_REFERENCE_MISMATCH","description":"Backup entries reference a resource that is absent from the validated resource set."},
+    {"symbol":"BackupResourceSizeMismatch","code":"BACKUP_RESOURCE_SIZE_MISMATCH","description":"A backup resource size does not match its declared size."},
+    {"symbol":"BackupResourceDigestMismatch","code":"BACKUP_RESOURCE_DIGEST_MISMATCH","description":"A backup resource digest does not match its content."},
+    {"symbol":"BackupZipDocumentMissing","code":"BACKUP_ZIP_DOCUMENT_MISSING","description":"The backup ZIP does not contain the required document entry."},
+    {"symbol":"BackupZipDuplicateEntry","code":"BACKUP_ZIP_DUPLICATE_ENTRY","description":"The backup ZIP contains duplicate entry names."},
+    {"symbol":"BackupZipInvalidEntry","code":"BACKUP_ZIP_INVALID_ENTRY","description":"The backup ZIP contains an invalid or unsupported entry path."},
+    {"symbol":"BackupDocumentFormatUnsupported","code":"BACKUP_DOCUMENT_FORMAT_UNSUPPORTED","description":"The backup document format identifier is unsupported."},
+    {"symbol":"BackupDocumentVersionUnsupported","code":"BACKUP_DOCUMENT_VERSION_UNSUPPORTED","description":"The backup document version is unsupported."},
+    {"symbol":"BackupDocumentDuplicateEntryId","code":"BACKUP_DOCUMENT_DUPLICATE_ENTRY_ID","description":"The backup document contains duplicate entry identifiers."},
+    {"symbol":"BackupDocumentDuplicateResourceId","code":"BACKUP_DOCUMENT_DUPLICATE_RESOURCE_ID","description":"The backup document contains duplicate resource identifiers."},
+    {"symbol":"BackupDocumentDuplicateLinkId","code":"BACKUP_DOCUMENT_DUPLICATE_LINK_ID","description":"The backup document contains duplicate link identifiers."},
+    {"symbol":"BackupDocumentMalformed","code":"BACKUP_DOCUMENT_MALFORMED","description":"The backup document could not be decoded as a supported document."},
+    {"symbol":"BackupPasswordRequired","code":"BACKUP_PASSWORD_REQUIRED","description":"The selected backup format requires a non-empty password."},
+    {"symbol":"BackupFormatUnsupported","code":"BACKUP_FORMAT_UNSUPPORTED","description":"The requested backup format is not supported by the installed application."},
+    {"symbol":"BackupContentUnsupported","code":"BACKUP_CONTENT_UNSUPPORTED","description":"The backup contains a feature or record that this importer does not support."},
+    {"symbol":"BackupZipMalformed","code":"BACKUP_ZIP_MALFORMED","description":"The encrypted backup ZIP structure could not be read."}
   ],
   "errors": [
     {"symbol":"AutofillDiscoveryUnavailable","code":"AUTOFILL_DISCOVERY_UNAVAILABLE","default_reason":"NO_MATCHING_ENTRY","category":"AUTOFILL","exposure":"INTERNAL","description":"Autofill discovery could not produce a usable result."},
@@ -67,6 +89,7 @@
     {"symbol":"DatabaseOpenFailed","code":"DATABASE_OPEN_FAILED","default_reason":"DATABASE_OPEN_FAILED","category":"DATABASE","exposure":"INTERNAL","description":"The database failed to open."},
     {"symbol":"DatabaseResetFailed","code":"DATABASE_RESET_FAILED","default_reason":"DATABASE_RESET_FAILED","category":"DATABASE","exposure":"INTERNAL","description":"The database reset failed."},
     {"symbol":"VaultEntryCreateFailed","code":"VAULT_ENTRY_CREATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be created."},
-    {"symbol":"VaultEntryUpdateFailed","code":"VAULT_ENTRY_UPDATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be updated."}
+    {"symbol":"VaultEntryUpdateFailed","code":"VAULT_ENTRY_UPDATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be updated."},
+    {"symbol":"BackupOperationFailed","code":"BACKUP_FAILED","default_reason":"UNKNOWN_FAILURE","category":"BACKUP","exposure":"INTERNAL","description":"A backup import or export operation failed."}
   ]
 }

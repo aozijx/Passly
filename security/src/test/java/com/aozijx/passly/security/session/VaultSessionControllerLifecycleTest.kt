@@ -10,13 +10,13 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.security.authentication.method.credential.OwnedBytes
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekState
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
-import com.aozijx.passly.security.authentication.method.credential.OwnedBytes
 import com.aozijx.passly.security.lock.LockStateManager
 import java.security.SecureRandom
 import kotlinx.coroutines.CancellationException
@@ -601,6 +601,7 @@ class VaultSessionControllerLifecycleTest {
             runCurrent()
             lockJob.join()
 
+            assertTrue("caller cancellation must propagate after cleanup", lockJob.isCancelled)
             assertTrue(dekManager.state is DekState.Locked)
             assertEquals(SecureSessionState.SEALED, lockState.state)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)

@@ -137,9 +137,13 @@ internal object DiagnosticsReducer {
                 state.copy(
                     clearState =
                         when (val clearState = state.clearState) {
-                            is DiagnosticsClearState.Clearing ->
+                            is DiagnosticsClearState.Clearing -> {
                                 if (clearState.confirmationVisible) DiagnosticsClearState.Confirmation else DiagnosticsClearState.Idle
-                            else -> clearState
+                            }
+
+                            else -> {
+                                clearState
+                            }
                         },
                 )
             }

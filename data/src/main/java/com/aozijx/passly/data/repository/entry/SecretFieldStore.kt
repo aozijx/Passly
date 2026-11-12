@@ -15,8 +15,9 @@ import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import javax.inject.Inject
 
 /**
@@ -157,17 +158,33 @@ class SecretFieldStore
             return fieldCodec.decrypt(entryId, key, row.valueCipher)
         }
 
-        /** Reads only the OTP structure and its secret, leaving every unrelated secret encrypted. */
-        suspend fun readOtpConfig(
+        suspend fun readFieldBytes(
             db: AppDatabase,
             entryId: String,
-        ): OtpConfig? {
+            key: SensitiveFieldKey,
+        ): ByteArray? {
+            val row = db.secretFieldQueryDao().getField(entryId, key.toStorageKey()) ?: return null
+            return fieldCodec.decryptBytes(entryId, key, row.valueCipher)
+        }
+
+        /** Reads OTP metadata and its encoded seed as caller-owned bytes for secure generation. */
+        suspend fun readOtpGenerationMaterial(
+            db: AppDatabase,
+            entryId: String,
+        ): OtpGenerationMaterial? {
             val entry = db.entryQueryDao().getById(entryId) ?: return null
             if (entry.deletedAt != null || entry.entryType.credentialKind != EntryCredentialKind.OTP) return null
             val bundle = readBundle(db, entryId, entry.entryType)
             val config = bundle.otp?.config ?: return null
-            val secret = readField(db, entryId, SensitiveFieldKey.OTP_SECRET)
-            return config.copy(secret = secret)
+            val generationConfig = config.toGenerationConfig()
+            val row = db.secretFieldQueryDao().getField(entryId, SensitiveFieldKey.OTP_SECRET.toStorageKey()) ?: return null
+            val secret = fieldCodec.decryptBytes(entryId, SensitiveFieldKey.OTP_SECRET, row.valueCipher)
+            return try {
+                OtpGenerationMaterial(config = generationConfig, secretBytes = secret)
+            } catch (failure: Throwable) {
+                secret.fill(0)
+                throw failure
+            }
         }
 
         private fun emptyBundleFor(entryType: EntryType): EntrySecret {

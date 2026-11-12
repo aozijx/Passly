@@ -1,6 +1,5 @@
 package com.aozijx.passly.security.authentication.method.credential
 
-import com.aozijx.passly.security.authentication.flow.toAuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
@@ -15,6 +14,7 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.security.authentication.flow.toAuthenticationMethods
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking

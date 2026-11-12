@@ -145,7 +145,7 @@ fun BackupOperationRoute(
     BackupRestoreSheet(
         state =
             state.toSheetUiState(
-            configuredDirectoryLabel = configuredDirectoryLabel,
+                configuredDirectoryLabel = configuredDirectoryLabel,
             ),
         onAction = viewModel::onAction,
     )

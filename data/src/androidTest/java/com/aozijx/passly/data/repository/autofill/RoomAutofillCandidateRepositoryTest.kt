@@ -24,8 +24,8 @@ import com.aozijx.passly.data.local.database.session.DatabaseSessionEventLogger
 import com.aozijx.passly.data.testing.IsolatedTestContext
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.runtime.session.SessionKeySource
@@ -178,18 +178,17 @@ class RoomAutofillCandidateRepositoryTest {
         favorite: Boolean = false,
         updatedAt: Long = 1L,
         deletedAt: Long? = null,
-    ) =
-        EntryEntity(
-            entryId = id,
-            entryType = type,
-            title = id,
-            domains = domains,
-            applicationIds = applicationIds,
-            favorite = favorite,
-            createdAt = 1L,
-            updatedAt = updatedAt,
-            deletedAt = deletedAt,
-        )
+    ) = EntryEntity(
+        entryId = id,
+        entryType = type,
+        title = id,
+        domains = domains,
+        applicationIds = applicationIds,
+        favorite = favorite,
+        createdAt = 1L,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+    )
 
     private class AutofillAuthenticatedAccess : SecureSessionAccessState {
         override val authenticationState =
@@ -199,9 +198,23 @@ class RoomAutofillCandidateRepositoryTest {
     }
 
     private object NoOpLogger : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = Unit
-        override fun info(event: EventKey, fields: LogFields) = Unit
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
         override fun warn(
             event: EventKey,
             errorCode: ErrorCode,

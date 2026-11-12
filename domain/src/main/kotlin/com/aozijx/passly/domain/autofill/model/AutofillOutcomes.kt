@@ -25,9 +25,13 @@ sealed interface AutofillDiscoveryOutcome {
         get() =
             when (this) {
                 is RequiresUnlock -> context.presentation
+
                 is RequiresWebRecipientConfirmation -> context.presentation
+
                 is NoCandidates -> context.presentation
+
                 is Candidates -> context.presentation
+
                 Disabled,
                 UnsupportedFields,
                 is Failed,

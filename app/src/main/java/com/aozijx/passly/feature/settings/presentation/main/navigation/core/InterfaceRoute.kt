@@ -9,9 +9,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsViewModel
+import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceUiState
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.InterfaceDetail
-import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
@@ -40,7 +40,7 @@ internal fun InterfaceRoute(onBack: (() -> Unit)?) {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InterfaceSettingsAction.RetryRead) }) }
             }
 
-            is RecoverableReadState.Ready<InterfaceUiModel> -> {
+            is RecoverableReadState.Ready<InterfaceUiState> -> {
                 item {
                     InterfaceDetail(
                         state = currentReadState.value,

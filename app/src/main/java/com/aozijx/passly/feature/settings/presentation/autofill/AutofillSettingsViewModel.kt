@@ -140,21 +140,22 @@ internal class AutofillSettingsViewModel
 
         @OptIn(ExperimentalCoroutinesApi::class)
         private fun observeSystemService(retry: MutableStateFlow<Int>): Flow<AutofillSystemServiceStatus> =
-            retry.flatMapLatest {
-                flow<AutofillSystemServiceObservation> {
-                    emit(AutofillSystemServiceObservation.Checking)
-                    autofillServiceStatusSource.observeServiceEnabled().collect { isEnabled ->
-                        emit(AutofillSystemServiceObservation.EnabledChanged(isEnabled))
+            retry
+                .flatMapLatest {
+                    flow<AutofillSystemServiceObservation> {
+                        emit(AutofillSystemServiceObservation.Checking)
+                        autofillServiceStatusSource.observeServiceEnabled().collect { isEnabled ->
+                            emit(AutofillSystemServiceObservation.EnabledChanged(isEnabled))
+                        }
+                    }.catch { error ->
+                        when (error) {
+                            is CancellationException -> throw error
+                            is Exception -> emit(AutofillSystemServiceObservation.Unavailable)
+                            else -> throw error
+                        }
                     }
-                }.catch { error ->
-                    when (error) {
-                        is CancellationException -> throw error
-                        is Exception -> emit(AutofillSystemServiceObservation.Unavailable)
-                        else -> throw error
-                    }
-                }
-            }.runningFold<AutofillSystemServiceObservation, AutofillSystemServiceStatus>(
-                AutofillSystemServiceStatus.Checking,
-                AutofillSettingsUiStateMapper::systemServiceStatus,
-            )
+                }.runningFold<AutofillSystemServiceObservation, AutofillSystemServiceStatus>(
+                    AutofillSystemServiceStatus.Checking,
+                    AutofillSettingsUiStateMapper::systemServiceStatus,
+                )
     }

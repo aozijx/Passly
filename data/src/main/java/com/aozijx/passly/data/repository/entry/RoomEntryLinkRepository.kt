@@ -25,7 +25,7 @@ internal class RoomEntryLinkRepository
     constructor(
         private val databaseTransactions: DatabaseTransactionRunner,
         private val databaseSession: AppDatabaseSession,
-        private val revisionHelper: EntryRevisionWriter,
+        private val revisionWriter: EntryRevisionWriter,
         private val secretFieldStore: SecretFieldStore,
         private val clock: DatabaseClock,
         private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
@@ -98,7 +98,7 @@ internal class RoomEntryLinkRepository
                         }
                     val now = clock.now()
                     affectedEntryIds.forEach {
-                        revisionHelper.snapshotCurrent(this, it, now, secretFieldStore)
+                        revisionWriter.snapshotCurrent(this, it, now, secretFieldStore)
                     }
                     attachmentGarbageCollector.scheduleInTransaction(this)
                 }
@@ -115,7 +115,7 @@ internal class RoomEntryLinkRepository
                     if (link != null) {
                         val now = clock.now()
                         setOf(link.sourceEntryId, link.targetEntryId).forEach {
-                            revisionHelper.snapshotCurrent(this, it, now, secretFieldStore)
+                            revisionWriter.snapshotCurrent(this, it, now, secretFieldStore)
                         }
                         attachmentGarbageCollector.scheduleInTransaction(this)
                     }

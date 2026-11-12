@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.local.database.maintenance
 
-import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,8 +37,7 @@ internal class DatabaseCleanerImpl
     constructor(
         private val databaseSession: AppDatabaseSession,
     ) : DatabaseCleaner {
-        override suspend fun clearAllData(): DatabaseClearResult =
-            databaseSession.transactionForMaintenance { clearAllVaultData() }
+        override suspend fun clearAllData(): DatabaseClearResult = databaseSession.transactionForMaintenance { clearAllVaultData() }
     }
 
 /** Clears user data in the caller's existing transaction, without re-entering the session. */

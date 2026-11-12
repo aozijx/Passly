@@ -11,7 +11,7 @@
 - Vault 单元测试：71 个测试类、472 个用例通过。
 - `:app:compileDebugAndroidTestKotlin`、`verifyArchitecture`、`:app:compileDebugKotlin` 通过。
 - 应用关联选择器状态迁移：`AppPackagePickerUiStateTest`、`AddPasswordViewModelTest`、`DetailReducerTest` 和 `DetailViewModelTest` 共 70 项通过；AndroidTest Kotlin 编译与 `verifyArchitecture` 通过。该结果沿用原计划记录的历史验收，未在本次复核重跑。
-- 修订历史工作流迁移：`ObserveEntryRevisionMetadataUseCase` 负责先初始化全库历史，再提供当前条目的 metadata Flow；`DetailRevisionWorkflow` 保留页面 token、generation、失败投影和重试。原维护记录报告 UseCase 顺序/初始化失败/取消用例、Detail 初始化失败后重试用例与 `DetailViewModelTest` 定向类通过；本记录本次未重跑。Task 83 仍需验证 session lock、owner 替换迟到结果、metadata Flow 后续失败重订阅与重复初始化幂等性。
+- 修订历史工作流迁移：`ObserveEntryRevisionMetadataUseCase` 负责先初始化全库历史，再提供当前条目的 metadata Flow；`DetailRevisionWorkflow` 保留页面 token、generation、失败投影和重试。原维护记录报告 UseCase 顺序/初始化失败/取消用例、Detail 初始化失败后重试用例与 `DetailViewModelTest` 定向类通过；本记录本次未重跑。2026-11-12 源码复核的当前覆盖与剩余缺口见下文。
 - Detail Favicon preparation identity 已改为直接以 coroutine `Job` 作为 token，移除重复 sealed identity；`DetailFaviconSessionTest` 13 项通过，Release Kotlin 编译、Debug unit test 源码编译与 `verifyArchitecture` 通过。该历史记录未在本次复核重跑；图片 staging/promote 与条目保存流程是否提取仍由 Task 83 审查。
 - 旧符号、生产调用方、测试、DI、导航、资源与正式文档引用已完成静态闭包扫描。
 - 以上结果记录于 2026-11-08 的审查快照；本记录不代表之后代码变更已经重新验证。
@@ -25,6 +25,12 @@ Detail 标签编辑以 `DetailTagEditorState` 作为 Route/Composable 消费的�
 ## 2026-11-12 Trash Flow 恢复 owner 补充
 
 `TrashViewModel` 将普通 `deletedEntries` 查询异常映射为可见的 `TrashContentState.Failed`；`RetryLoad` 只在失败态新建一次冷 Flow 订阅，之后继续接收仓库更新。每次订阅使用 ticket 隔离旧结果，页面关闭或 ViewModel 销毁时取消读取并清理页面状态；取消和 fatal `Error` 不作为可重试页面失败。合同与生产入口已补到[列表与搜索](../../product/vault/list-and-search.md#代码位置)。当前 `TrashViewModelTest` 源码覆盖首次及后续读取失败、连续重试、读取发出数据后的失败、取消、fatal 传播和销毁后的迟到数据；本次仅核对测试定义，未重跑测试。
+
+## 2026-11-12 修订历史测试覆盖边界
+
+当前 `DetailViewModelTest` 源码覆盖 metadata 订阅首次失败后的手动重试、历史初始化失败后再订阅、metadata fatal `Error` 传播，以及关闭并重开同一条目的历史弹层后丢弃旧观察者失败；`ObserveEntryRevisionMetadataUseCaseTest` 覆盖先初始化再请求 metadata Flow。Data 的 `EntryRevisionHistoryInitializationFlowTest` 覆盖已完成 generation 跳过重复重建，以及并发初始化在首个事务提交后复查 generation。上述为源码核对，本次未重跑测试。
+
+仍未见 Detail revision metadata 发出数据后再失败并重新订阅、revision observer 活跃时会话锁定、替换条目或 Detail visit 后旧 metadata 结果被拒绝的对应 owner 测试。已完成的“重复初始化幂等”不再列为 Task 83 待办；剩余边界继续由[主维护计划 Task 83](../work/plans/2026-10-30-passly-maintainability-todo.md#task-83)跟踪。
 
 ## 后续事项
 

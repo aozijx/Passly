@@ -6,10 +6,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.fragment.app.FragmentActivity
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.android.components.ActivityComponent
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,6 +15,10 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.security.authentication.host.ActivityAuthUiHost
 import com.aozijx.passly.security.authentication.host.AuthenticationDialogRequest
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.components.ActivityComponent
 
 @Composable
 fun AuthenticationHost(

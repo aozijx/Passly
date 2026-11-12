@@ -8,12 +8,12 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleMessageSettings
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +21,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -133,6 +134,37 @@ class NotificationSettingsViewModelTest {
         }
 
     @Test
+    fun `permission launch failure can be retried without reporting system denial`() =
+        runTest {
+            val repository = RecordingMessageSettingsRepository()
+            val model = viewModel(repository, unavailableState(runtimePermissionGranted = false))
+            backgroundScope.launch { model.uiState.collect {} }
+            val effects = mutableListOf<NotificationSettingsEffect>()
+            backgroundScope.launch { model.effects.collect { effects += it } }
+            runCurrent()
+
+            model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
+            runCurrent()
+            val first =
+                (effects.single() as NotificationSettingsEffect.RequestRuntimeNotificationPermission)
+                    .request
+
+            model.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(first))
+            runCurrent()
+
+            assertTrue(effects.none { it == NotificationSettingsEffect.ShowPermissionDenied })
+            assertTrue(repository.systemNotificationWrites.isEmpty())
+            assertEquals(false, model.canLaunchRuntimePermissionRequest(first))
+
+            model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
+            runCurrent()
+
+            val requests = effects.filterIsInstance<NotificationSettingsEffect.RequestRuntimeNotificationPermission>()
+            assertEquals(2, requests.size)
+            assertTrue(requests[1].request !== first)
+        }
+
+    @Test
     fun `system-disabled notifications report denial and open platform settings`() =
         runTest {
             val repository = RecordingMessageSettingsRepository()
@@ -213,7 +245,7 @@ class NotificationSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val effects = mutableListOf<NotificationSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(false))
@@ -235,7 +267,7 @@ class NotificationSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val effects = mutableListOf<NotificationSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             runCurrent()
             val request = (effects.single() as NotificationSettingsEffect.RequestRuntimeNotificationPermission).request
@@ -268,6 +300,7 @@ class NotificationSettingsViewModelTest {
             system = availableState()
             model.onAction(NotificationSettingsAction.RuntimePermissionGranted(oldRequest))
             model.onAction(NotificationSettingsAction.RuntimePermissionDenied(oldRequest))
+            model.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(oldRequest))
             runCurrent()
             assertTrue(repository.systemNotificationWrites.isEmpty())
             assertTrue(model.canLaunchRuntimePermissionRequest(currentRequest))
@@ -282,7 +315,7 @@ class NotificationSettingsViewModelTest {
             val repository = RecordingMessageSettingsRepository(save = { throw IOException("synthetic private failure") })
             val model = viewModel(repository, availableState())
             val effects = mutableListOf<NotificationSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value
@@ -315,7 +348,7 @@ class NotificationSettingsViewModelTest {
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val request = model.nextPermissionRequest()
             val effects = mutableListOf<NotificationSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             system = availableState()
             model.onAction(NotificationSettingsAction.RuntimePermissionGranted(request))
             model.onAction(NotificationSettingsAction.RuntimePermissionGranted(request))
@@ -335,7 +368,7 @@ class NotificationSettingsViewModelTest {
                 })
             val model = viewModel(repository, availableState())
             val effects = mutableListOf<NotificationSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(false))
             runCurrent()
             ViewModelStore().apply {
@@ -374,6 +407,7 @@ class NotificationSettingsViewModelTest {
             val request = model.nextPermissionRequest()
 
             model.onPageExited(oldOwner, preservePendingPermissionRequest = true)
+            model.onAction(NotificationSettingsAction.RuntimePermissionRequestNotStarted(request))
             val newOwner = model.onPageEntered()
             val restoredRequest = model.nextPermissionRequest()
             system = availableState()

@@ -12,8 +12,10 @@ import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,7 +47,7 @@ class AppPasswordSettingsViewModelTest {
             val viewModel = viewModel(provisioner)
             viewModel.onPageEntered()
             val effects = mutableListOf<AppPasswordSettingsEffect>()
-            backgroundScope.launch { viewModel.effects.toList(effects) }
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
             runCurrent()
 
             viewModel.onAction(
@@ -126,7 +128,7 @@ class AppPasswordSettingsViewModelTest {
             val viewModel = viewModel(provisioner)
             viewModel.onPageEntered()
             val effects = mutableListOf<AppPasswordSettingsEffect>()
-            backgroundScope.launch { viewModel.effects.toList(effects) }
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
             runCurrent()
             val firstPassword = "long-enough-password".toCharArray()
             val firstConfirmation = "long-enough-password".toCharArray()
@@ -171,7 +173,7 @@ class AppPasswordSettingsViewModelTest {
             val viewModel = viewModel(provisioner)
             val oldOwner = viewModel.onPageEntered()
             val effects = mutableListOf<AppPasswordSettingsEffect>()
-            backgroundScope.launch { viewModel.effects.toList(effects) }
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
             runCurrent()
             val password = "long-enough-password".toCharArray()
             val confirmation = "long-enough-password".toCharArray()
@@ -194,6 +196,104 @@ class AppPasswordSettingsViewModelTest {
         }
 
     @Test
+    fun `post commit cancellation follows persisted availability without reporting failure`() =
+        runTest {
+            val methods = MutableStateFlow(AuthenticationMethods())
+            val provisioner =
+                Provisioner(
+                    setPassword = {
+                        methods.value = AuthenticationMethods(setOf(AuthenticationMethod.APP_PASSWORD))
+                        throw CancellationException("caller cancelled after persistence")
+                    },
+                )
+            val viewModel = viewModel(provisioner, methods)
+            viewModel.onPageEntered()
+            val effects = mutableListOf<AppPasswordSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            assertEquals(false, viewModel.uiState.value.isAppPasswordEnabled)
+            val password = "long-enough-password".toCharArray()
+            val confirmation = "long-enough-password".toCharArray()
+
+            viewModel.onAction(
+                AppPasswordSettingsAction.SubmitChange(
+                    AppPasswordChangeRequest.Set(password, confirmation),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.isAppPasswordEnabled)
+            assertEquals(false, viewModel.uiState.value.isOperationInProgress)
+            assertTrue(password.all { it == '\u0000' })
+            assertTrue(confirmation.all { it == '\u0000' })
+            assertTrue(effects.isEmpty())
+        }
+
+    @Test
+    fun `provisioner cancellation before commit does not report failure or change password availability`() =
+        runTest {
+            val methods = MutableStateFlow(AuthenticationMethods())
+            val provisioner =
+                Provisioner(
+                    setPassword = {
+                        throw CancellationException("caller cancelled before persistence")
+                    },
+                )
+            val viewModel = viewModel(provisioner, methods)
+            viewModel.onPageEntered()
+            val effects = mutableListOf<AppPasswordSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            val password = "long-enough-password".toCharArray()
+            val confirmation = "long-enough-password".toCharArray()
+
+            viewModel.onAction(
+                AppPasswordSettingsAction.SubmitChange(
+                    AppPasswordChangeRequest.Set(password, confirmation),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.isAppPasswordEnabled)
+            assertEquals(false, viewModel.uiState.value.isOperationInProgress)
+            assertTrue(password.all { it == '\u0000' })
+            assertTrue(confirmation.all { it == '\u0000' })
+            assertTrue(effects.isEmpty())
+        }
+
+    @Test
+    fun `view model cancellation while provisioner is pending wipes request without feedback`() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val provisioner = Provisioner(setPassword = { gate.await(); AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD) })
+            val viewModel = viewModel(provisioner)
+            val store = ViewModelStore().apply { put("app-password", viewModel) }
+            viewModel.onPageEntered()
+            val effects = mutableListOf<AppPasswordSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            val password = "long-enough-password".toCharArray()
+            val confirmation = "long-enough-password".toCharArray()
+
+            viewModel.onAction(
+                AppPasswordSettingsAction.SubmitChange(
+                    AppPasswordChangeRequest.Set(password, confirmation),
+                ),
+            )
+            runCurrent()
+            assertEquals(1, provisioner.setCalls)
+            assertEquals(true, viewModel.uiState.value.isOperationInProgress)
+
+            store.clear()
+            runCurrent()
+
+            assertTrue(password.all { it == '\u0000' })
+            assertTrue(confirmation.all { it == '\u0000' })
+            assertEquals(false, viewModel.uiState.value.isOperationInProgress)
+            assertTrue(effects.isEmpty())
+        }
+
+    @Test
     fun `authorization result from exited page is not delivered to the reentered page`() =
         runTest {
             val gate = CompletableDeferred<Unit>()
@@ -207,7 +307,7 @@ class AppPasswordSettingsViewModelTest {
             val viewModel = viewModel(provisioner)
             val oldOwner = viewModel.onPageEntered()
             val effects = mutableListOf<AppPasswordSettingsEffect>()
-            backgroundScope.launch { viewModel.effects.toList(effects) }
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
             runCurrent()
 
             viewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
@@ -220,12 +320,15 @@ class AppPasswordSettingsViewModelTest {
             assertTrue(effects.isEmpty())
         }
 
-    private fun viewModel(provisioner: Provisioner) =
+    private fun viewModel(
+        provisioner: Provisioner,
+        methods: MutableStateFlow<AuthenticationMethods> = MutableStateFlow(AuthenticationMethods()),
+    ) =
         AppPasswordSettingsViewModel(
             AppPasswordSettingsInteractor(
                 authenticationMethodAvailability =
                     object : AuthenticationMethodAvailability {
-                        override val methods = MutableStateFlow(AuthenticationMethods())
+                        override val methods = methods
                     },
                 authenticationMethodProvisioner = provisioner,
             ),

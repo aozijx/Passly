@@ -5,6 +5,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
 /** Checks usable configuration without rewriting stored secret or identity metadata. */
@@ -39,25 +41,18 @@ object OtpConfigValidation {
         counter: Long?,
     ): Set<FieldKey> =
         buildSet {
-            val validDigits =
-                when (type) {
-                    OtpType.STEAM -> digits == 5
-                    OtpType.TOTP, OtpType.HOTP -> digits != null && digits in 6..8
-                }
-            if (!validDigits) add(FieldKey.OTP_DIGITS)
-            when (type) {
-                OtpType.HOTP -> {
-                    if (counter == null || counter < 0) add(FieldKey.OTP_COUNTER)
-                }
-
-                OtpType.TOTP -> {
-                    if (period == null || period <= 0) add(FieldKey.OTP_PERIOD)
-                }
-
-                OtpType.STEAM -> {
-                    if (period != 30) add(FieldKey.OTP_PERIOD)
-                    if (algorithm != OtpHashAlgorithm.SHA1) add(FieldKey.OTP_ALGORITHM)
-                }
+            val definition = OtpTypeDefinitions[type]
+            if (digits == null || digits !in definition.allowedDigits) add(FieldKey.OTP_DIGITS)
+            if (definition.movingFactor == OtpMovingFactor.COUNTER) {
+                if (counter == null || counter < 0) add(FieldKey.OTP_COUNTER)
+            } else if (period == null || period <= 0) {
+                add(FieldKey.OTP_PERIOD)
+            }
+            if (definition.fixedPeriodSeconds != null && period != definition.fixedPeriodSeconds) {
+                add(FieldKey.OTP_PERIOD)
+            }
+            if (definition.fixedAlgorithm != null && algorithm != definition.fixedAlgorithm) {
+                add(FieldKey.OTP_ALGORITHM)
             }
         }
 }

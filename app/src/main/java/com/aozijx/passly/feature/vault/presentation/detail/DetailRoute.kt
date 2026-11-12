@@ -30,9 +30,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
-import com.aozijx.passly.feature.vault.otp.OtpLease
-import com.aozijx.passly.feature.vault.otp.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
@@ -45,16 +44,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailRoute(
     entryId: String,
-    otpStates: StateFlow<Map<String, OtpCodeState>>,
-    onAcquireOtp: (String) -> OtpLease,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
     onBack: () -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
     onEditFullForm: (EntryEditorSeed.Editable) -> EntryEditorSeedNavigationResult,
@@ -78,24 +74,14 @@ fun DetailRoute(
             ?.filterIsInstance<DetailBodySectionUiModel.Otp>()
             ?.firstOrNull()
             ?.type
-    val currentOnAcquireOtp by rememberUpdatedState(onAcquireOtp)
-    DisposableEffect(entryId, detailContent?.entryId, otpType) {
-        val lease =
-            if (detailContent?.entryId == entryId && otpType != null) {
-                currentOnAcquireOtp(entryId)
-            } else {
-                null
-            }
-        onDispose { lease?.close() }
-    }
     val otpUiState by
-        remember(entryId, otpStates, otpType) {
-            otpStates
-                .map { states -> states[entryId].toOtpUiState(otpType) }
-                .distinctUntilChanged()
-        }.collectAsStateWithLifecycle(
-            initialValue = otpStates.value[entryId].toOtpUiState(otpType),
-        )
+        remember(entryId, otpUiStateFlow, otpType) {
+            otpUiStateFlow(
+                entryId,
+                otpType?.let(OtpPresentation::Applicable) ?: OtpPresentation.NotApplicable,
+                true,
+            )
+        }.collectAsStateWithLifecycle()
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)

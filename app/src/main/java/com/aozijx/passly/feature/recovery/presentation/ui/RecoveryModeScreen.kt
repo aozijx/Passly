@@ -8,11 +8,11 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -79,7 +79,10 @@ fun RecoveryModeScreen(
         }
     }
     when (state) {
-        RecoveryModeUiState.Closed -> Unit
+        RecoveryModeUiState.Closed -> {
+            Unit
+        }
+
         is RecoveryModeUiState.PasswordDialog -> {
             RecoveryPasswordDialog(
                 state,

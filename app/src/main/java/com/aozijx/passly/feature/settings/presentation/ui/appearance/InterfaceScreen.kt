@@ -1,17 +1,18 @@
 package com.aozijx.passly.feature.settings.presentation.ui.appearance
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Fullscreen
@@ -40,79 +41,32 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
+import com.aozijx.passly.feature.settings.presentation.appearance.CardStyleGroupUiState
+import com.aozijx.passly.feature.settings.presentation.appearance.CardStyleOptionUiState
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
-import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
-import com.aozijx.passly.presentation.shared.entry.labelRes
+import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceUiState
+import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
+import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.settingsSegmentedColors
-import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
-import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
+import com.aozijx.passly.presentation.shared.entry.labelRes
 import kotlin.math.roundToInt
-
-internal data class CardStyleGroupUiModel(
-    val entryType: EntryType,
-    val entryTypeKey: String,
-    val options: List<CardStyleOptionUiModel>,
-)
-
-internal data class CardStyleOptionUiModel(
-    val styleKey: String,
-    val titleRes: Int,
-    val selected: Boolean,
-    val selection: EntryCardPresentation,
-)
-
-internal object CardStyleSettingsProjection {
-    fun from(presentations: List<EntryCardPresentation>): List<CardStyleGroupUiModel> =
-        CardStyleRegistry.configurableEntryTypes.map { entryType ->
-            val entryTypeKey = CardStyleRegistry.entryTypeKey(entryType)
-            val storedPresentation = presentations.firstOrNull { it.entryTypeKey == entryTypeKey }
-            val styles = CardStyleRegistry.stylesFor(entryType)
-            val selectedStyle =
-                styles.firstOrNull { it.key == storedPresentation?.variantKey } ?: styles.first()
-
-            CardStyleGroupUiModel(
-                entryType = entryType,
-                entryTypeKey = entryTypeKey,
-                options =
-                    styles.map { style ->
-                        CardStyleOptionUiModel(
-                            styleKey = style.key,
-                            titleRes = style.titleRes,
-                            selected = style.key == selectedStyle.key,
-                            selection =
-                                (storedPresentation ?: EntryCardPresentation(
-                                    entryTypeKey = entryTypeKey,
-                                    variantKey = "",
-                                    density = CardDensity.STANDARD,
-                                    showIcon = true,
-                                    showFavorite = true,
-                                    showSecondaryText = true,
-                                    showQuickAction = true,
-                                ))
-                                    .copy(variantKey = style.key),
-                        )
-                    },
-            )
-        }
-}
 
 @Composable
 internal fun InterfaceDetail(
-    state: InterfaceUiModel,
+    state: InterfaceUiState,
     onAction: (InterfaceSettingsAction) -> Unit,
 ) {
-    val cardStyleGroups = remember(state.entryCardPresentations) {
-        CardStyleSettingsProjection.from(state.entryCardPresentations)
-    }
+    val cardStyleGroups =
+        remember(state.cardStylePresentations) {
+            interfaceCardStyleGroups(state.cardStylePresentations)
+        }
     var appCornerRadius by remember(state.appCornerRadiusDp) {
         mutableFloatStateOf(state.appCornerRadiusDp)
     }
@@ -171,6 +125,17 @@ internal fun InterfaceDetail(
                                 imageVector = if (cardStylesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = stringResource(R.string.settings_interface_card_style_section_toggle),
                             )
+                        },
+                    ),
+                    switchSettingsGroupItem(
+                        key = "interface.copy_next_totp_near_expiry",
+                        visible = cardStylesExpanded,
+                        icon = Icons.Default.ContentCopy,
+                        title = stringResource(R.string.settings_interface_copy_next_totp_near_expiry),
+                        subtitle = stringResource(R.string.settings_interface_copy_next_totp_near_expiry_description),
+                        checked = state.copyNextTotpNearExpiry,
+                        onCheckedChange = { enabled ->
+                            onAction(InterfaceSettingsAction.SetCopyNextTotpNearExpiry(enabled))
                         },
                     ),
                     SegmentedSettingsItem(
@@ -249,13 +214,10 @@ internal fun InterfaceDetail(
                                 R.string.settings_interface_entry_hierarchy_display_mode,
                             ),
                         selected = state.entryHierarchyDisplayMode,
-                        selectedLabel =
-                            stringResource(
-                                state.entryHierarchyDisplayMode.labelResource(),
-                            ),
+                        selectedLabel = stringResource(state.entryHierarchyDisplayModeLabelRes),
                         options =
-                            EntryHierarchyDisplayMode.entries.map {
-                                it to stringResource(it.labelResource())
+                            state.entryHierarchyDisplayModeOptions.map { option ->
+                                option.mode to stringResource(option.labelRes)
                             },
                         expanded = showHierarchyModeMenu,
                         onExpandedChange = { showHierarchyModeMenu = it },
@@ -268,17 +230,47 @@ internal fun InterfaceDetail(
     }
 }
 
+internal fun interfaceCardStyleGroups(presentations: List<EntryCardPresentation>): List<CardStyleGroupUiState> =
+    CardStyleRegistry.configurableEntryTypes.map { entryType ->
+        val entryTypeKey = CardStyleRegistry.entryTypeKey(entryType)
+        val storedPresentation = presentations.firstOrNull { it.entryTypeKey == entryTypeKey }
+        val styles = CardStyleRegistry.stylesFor(entryType)
+        val selectedStyle = CardStyleRegistry.configuredStyleFor(entryType, storedPresentation?.variantKey)
+        val basePresentation =
+            storedPresentation
+                ?: EntryCardPresentation(
+                    entryTypeKey = entryTypeKey,
+                    variantKey = selectedStyle.key,
+                    density = CardDensity.STANDARD,
+                    showIcon = true,
+                    showFavorite = true,
+                    showSecondaryText = true,
+                    showQuickAction = true,
+                )
+
+        CardStyleGroupUiState(
+            entryType = entryType,
+            entryTypeKey = entryTypeKey,
+            options =
+                styles.map { style ->
+                    CardStyleOptionUiState(
+                        styleKey = style.key,
+                        titleRes = style.titleRes,
+                        selected = style.key == selectedStyle.key,
+                        selection = basePresentation.copy(variantKey = style.key),
+                    )
+                },
+        )
+    }
+
 @Composable
 private fun CardStyleChoices(
-    group: CardStyleGroupUiModel,
+    group: CardStyleGroupUiState,
     onSelect: (EntryCardPresentation) -> Unit,
 ) {
     val typeKey = group.entryTypeKey
     var expanded by rememberSaveable(typeKey) { mutableStateOf(false) }
     val entryTypeLabel = stringResource(group.entryType.labelRes)
-    val stylesByKey = remember(group.entryType) {
-        CardStyleRegistry.stylesFor(group.entryType).associateBy { it.key }
-    }
 
     SegmentedSettingsGroup(
         items =
@@ -311,7 +303,11 @@ private fun CardStyleChoices(
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                             ) {
                                 group.options.forEach { option ->
-                                    val style = stylesByKey.getValue(option.styleKey)
+                                    val style =
+                                        CardStyleRegistry.styleFor(
+                                            group.entryType,
+                                            option.styleKey,
+                                        )
                                     val selected = option.selected
                                     val selectStyle = { onSelect(option.selection) }
                                     Card(
@@ -366,18 +362,3 @@ private fun CardStyleChoices(
 }
 
 private val cardStylePreviewHeight = 112.dp
-
-private fun EntryHierarchyDisplayMode.labelResource(): Int =
-    when (this) {
-        EntryHierarchyDisplayMode.COLLAPSED -> {
-            R.string.settings_interface_entry_hierarchy_collapsed
-        }
-
-        EntryHierarchyDisplayMode.EXPANDED -> {
-            R.string.settings_interface_entry_hierarchy_expanded
-        }
-
-        EntryHierarchyDisplayMode.SEPARATE -> {
-            R.string.settings_interface_entry_hierarchy_separate
-        }
-    }

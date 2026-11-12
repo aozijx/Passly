@@ -18,11 +18,11 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleSecuritySettings
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +30,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -148,7 +149,7 @@ class SecuritySettingsViewModelTest {
                 val fixture = Fixture { result }
                 val model = fixture.model()
                 val errors = mutableListOf<UiErrorMessage>()
-                backgroundScope.launch { model.errors.toList(errors) }
+                backgroundScope.launch { model.errors.collect { errors += it } }
                 backgroundScope.launch { model.uiState.collect {} }
                 runCurrent()
                 model.onAction(SecuritySettingsAction.SetBiometricEnabled(false))
@@ -179,7 +180,7 @@ class SecuritySettingsViewModelTest {
                 }
             val model = fixture.model()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
@@ -201,7 +202,7 @@ class SecuritySettingsViewModelTest {
                 }
             val model = fixture.model()
             val notices = mutableListOf<SecuritySettingsNotice>()
-            backgroundScope.launch { model.notices.toList(notices) }
+            backgroundScope.launch { model.notices.collect { notices += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
@@ -231,7 +232,7 @@ class SecuritySettingsViewModelTest {
                 }
             val model = fixture.model()
             val notices = mutableListOf<SecuritySettingsNotice>()
-            backgroundScope.launch { model.notices.toList(notices) }
+            backgroundScope.launch { model.notices.collect { notices += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
@@ -260,7 +261,7 @@ class SecuritySettingsViewModelTest {
                 }
             val model = fixture.model()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             val before = model.uiState.value
@@ -322,7 +323,7 @@ class SecuritySettingsViewModelTest {
                 }
             val model = fixture.model()
             val errors = mutableListOf<UiErrorMessage>()
-            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.errors.collect { errors += it } }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             model.onAction(SecuritySettingsAction.SetBiometricEnabled(false))

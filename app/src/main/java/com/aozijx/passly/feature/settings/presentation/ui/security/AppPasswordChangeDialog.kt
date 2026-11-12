@@ -25,8 +25,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogEvent
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogsModel
-import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
 import com.aozijx.passly.presentation.mapping.toUiState
+import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
 
 @Composable
 internal fun AppPasswordChangeDialog(

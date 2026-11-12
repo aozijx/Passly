@@ -9,9 +9,11 @@ import java.io.InputStream
 /** Applies the same parser safety limits to every supported JSON backup format. */
 internal object BackupJsonParserFactory {
     private val factory =
-        JsonFactory.builder()
+        JsonFactory
+            .builder()
             .streamReadConstraints(
-                StreamReadConstraints.builder()
+                StreamReadConstraints
+                    .builder()
                     .maxNestingDepth(MAX_NESTING_DEPTH)
                     .maxStringLength(MAX_RESOURCE_BASE64_CHARS)
                     .build(),

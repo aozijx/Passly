@@ -1,7 +1,10 @@
 package com.aozijx.passly.data.mapper.activity
 
+import com.aozijx.passly.data.codec.fieldKeyFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 
@@ -17,6 +20,7 @@ fun EntryActivityEntity.toDomain(): EntryActivity =
                 else -> EntryActivityContext.Lifecycle
             },
         createdAt = createdAt,
+        affectedFields = affectedFieldKeys.map(::fieldKeyFromStorageKey).toSet(),
     )
 
 fun EntryActivity.toEntity(): EntryActivityEntity =
@@ -29,5 +33,6 @@ fun EntryActivity.toEntity(): EntryActivityEntity =
                 is EntryActivityContext.ContentRevision -> value.version.value
                 EntryActivityContext.Usage, EntryActivityContext.Lifecycle -> null
             },
+        affectedFieldKeys = affectedFields.map(FieldKey::toStorageKey).toSet(),
         createdAt = createdAt,
     )

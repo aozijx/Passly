@@ -41,7 +41,8 @@ internal class RoomEntryQueryRepository
             ) {
                 val requestedIds = entryIds.distinct()
                 val entriesById =
-                    entryQueryDao().getByIds(requestedIds.map(EntryId::value))
+                    entryQueryDao()
+                        .getByIds(requestedIds.map(EntryId::value))
                         .associateBy { it.entryId }
                 requestedIds.mapNotNull { id ->
                     val metaEntity = entriesById[id.value] ?: return@mapNotNull null
@@ -52,11 +53,10 @@ internal class RoomEntryQueryRepository
             }
         }
 
-        override suspend fun findAllTags(): Set<String> {
-            return databaseSession.queryFullVault(
+        override suspend fun findAllTags(): Set<String> =
+            databaseSession.queryFullVault(
                 onDenied = { emptySet() },
             ) {
                 entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
             }
-        }
     }

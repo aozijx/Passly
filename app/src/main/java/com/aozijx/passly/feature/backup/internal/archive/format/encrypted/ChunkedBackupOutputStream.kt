@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
 import com.aozijx.passly.core.crypto.KeyDerivation
-import com.aozijx.passly.feature.backup.internal.archive.io.LimitedOutputStream
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
+import com.aozijx.passly.feature.backup.internal.archive.io.LimitedOutputStream
 import java.io.OutputStream
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -124,10 +124,12 @@ internal class ChunkedBackupOutputStream(
     }
 
     private fun emitTerminalRecord() {
-        val totals = java.nio.ByteBuffer.allocate(BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH)
-            .putLong(sequence)
-            .putLong(totalBytes)
-            .array()
+        val totals =
+            java.nio.ByteBuffer
+                .allocate(BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH)
+                .putLong(sequence)
+                .putLong(totalBytes)
+                .array()
         val recordHeader = BackupRecordCrypto.header(BackupContainerV1Spec.TERMINAL_RECORD_TYPE, sequence, totals.size)
         val nonce = BackupRecordCrypto.nonce(noncePrefix, sequence)
         val aad = BackupRecordCrypto.aad(encodedHeader, recordHeader)

@@ -18,20 +18,21 @@ internal class AuthenticationAvailabilityRetry(
     @Synchronized
     fun schedule() {
         if (retryJob?.isActive == true) return
-        retryJob = scope.launch {
-            var retryDelayMs = initialDelayMs
-            while (true) {
-                delay(retryDelayMs)
-                try {
-                    refresh()
-                    return@launch
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    retryDelayMs = (retryDelayMs * 2).coerceAtMost(maxDelayMs)
+        retryJob =
+            scope.launch {
+                var retryDelayMs = initialDelayMs
+                while (true) {
+                    delay(retryDelayMs)
+                    try {
+                        refresh()
+                        return@launch
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        retryDelayMs = (retryDelayMs * 2).coerceAtMost(maxDelayMs)
+                    }
                 }
             }
-        }
     }
 
     private companion object {

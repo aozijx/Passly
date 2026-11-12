@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
@@ -39,8 +40,7 @@ internal fun BackupImportOptionsContent(
     BackupSheetColumn(scrollable = true) {
         Text(
             text = stringResource(R.string.settings_backup_import_options_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = passlySheetTitleStyle(),
         )
         Text(
             stringResource(R.string.settings_backup_import_format_description, stringResource(R.string.app_name)),

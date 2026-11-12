@@ -18,18 +18,20 @@ data class PasswordSetupDraft(
     val passwordStrength: PasswordStrengthResult? = null,
 ) {
     val confirmationState: PasswordConfirmationUiState
-        get() = withPasswordChars { passwordChars, confirmationChars ->
+        get() =
+            withPasswordChars { passwordChars, confirmationChars ->
                 if (confirmationChars.isNotEmpty() && !passwordChars.contentEquals(confirmationChars)) {
                     PasswordConfirmationUiState.Mismatch
                 } else {
                     PasswordConfirmationUiState.Hidden
                 }
-        }
+            }
 
-    fun canSubmit(): Boolean = withPasswordChars { passwordChars, confirmationChars ->
-        AppPasswordPolicy.DEFAULT.acceptsLength(passwordChars.size) &&
-            passwordChars.contentEquals(confirmationChars)
-    }
+    fun canSubmit(): Boolean =
+        withPasswordChars { passwordChars, confirmationChars ->
+            AppPasswordPolicy.DEFAULT.acceptsLength(passwordChars.size) &&
+                passwordChars.contentEquals(confirmationChars)
+        }
 
     private fun <T> withPasswordChars(block: (CharArray, CharArray) -> T): T {
         val passwordChars = newPassword.toCharArray()

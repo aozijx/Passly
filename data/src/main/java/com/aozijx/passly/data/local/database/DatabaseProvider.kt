@@ -6,6 +6,7 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.callback.AttachmentReferenceConstraintCallback
+import com.aozijx.passly.data.local.database.migration.ActivityHistoryMigration
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,6 +49,7 @@ class DatabaseProvider
                                 AppDatabase::class.java,
                                 databaseName,
                             ).openHelperFactory(factory)
+                            .addMigrations(ActivityHistoryMigration.MIGRATION_1_2)
                             .addCallback(AttachmentReferenceConstraintCallback)
                             .build()
 

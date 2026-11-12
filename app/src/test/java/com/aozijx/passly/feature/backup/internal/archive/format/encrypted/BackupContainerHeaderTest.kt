@@ -1,13 +1,13 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
 import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.observability.Reasons
 import java.io.ByteArrayInputStream
-import java.io.EOFException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -60,9 +60,10 @@ class BackupContainerHeaderTest {
             putInt(88)
         }
 
-        val error = assertThrows(IllegalArgumentException::class.java) {
-            BackupContainerHeader.read(ByteArrayInputStream(oldHeader))
-        }
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                BackupContainerHeader.read(ByteArrayInputStream(oldHeader))
+            }
         assertEquals("备份头长度无效", error.message)
     }
 
@@ -138,7 +139,7 @@ class BackupContainerHeaderTest {
             val password = "header-password".toCharArray()
             var derivationStarted = false
             try {
-                assertThrows(EOFException::class.java) {
+                val failure = assertThrows(BackupTruncatedException::class.java) {
                     ChunkedBackupInputStream(
                         input = ByteArrayInputStream(truncatedHeader),
                         password = password,
@@ -148,6 +149,7 @@ class BackupContainerHeaderTest {
                         },
                     )
                 }
+                assertEquals(Reasons.BackupContainerHeaderTruncated, failure.reasonCode)
                 assertFalse("$field truncation must be rejected before KDF", derivationStarted)
             } finally {
                 password.fill('\u0000')

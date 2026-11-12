@@ -1,7 +1,10 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.otp.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -15,6 +18,14 @@ import org.junit.Test
 
 class OtpArchiveValidationTest {
     private val mapper = KeyedEntryArchiveMapper
+
+    private fun generateOtp(
+        config: OtpConfig,
+        timestamp: Long,
+    ): OtpResult {
+        val material = OtpGenerationMaterial(config.toGenerationConfig(), config.secret?.toByteArray() ?: byteArrayOf())
+        return material.use { OtpGenerator.generate(it, timestamp = timestamp) }
+    }
 
     @Test
     fun validLongPeriodCanBeBackedUpRestoredAndGenerateTheSameCode() {
@@ -30,8 +41,8 @@ class OtpArchiveValidationTest {
 
         assertEquals(600, config.periodSeconds)
         assertEquals(
-            OtpGenerator.generate(OtpConfig(secret = SECRET, periodSeconds = 600), timestamp = 1234567),
-            OtpGenerator.generate(config, timestamp = 1234567),
+            generateOtp(OtpConfig(secret = SECRET, periodSeconds = 600), 1234567),
+            generateOtp(config, 1234567),
         )
     }
 

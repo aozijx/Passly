@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
@@ -92,6 +93,7 @@ class CompleteAutofillSelectionTest {
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             onRecord()
             recordedEntryId = entryId

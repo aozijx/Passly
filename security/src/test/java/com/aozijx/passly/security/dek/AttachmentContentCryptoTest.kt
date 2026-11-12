@@ -1,13 +1,7 @@
 package com.aozijx.passly.security.dek
 
 import com.aozijx.passly.core.error.boundary.CryptoException
-import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
-import com.aozijx.passly.domain.access.model.BiometricBinding
-import com.aozijx.passly.domain.access.model.BiometricBootstrapState
-import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
-import com.aozijx.passly.domain.access.model.KeyEnvelope
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.testing.testLogger
 import java.security.MessageDigest
 import kotlinx.coroutines.CancellationException
@@ -25,13 +19,13 @@ import org.junit.Test
 
 class AttachmentContentCryptoTest {
     private lateinit var dekManager: DekManager
-    private lateinit var store: InMemoryVaultBootstrapStore
+    private lateinit var store: InMemoryDekBootstrapStore
     private lateinit var crypto: AttachmentContentCrypto
 
     @Before
     fun setUp() =
         runBlocking {
-            store = InMemoryVaultBootstrapStore()
+            store = InMemoryDekBootstrapStore()
             dekManager = DekManager(store, FieldKeyManager(), testLogger())
             check(dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() }) == DekUnlockResult.Success)
             crypto = AttachmentContentCrypto(AttachmentDataKeyManager(store, dekManager, CapturingSecureRandom()))
@@ -158,58 +152,4 @@ class AttachmentContentCryptoTest {
     }
 
     private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
-
-    private class InMemoryVaultBootstrapStore : VaultBootstrapStore {
-        private val envelopes = linkedMapOf<EnvelopeType, KeyEnvelope>()
-        private var verificationTag: ByteArray? = null
-        private var attachmentEnvelope: ByteArray? = null
-        var attachmentKeySaveFailure: Throwable? = null
-
-        override suspend fun save(envelope: KeyEnvelope) {
-            envelopes[envelope.type] = envelope
-        }
-
-        override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
-
-        override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
-
-        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
-
-        override suspend fun delete(type: EnvelopeType) {
-            envelopes.remove(type)
-        }
-
-        override suspend fun saveVerificationTag(tag: ByteArray) {
-            verificationTag = tag.clone()
-        }
-
-        override suspend fun loadVerificationTag(): ByteArray? = verificationTag?.clone()
-
-        override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) = Unit
-
-        override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = null
-
-        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) {
-            attachmentKeySaveFailure?.let { throw it }
-            attachmentEnvelope = envelope.clone()
-        }
-
-        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = attachmentEnvelope?.clone()
-
-        override suspend fun loadBiometricState() = BiometricBootstrapState(null, null, emptySet())
-
-        override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
-
-        override suspend fun commitBiometricRotation(
-            envelope: KeyEnvelope,
-            binding: BiometricBinding,
-            obsoleteAlias: String?,
-        ) = Unit
-
-        override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
-
-        override suspend fun disableBiometric(activeAlias: String) = Unit
-
-        override suspend fun clearBiometricRotationJournal() = Unit
-    }
 }

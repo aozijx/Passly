@@ -30,6 +30,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.SecuritySettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.settingsSegmentedColors
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
@@ -75,7 +76,7 @@ fun LockAuthSettingsSection(
                     key = "security.lock_timeout",
                     icon = Icons.Default.Timer,
                     title = stringResource(R.string.settings_security_auto_lock),
-                    value = formatLockTimeoutText(state.lockTimeoutMs),
+                    value = SettingsItemValue.Text(formatLockTimeoutText(state.lockTimeoutMs)),
                     onClick = { expanded = !expanded },
                 ),
                 SegmentedSettingsItem(
@@ -156,8 +157,10 @@ fun LockAuthSettingsSection(
                     icon = Icons.Default.Lock,
                     title = stringResource(R.string.authentication_app_password_label),
                     value =
-                        stringResource(
-                            if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set,
+                        SettingsItemValue.Text(
+                            stringResource(
+                                if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set,
+                            ),
                         ),
                     onClick = onAppPasswordClick,
                 ),

@@ -30,10 +30,14 @@ internal data class ScannerRecognitionRegion(
         val bounds = barcode.boundingBox ?: return false
         return containsMappedPoints(
             floatArrayOf(
-                bounds.left.toFloat(), bounds.top.toFloat(),
-                bounds.right.toFloat(), bounds.top.toFloat(),
-                bounds.right.toFloat(), bounds.bottom.toFloat(),
-                bounds.left.toFloat(), bounds.bottom.toFloat(),
+                bounds.left.toFloat(),
+                bounds.top.toFloat(),
+                bounds.right.toFloat(),
+                bounds.top.toFloat(),
+                bounds.right.toFloat(),
+                bounds.bottom.toFloat(),
+                bounds.left.toFloat(),
+                bounds.bottom.toFloat(),
             ),
         )
     }
@@ -61,8 +65,7 @@ internal data class ScannerRecognitionRegion(
                     .apply {
                         // ML Kit returns barcode coordinates after rotationDegrees is applied.
                         setUsingRotationDegrees(true)
-                    }
-                    .getOutputTransform(imageProxy)
+                    }.getOutputTransform(imageProxy)
             val coordinateTransform =
                 CoordinateTransform(imageOutputTransform, previewOutputTransform)
             val imageToPreview = Matrix().also(coordinateTransform::transform)

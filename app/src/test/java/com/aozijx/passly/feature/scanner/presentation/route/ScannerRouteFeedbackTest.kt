@@ -35,7 +35,7 @@ class ScannerRouteFeedbackTest {
     @Test
     fun `route consumes pending feedback from ui state and acknowledges it`() =
         runTest {
-            val pending = ScannerFeedback(1, ScannerFeedback.Kind.CopySucceeded)
+            val pending = ScannerFeedback(1, ScannerFeedback.Kind.ScanSucceeded)
             val state = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning(pending))
             val lifecycleOwner = Owner().apply { lifecycle.currentState = Lifecycle.State.STARTED }
             var hapticCount = 0
@@ -48,8 +48,11 @@ class ScannerRouteFeedbackTest {
                         onHostStarted = {},
                         onHostStopped = {},
                         onFeedback = { feedback ->
-                            if (feedback.kind == ScannerFeedback.Kind.ScanSucceeded) hapticCount++
-                            else uiFeedback += feedback.kind
+                            if (feedback.kind == ScannerFeedback.Kind.ScanSucceeded) {
+                                hapticCount++
+                            } else {
+                                uiFeedback += feedback.kind
+                            }
                         },
                         onFeedbackConsumed = { id ->
                             state.update { current ->
@@ -59,6 +62,13 @@ class ScannerRouteFeedbackTest {
                         },
                     )
                 }
+            runCurrent()
+
+            assertEquals(1, hapticCount)
+            assertEquals(emptyList<ScannerFeedback.Kind>(), uiFeedback)
+            assertEquals(null, state.value.feedback)
+
+            state.value = ScannerUiState.Scanning(ScannerFeedback(2, ScannerFeedback.Kind.CopySucceeded))
             runCurrent()
 
             assertEquals(1, hapticCount)

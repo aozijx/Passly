@@ -4,14 +4,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion
 
 @Composable
-internal fun AccessibilityAutofillEntry(onComplete: (AutofillHostCompletion) -> Unit) {
+internal fun AccessibilityAutofillEntry(
+    entryIcon: @Composable (EntryListItem, Modifier) -> Unit,
+    onComplete: (AutofillHostCompletion) -> Unit,
+) {
     val activity =
         LocalActivity.current as? ComponentActivity
             ?: error("AccessibilityAutofillEntry requires a ComponentActivity host")
@@ -33,6 +38,7 @@ internal fun AccessibilityAutofillEntry(onComplete: (AutofillHostCompletion) -> 
 
     AccessibilityFillRoute(
         viewModel = viewModel,
+        entryIcon = entryIcon,
         onComplete = { onComplete(AutofillHostCompletion.AccessibilityFinished) },
     )
 }

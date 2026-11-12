@@ -56,7 +56,7 @@ internal class CredentialResponseViewModel
         private val traceContinuations: TraceContinuationStore,
     ) : ViewModel() {
         private val mutableUiState =
-            MutableStateFlow(
+            MutableStateFlow<CredentialResponseUiState>(
                 CredentialResponseUiState.Loading,
             )
         internal val uiState: StateFlow<CredentialResponseUiState> = mutableUiState.asStateFlow()
@@ -65,6 +65,7 @@ internal class CredentialResponseViewModel
 
         private val requestStarted = AtomicBoolean(false)
         private var activeInteractionId: AutofillInteractionId? = null
+
         @Volatile private var abandoned = false
 
         internal fun onAction(action: CredentialResponseUiAction) {

@@ -6,7 +6,9 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
@@ -36,6 +38,7 @@ sealed interface AutofillHostCompletion {
 @Composable
 fun AutofillFeatureEntry(
     sourceIntent: Intent,
+    entryIcon: @Composable (EntryListItem, Modifier) -> Unit,
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     val activity =
@@ -52,11 +55,11 @@ fun AutofillFeatureEntry(
         }
 
         is AutofillLaunch.Legacy -> {
-            LegacyAutofillEntry(current, activity, dependencies, onComplete)
+            LegacyAutofillEntry(current, activity, dependencies, entryIcon, onComplete)
         }
 
         AutofillLaunch.Accessibility -> {
-            AccessibilityAutofillEntry(onComplete)
+            AccessibilityAutofillEntry(entryIcon, onComplete)
         }
 
         is AutofillLaunch.Credential -> {

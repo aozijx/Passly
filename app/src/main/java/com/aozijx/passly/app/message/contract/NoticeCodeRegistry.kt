@@ -87,7 +87,9 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy =
             )
         }
 
-        NoticeCode.BACKUP_IMPORT_FAILED -> {
+        NoticeCode.BACKUP_IMPORT_FAILED,
+        NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED,
+        -> {
             NoticeCodePolicy(
                 NoticeTopic.BACKUP,
                 NoticeLevel.ERROR,

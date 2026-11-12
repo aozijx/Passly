@@ -1,16 +1,15 @@
 package com.aozijx.passly.feature.settings.backup
 
-import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.testing.RecordingTestLogger
 import java.io.IOException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -182,7 +181,13 @@ class BackupDirectorySettingsInteractorTest {
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.ResourceCleanupFailed, logger.events.single().event)
             assertEquals(Reasons.StorageFailure, logger.events.single().reason)
-            assertEquals(IllegalStateException::class.java, logger.events.single().throwable?.javaClass)
+            assertEquals(
+                IllegalStateException::class.java,
+                logger.events
+                    .single()
+                    .throwable
+                    ?.javaClass,
+            )
         }
 
     @Test
@@ -430,9 +435,7 @@ class BackupDirectorySettingsInteractorTest {
                             emit("content://tree/previous")
                         }
 
-                    override suspend fun setBackupDirectoryUri(uri: String) {
-                        throw IOException("settings write failed")
-                    }
+                    override suspend fun setBackupDirectoryUri(uri: String): Unit = throw IOException("settings write failed")
 
                     override suspend fun clearBackupDirectoryUri() = Unit
                 }

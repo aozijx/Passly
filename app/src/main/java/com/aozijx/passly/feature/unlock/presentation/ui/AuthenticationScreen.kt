@@ -35,17 +35,19 @@ import com.aozijx.passly.core.ui.components.common.ActionButtonPhase
 import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.unlock.presentation.UnlockFailureMessage
 import com.aozijx.passly.feature.unlock.presentation.KdfInitializationUiState
+import com.aozijx.passly.feature.unlock.presentation.PasswordSetupFeedback
+import com.aozijx.passly.feature.unlock.presentation.UnlockFailureMessage
 import com.aozijx.passly.feature.unlock.presentation.UnlockPasswordSetup
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import com.aozijx.passly.feature.unlock.presentation.UnlockVerificationPhase
-import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import com.aozijx.passly.presentation.mapping.toUiState
+import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
 fun AuthenticationScreen(
@@ -197,7 +199,7 @@ fun AuthenticationScreen(
             }
 
             if (state.shouldOfferPasswordSetup) {
-                val isSaving = state.passwordSetup is UnlockPasswordSetup.Saving
+                val isSaving = state.passwordSetup == UnlockPasswordSetup.Saving
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
@@ -262,9 +264,29 @@ fun AuthenticationScreen(
     val passwordDraft =
         when (passwordSetup) {
             UnlockPasswordSetup.Closed -> null
+            UnlockPasswordSetup.Saving -> PasswordSetupDraft()
             is UnlockPasswordSetup.Editing -> passwordSetup.draft
-            is UnlockPasswordSetup.Saving -> passwordSetup.draft
-            is UnlockPasswordSetup.Failed -> passwordSetup.draft
+        }
+    val passwordSetupCanSubmit =
+        when (passwordSetup) {
+            UnlockPasswordSetup.Closed,
+            UnlockPasswordSetup.Saving,
+            -> false
+
+            is UnlockPasswordSetup.Editing -> passwordSetup.canSubmit
+        }
+    val passwordSetupErrorMessage =
+        when (passwordSetup) {
+            UnlockPasswordSetup.Closed, UnlockPasswordSetup.Saving -> {
+                null
+            }
+
+            is UnlockPasswordSetup.Editing -> {
+                when (val feedback = passwordSetup.feedback) {
+                    PasswordSetupFeedback.None -> null
+                    is PasswordSetupFeedback.Failed -> feedback.message.localized()
+                }
+            }
         }
     if (passwordDraft != null) {
         AppPasswordSetDialog(
@@ -274,7 +296,7 @@ fun AuthenticationScreen(
                 passwordDraft.passwordStrength.toUiState(MaterialTheme.colorScheme),
             confirmationState = passwordDraft.confirmationState,
             confirmEnabled =
-                passwordDraft.canSubmit() &&
+                passwordSetupCanSubmit &&
                     state.kdfInitialization is KdfInitializationUiState.Ready,
             kdfHint =
                 when (val kdfInitialization = state.kdfInitialization) {
@@ -300,8 +322,8 @@ fun AuthenticationScreen(
             onConfirmPasswordChange = { onAction(UnlockUiAction.ConfirmAppPasswordChanged(it)) },
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },
             onDismiss = { onAction(UnlockUiAction.DismissSetPasswordDialog) },
-            isBusy = passwordSetup is UnlockPasswordSetup.Saving,
-            errorMessage = (passwordSetup as? UnlockPasswordSetup.Failed)?.message?.localized(),
+            isBusy = passwordSetup == UnlockPasswordSetup.Saving,
+            errorMessage = passwordSetupErrorMessage,
         )
     }
 }

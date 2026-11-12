@@ -65,6 +65,7 @@ private fun CredentialAutofillEntryApi34(
 
     DisposableEffect(activity, lifecycleOwner, resultClaim, interactionId) {
         var hostAbandoned = false
+
         fun abandonPendingResult() {
             if (hostAbandoned || resultClaim.isClaimed) return
             hostAbandoned = true

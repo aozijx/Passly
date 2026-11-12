@@ -1,11 +1,11 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
 import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.observability.Reasons
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
-import java.io.EOFException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 
@@ -61,11 +61,11 @@ internal object BackupContainerHeader {
 
     fun read(input: InputStream): Parsed {
         val fixed = ByteArray(BackupContainerV1Spec.FIXED_HEADER_LENGTH)
-        readFully(input, fixed, "header")
+        readFully(input, fixed)
         try {
             val data = DataInputStream(ByteArrayInputStream(fixed))
             val magic = ByteArray(BackupContainerV1Spec.MAGIC.length)
-            readFully(data, magic, "magic")
+            readFully(data, magic)
             require(magic.contentEquals(BackupContainerV1Spec.MAGIC.toByteArray(StandardCharsets.US_ASCII))) {
                 "不支持的备份文件格式"
             }
@@ -92,8 +92,8 @@ internal object BackupContainerHeader {
             val salt = ByteArray(BackupContainerV1Spec.SALT_LENGTH)
             val noncePrefix = ByteArray(BackupContainerV1Spec.NONCE_PREFIX_LENGTH)
             try {
-                readFully(input, salt, "salt")
-                readFully(input, noncePrefix, "nonce prefix")
+                readFully(input, salt)
+                readFully(input, noncePrefix)
                 return Parsed(version, parameters, salt, noncePrefix, fixed + salt + noncePrefix)
             } catch (error: Throwable) {
                 salt.fill(0)
@@ -120,12 +120,11 @@ internal object BackupContainerHeader {
     private fun readFully(
         input: InputStream,
         target: ByteArray,
-        field: String,
     ) {
         var offset = 0
         while (offset < target.size) {
             val count = input.read(target, offset, target.size - offset)
-            if (count < 0) throw EOFException("文件损坏: $field 不完整")
+            if (count < 0) throw BackupTruncatedException(Reasons.BackupContainerHeaderTruncated)
             if (count == 0) continue
             offset += count
         }

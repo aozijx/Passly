@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.LanguageOptionUiModel
 
@@ -52,7 +53,7 @@ fun LanguagePicker(
                 Text(
                     text = stringResource(R.string.settings_language_choose),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = passlySheetTitleStyle(),
                 )
             }
             items(options, key = { it.language.storageTag }) { language ->

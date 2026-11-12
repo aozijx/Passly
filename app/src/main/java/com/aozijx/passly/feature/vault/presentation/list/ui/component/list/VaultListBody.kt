@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.paging.PagingData
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
-import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
@@ -33,7 +32,6 @@ internal fun VaultListBody(
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
     otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
-    onAcquireOtp: (String) -> OtpLease,
     onAction: (VaultUiAction) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -70,7 +68,6 @@ internal fun VaultListBody(
             entries = entries,
             onItemAction = onItemAction,
             otpUiStateFlow = otpUiStateFlow,
-            onAcquireOtp = onAcquireOtp,
             gridState = gridState,
             modifier =
                 Modifier

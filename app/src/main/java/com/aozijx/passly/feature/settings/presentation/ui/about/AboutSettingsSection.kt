@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 
 @Composable
@@ -17,7 +18,7 @@ internal fun AboutSettingsSection(
     onPrivacyPolicyClick: () -> Unit,
     onOpenSourceLicensesClick: () -> Unit,
 ) {
-        SettingsSectionTitle(text = stringResource(R.string.settings_page_about))
+    SettingsSectionTitle(text = stringResource(R.string.settings_page_about))
     SegmentedSettingsGroup(
         items =
             listOf(
@@ -25,7 +26,7 @@ internal fun AboutSettingsSection(
                     key = "about.app",
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.settings_about_app, stringResource(R.string.app_name)),
-                    value = appVersion,
+                    value = SettingsItemValue.Text(appVersion),
                     onClick = onAppDetailsClick,
                 ),
                 navigationSettingsGroupItem(

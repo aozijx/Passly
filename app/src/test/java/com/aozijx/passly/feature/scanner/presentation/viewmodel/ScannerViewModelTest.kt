@@ -36,7 +36,11 @@ class ScannerViewModelTest {
             model.onAction(ScannerUiAction.BarcodeDetected("duplicate frame"))
             runCurrent()
 
-            assertEquals(ScannerFeedback.Kind.ScanSucceeded, model.uiState.value.feedback?.kind)
+            assertEquals(
+                ScannerFeedback.Kind.ScanSucceeded,
+                model.uiState.value.feedback
+                    ?.kind,
+            )
         }
 
     @Test
@@ -163,7 +167,11 @@ class ScannerViewModelTest {
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
             runCurrent()
             assertTrue(model.uiState.value is ScannerUiState.Scanning)
-            assertEquals(ScannerFeedback.Kind.ImageNoBarcode, model.uiState.value.feedback?.kind)
+            assertEquals(
+                ScannerFeedback.Kind.ImageNoBarcode,
+                model.uiState.value.feedback
+                    ?.kind,
+            )
         }
 
     @Test
@@ -179,7 +187,7 @@ class ScannerViewModelTest {
             clipboard.finishWrite.complete(Unit)
             runCurrent()
             assertNull(clipboard.lastValue)
-            assertEquals(ScannerFeedback.Kind.ScanSucceeded, model.uiState.value.feedback?.kind)
+            assertEquals(ScannerUiState.Scanning(), model.uiState.value)
         }
 
     @Test
@@ -190,7 +198,11 @@ class ScannerViewModelTest {
             runCurrent()
             model.onAction(ScannerUiAction.BarcodeDetected("current camera result"))
             runCurrent()
-            assertEquals(ScannerFeedback.Kind.ScanSucceeded, model.uiState.value.feedback?.kind)
+            assertEquals(
+                ScannerFeedback.Kind.ScanSucceeded,
+                model.uiState.value.feedback
+                    ?.kind,
+            )
         }
 
     @Test
@@ -254,8 +266,9 @@ class ScannerViewModelTest {
             runCurrent()
 
             assertNull(clipboard.lastValue)
-            assertEquals(ScannerFeedback.Kind.ScanSucceeded, model.uiState.value.feedback?.kind)
-            assertEquals(ScannerResult("sensitive text"), (model.uiState.value as ScannerUiState.ShowingResult).result)
+            val result = model.uiState.value as ScannerUiState.ShowingResult
+            assertEquals(ScannerResult("sensitive text"), result.result)
+            assertNull(result.feedback)
         }
 
     private fun model(

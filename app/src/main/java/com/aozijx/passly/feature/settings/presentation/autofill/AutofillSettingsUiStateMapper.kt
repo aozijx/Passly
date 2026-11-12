@@ -28,14 +28,17 @@ internal object AutofillSettingsUiStateMapper {
         observation: AutofillSystemServiceObservation,
     ): AutofillSystemServiceStatus =
         when (observation) {
-            AutofillSystemServiceObservation.Checking ->
+            AutofillSystemServiceObservation.Checking -> {
                 previous.lastKnownEnabled?.let { AutofillSystemServiceStatus.Refreshing(it) }
                     ?: AutofillSystemServiceStatus.Checking
+            }
 
-            is AutofillSystemServiceObservation.EnabledChanged ->
+            is AutofillSystemServiceObservation.EnabledChanged -> {
                 AutofillSystemServiceStatus.Available(observation.isEnabled)
+            }
 
-            AutofillSystemServiceObservation.Unavailable ->
+            AutofillSystemServiceObservation.Unavailable -> {
                 AutofillSystemServiceStatus.Unavailable(previous.lastKnownEnabled)
+            }
         }
 }

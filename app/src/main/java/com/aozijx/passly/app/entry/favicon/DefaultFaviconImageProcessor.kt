@@ -73,7 +73,7 @@ class DefaultFaviconImageProcessor
                 withContext(Dispatchers.IO) {
                     resultOfPreservingCancellation {
                         val input = imageStore.requireStaged(stagedInputPath)
-                        val output = imageStore.createTransformOutput()
+                        val output = imageStore.createTransformOutput(bitmapTransformer.outputExtension(input, crop))
                         withFaviconOutputCleanup(output) {
                             bitmapTransformer.transform(input, output, crop)
                             imageStore.finishTransform(input, output).also {

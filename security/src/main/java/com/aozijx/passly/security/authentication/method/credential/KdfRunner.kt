@@ -1,4 +1,5 @@
 package com.aozijx.passly.security.authentication.method.credential
+
 internal fun interface KdfOperation<T> {
     fun run(secret: CharArray): T
 }

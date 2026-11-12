@@ -1,19 +1,17 @@
 package com.aozijx.passly.feature.autofill.legacy.service.builder
 
 import android.service.autofill.SaveInfo
+import android.view.autofill.AutofillId
 import com.aozijx.passly.domain.autofill.model.FieldRole
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 
 internal object LegacySaveInfoFactory {
     fun create(
         roleMap: Map<String, FieldRole>,
-        parsed: ParsedStructure,
+        editableIds: List<AutofillId>,
     ): SaveInfo? {
         val plan = LegacySaveInfoPolicy.plan(roleMap) ?: return null
         val idByString =
-            parsed.editableFields.associate { field ->
-                field.autofillId.toString() to field.autofillId
-            }
+            editableIds.associateBy(AutofillId::toString)
         val requiredPasswordIds = plan.requiredPasswordFieldIds.mapNotNull(idByString::get)
         if (requiredPasswordIds.isEmpty()) return null
         val optionalUsernameIds = plan.optionalUsernameFieldIds.mapNotNull(idByString::get)

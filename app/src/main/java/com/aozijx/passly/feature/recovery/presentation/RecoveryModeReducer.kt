@@ -48,34 +48,44 @@ internal object RecoveryModeReducer {
                 RecoveryModeUiState.Editing(PasswordSetupDraft())
             }
 
-            is RecoveryModeMutation.NewPasswordChanged ->
-                state.updateEditableDraft(mutation.value) { copy(newPassword = mutation.value, passwordStrength = mutation.passwordStrength) }
+            is RecoveryModeMutation.NewPasswordChanged -> {
+                state.updateEditableDraft(
+                    mutation.value,
+                ) { copy(newPassword = mutation.value, passwordStrength = mutation.passwordStrength) }
+            }
 
-            is RecoveryModeMutation.ConfirmPasswordChanged ->
+            is RecoveryModeMutation.ConfirmPasswordChanged -> {
                 state.updateEditableDraft(mutation.value) { copy(confirmPassword = mutation.value) }
+            }
 
-            is RecoveryModeMutation.ValidationFailed ->
+            is RecoveryModeMutation.ValidationFailed -> {
                 state.updateEditableSetup { draft -> RecoveryModeUiState.Failed(draft, mutation.reason) }
+            }
 
-            RecoveryModeMutation.PasswordSetupStarted ->
+            RecoveryModeMutation.PasswordSetupStarted -> {
                 state.updateEditableSetup { RecoveryModeUiState.Saving(PasswordSetupDraft()) }
+            }
 
-            is RecoveryModeMutation.PasswordSetupFailed ->
+            is RecoveryModeMutation.PasswordSetupFailed -> {
                 when (state) {
                     is RecoveryModeUiState.Saving -> RecoveryModeUiState.Failed(state.draft, mutation.reason)
                     else -> state
                 }
+            }
 
-            RecoveryModeMutation.PasswordSetupStopped ->
+            RecoveryModeMutation.PasswordSetupStopped -> {
                 when (state) {
                     is RecoveryModeUiState.Saving -> RecoveryModeUiState.Editing(state.draft)
                     else -> state
                 }
+            }
 
             RecoveryModeMutation.PasswordSetupCompleted,
             RecoveryModeMutation.RecoveryModeRejected,
             RecoveryModeMutation.PasswordDialogDiscarded,
-            -> RecoveryModeUiState.Closed
+            -> {
+                RecoveryModeUiState.Closed
+            }
 
             RecoveryModeMutation.PasswordDialogDismissed -> {
                 if (state is RecoveryModeUiState.Saving) return state
@@ -93,21 +103,28 @@ private inline fun RecoveryModeUiState.updateEditableDraft(
             value.wipe()
             this
         }
+
         is RecoveryModeUiState.Saving -> {
             value.wipe()
             this
         }
-        is RecoveryModeUiState.Editing -> RecoveryModeUiState.Editing(draft.transform())
-        is RecoveryModeUiState.Failed -> RecoveryModeUiState.Editing(draft.transform())
+
+        is RecoveryModeUiState.Editing -> {
+            RecoveryModeUiState.Editing(draft.transform())
+        }
+
+        is RecoveryModeUiState.Failed -> {
+            RecoveryModeUiState.Editing(draft.transform())
+        }
     }
 
-private inline fun RecoveryModeUiState.updateEditableSetup(
-    transform: (PasswordSetupDraft) -> RecoveryModeUiState,
-): RecoveryModeUiState =
+private inline fun RecoveryModeUiState.updateEditableSetup(transform: (PasswordSetupDraft) -> RecoveryModeUiState): RecoveryModeUiState =
     when (this) {
         RecoveryModeUiState.Closed,
         is RecoveryModeUiState.Saving,
         -> this
+
         is RecoveryModeUiState.Editing -> transform(draft)
+
         is RecoveryModeUiState.Failed -> transform(draft)
     }

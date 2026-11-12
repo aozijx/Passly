@@ -8,7 +8,6 @@ import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
-import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -17,7 +16,6 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,7 +28,9 @@ internal class LegacyResponseFactory
         internal fun buildResult(
             context: Context,
             outcome: AutofillDiscoveryOutcome,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             inlineRequest: InlineSuggestionsRequest? = null,
         ): LegacyResponseBuildResult =
             when (outcome) {
@@ -55,7 +55,9 @@ internal class LegacyResponseFactory
                                 context,
                                 outcome.snapshot.id,
                                 outcome.context,
-                                parsed,
+                                packageName,
+                                webDomain,
+                                editableIds,
                                 inlineRequest,
                             ),
                     )
@@ -69,7 +71,9 @@ internal class LegacyResponseFactory
                                 context,
                                 outcome.snapshot.id,
                                 outcome.context,
-                                parsed,
+                                packageName,
+                                webDomain,
+                                editableIds,
                                 inlineRequest,
                                 promptTitle = R.string.autofill_review_web_request,
                             ),
@@ -84,7 +88,9 @@ internal class LegacyResponseFactory
                                 interactionId = outcome.snapshot.id,
                                 candidates = emptyList(),
                                 discoveryContext = outcome.context,
-                                parsed = parsed,
+                                packageName = packageName,
+                                webDomain = webDomain,
+                                editableIds = editableIds,
                                 inlineRequest = inlineRequest,
                             ),
                         observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
@@ -100,7 +106,9 @@ internal class LegacyResponseFactory
                                 interactionId = outcome.snapshot.id,
                                 candidates = outcome.candidates,
                                 discoveryContext = outcome.context,
-                                parsed = parsed,
+                                packageName = packageName,
+                                webDomain = webDomain,
+                                editableIds = editableIds,
                                 inlineRequest = inlineRequest,
                             ),
                     )
@@ -111,45 +119,27 @@ internal class LegacyResponseFactory
                 }
             }
 
-        fun buildAuthenticationResponse(
-            context: Context,
-            outcome: AutofillDiscoveryOutcome,
-            parsed: ParsedStructure,
-            inlineRequest: InlineSuggestionsRequest? = null,
-        ): FillResponse? = buildResult(context, outcome, parsed, inlineRequest).response
-
-        fun buildDataset(
-            payload: AutofillCredentialPayload,
-            usernameIds: List<AutofillId>,
-            passwordIds: List<AutofillId>,
-            otpIds: List<AutofillId>,
-        ): Dataset? =
-            LegacyDatasetFactory.createFillDatasetForRoles(
-                usernameIds = usernameIds,
-                passwordIds = passwordIds,
-                otpIds = otpIds,
-                username = payload.username,
-                password = payload.password,
-                totpCode = payload.otpCode,
-            )
-
         private fun buildAuthenticationPromptResponse(
             context: Context,
             interactionId: AutofillInteractionId,
             discoveryContext: AutofillDiscoveryContext,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             inlineRequest: InlineSuggestionsRequest?,
             promptTitle: Int = R.string.vault_locked_title,
         ): BuiltResponse {
-            if (parsed.allIds.isEmpty()) return BuiltResponse(response = null)
+            if (editableIds.isEmpty()) return BuiltResponse(response = null)
             val builder = FillResponse.Builder()
-            val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
+            val roleIds = resolveRoleIds(discoveryContext.roleMap, editableIds)
             val resultTarget = LegacyAutofillResultTarget.forLockedPresentation(discoveryContext.presentation)
             val intent =
                 pendingIntentFactory.createUnlockIntent(
                     context = context,
                     interactionId = interactionId,
-                    parsed = parsed,
+                    packageName = packageName,
+                    webDomain = webDomain,
+                    editableIds = editableIds,
                     uiMode = discoveryContext.presentation,
                     roleIds = roleIds,
                     resultTarget = resultTarget,
@@ -170,7 +160,7 @@ internal class LegacyResponseFactory
                 LegacyAutofillResultTarget.DATASET -> {
                     builder.addDataset(
                         LegacyDatasetFactory.createAuthenticatedPickerDataset(
-                            ids = parsed.allIds,
+                            ids = editableIds,
                             authentication = pendingIntent.intentSender,
                             presentation = lockedPresentation,
                         ),
@@ -180,7 +170,7 @@ internal class LegacyResponseFactory
                 LegacyAutofillResultTarget.RESPONSE -> {
                     LegacyDatasetFactory.setAuthenticationCompat(
                         builder,
-                        parsed.allIds.toTypedArray(),
+                        editableIds.toTypedArray(),
                         pendingIntent.intentSender,
                         lockedPresentation,
                         inlinePresentation =
@@ -198,7 +188,7 @@ internal class LegacyResponseFactory
                     )
                 }
             }
-            val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
+            val hasSaveInfo = addSaveInfo(builder, discoveryContext, editableIds)
             val datasetCount = if (resultTarget == LegacyAutofillResultTarget.DATASET) 1 else 0
             return BuiltResponse(
                 response = builder.build(),
@@ -212,13 +202,15 @@ internal class LegacyResponseFactory
             interactionId: AutofillInteractionId,
             candidates: List<AutofillCandidateSummary>,
             discoveryContext: AutofillDiscoveryContext,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             inlineRequest: InlineSuggestionsRequest?,
         ): BuiltResponse {
-            if (parsed.allIds.isEmpty()) return BuiltResponse(response = null)
+            if (editableIds.isEmpty()) return BuiltResponse(response = null)
 
             val builder = FillResponse.Builder()
-            val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
+            val roleIds = resolveRoleIds(discoveryContext.roleMap, editableIds)
             val pickerDataset =
                 candidates.isNotEmpty() &&
                     discoveryContext.presentation == AutofillPresentation.BOTTOM_SHEET
@@ -229,7 +221,9 @@ internal class LegacyResponseFactory
                     interactionId,
                     candidates.size,
                     discoveryContext,
-                    parsed,
+                    packageName,
+                    webDomain,
+                    editableIds,
                     roleIds,
                 )
             } else {
@@ -240,7 +234,9 @@ internal class LegacyResponseFactory
                         interactionId,
                         candidate,
                         discoveryContext,
-                        parsed,
+                        packageName,
+                        webDomain,
+                        editableIds,
                         roleIds,
                         inlineRequest =
                             if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
@@ -252,7 +248,7 @@ internal class LegacyResponseFactory
                     )
                 }
             }
-            val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
+            val hasSaveInfo = addSaveInfo(builder, discoveryContext, editableIds)
             if (candidates.isEmpty() && !hasSaveInfo) return BuiltResponse(response = null)
             val datasetCount = if (pickerDataset) 1 else candidates.size
             return BuiltResponse(
@@ -265,9 +261,9 @@ internal class LegacyResponseFactory
         private fun addSaveInfo(
             builder: FillResponse.Builder,
             discoveryContext: AutofillDiscoveryContext,
-            parsed: ParsedStructure,
+            editableIds: List<AutofillId>,
         ): Boolean {
-            val saveInfo = LegacySaveInfoFactory.create(discoveryContext.roleMap, parsed) ?: return false
+            val saveInfo = LegacySaveInfoFactory.create(discoveryContext.roleMap, editableIds) ?: return false
             builder.setSaveInfo(saveInfo)
             return true
         }
@@ -278,7 +274,9 @@ internal class LegacyResponseFactory
             interactionId: AutofillInteractionId,
             candidate: AutofillCandidateSummary,
             discoveryContext: AutofillDiscoveryContext,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             roleIds: Map<FieldRole, List<AutofillId>>,
             inlineRequest: InlineSuggestionsRequest?,
             suggestionIndex: Int,
@@ -296,7 +294,9 @@ internal class LegacyResponseFactory
                     context = context,
                     interactionId = interactionId,
                     entryId = candidate.entry.id,
-                    parsed = parsed,
+                    packageName = packageName,
+                    webDomain = webDomain,
+                    editableIds = editableIds,
                     uiMode = discoveryContext.presentation,
                     roleIds = roleIds,
                     inlineRequest = inlineRequest,
@@ -314,7 +314,7 @@ internal class LegacyResponseFactory
                 )
             LegacyDatasetFactory.setMenuPresentationCompat(
                 dataset,
-                parsed.allIds,
+                editableIds,
                 presentation,
                 inlinePresentation,
             )
@@ -327,14 +327,18 @@ internal class LegacyResponseFactory
             interactionId: AutofillInteractionId,
             candidateCount: Int,
             discoveryContext: AutofillDiscoveryContext,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             roleIds: Map<FieldRole, List<AutofillId>>,
         ) {
             val intent =
                 pendingIntentFactory.createPickerIntent(
                     context = context,
                     interactionId = interactionId,
-                    parsed = parsed,
+                    packageName = packageName,
+                    webDomain = webDomain,
+                    editableIds = editableIds,
                     uiMode = discoveryContext.presentation,
                     roleIds = roleIds,
                 )
@@ -346,7 +350,7 @@ internal class LegacyResponseFactory
                 )
             builder.addDataset(
                 LegacyDatasetFactory.createAuthenticatedPickerDataset(
-                    ids = parsed.allIds,
+                    ids = editableIds,
                     authentication = pendingIntent.intentSender,
                     presentation =
                         AutofillRemoteViewFactory.render(
@@ -371,9 +375,9 @@ internal class LegacyResponseFactory
 
         private fun resolveRoleIds(
             roleMap: Map<String, FieldRole>,
-            parsed: ParsedStructure,
+            editableIds: List<AutofillId>,
         ): Map<FieldRole, List<AutofillId>> {
-            val idByString = parsed.editableFields.associate { it.autofillId.toString() to it.autofillId }
+            val idByString = editableIds.associateBy(AutofillId::toString)
             return roleMap.entries
                 .groupBy(
                     keySelector = Map.Entry<String, FieldRole>::value,
@@ -390,15 +394,14 @@ internal class LegacyResponseFactory
         private fun completed(
             interactionId: AutofillInteractionId,
             built: BuiltResponse,
-        ) =
-            result(
-                built,
-                if (built.response == null) {
-                    LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields)
-                } else {
-                    LegacyDiscoveryObservation.Completed(interactionId)
-                },
-            )
+        ) = result(
+            built,
+            if (built.response == null) {
+                LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields)
+            } else {
+                LegacyDiscoveryObservation.Completed(interactionId)
+            },
+        )
 
         private fun result(
             built: BuiltResponse,

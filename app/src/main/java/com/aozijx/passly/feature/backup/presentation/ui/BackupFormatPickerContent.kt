@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 
 @Composable
@@ -29,8 +30,7 @@ internal fun BackupFormatPickerContent(onFormatSelected: (BackupExportFormat) ->
     BackupSheetColumn {
         Text(
             text = stringResource(R.string.settings_export_format_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = passlySheetTitleStyle(),
         )
         BackupFormatCard(
             icon = Icons.Default.Lock,

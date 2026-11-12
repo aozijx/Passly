@@ -66,7 +66,7 @@ class ScannerViewModel internal constructor(
             is Work.Active,
             Work.HostPaused,
             Work.Stopped,
-                -> Unit
+            -> Unit
         }
         when (action) {
             is ScannerUiAction.FeedbackConsumed -> {
@@ -80,7 +80,7 @@ class ScannerViewModel internal constructor(
                     ScannerUiState.ProcessingImage,
                     is ScannerUiState.ShowingResult,
                     ScannerUiState.Stopped,
-                        -> Unit
+                    -> Unit
                 }
             }
 
@@ -121,7 +121,7 @@ class ScannerViewModel internal constructor(
                     ScannerUiState.ProcessingImage,
                     is ScannerUiState.ShowingResult,
                     ScannerUiState.Stopped,
-                        -> {
+                    -> {
                     }
                 }
             }
@@ -144,7 +144,7 @@ class ScannerViewModel internal constructor(
             Work.HostPaused,
             Work.Stopped,
             Work.Destroyed,
-                -> Unit
+            -> Unit
         }
     }
 
@@ -163,7 +163,7 @@ class ScannerViewModel internal constructor(
                     is ScannerUiState.Scanning,
                     ScannerUiState.ProcessingImage,
                     ScannerUiState.Stopped,
-                        -> {
+                    -> {
                         replaceWork(Work.HostPaused)
                         mutate(ScannerMutation.Stopped)
                     }
@@ -184,7 +184,7 @@ class ScannerViewModel internal constructor(
                     is ScannerUiState.Scanning,
                     ScannerUiState.ProcessingImage,
                     is ScannerUiState.ShowingResult,
-                        -> Unit
+                    -> Unit
                 }
             }
 
@@ -217,11 +217,11 @@ class ScannerViewModel internal constructor(
         when (work) {
             Work.Stopped,
             Work.Destroyed,
-                -> return
+            -> return
 
             Work.HostPaused,
             is Work.Active,
-                -> Unit
+            -> Unit
         }
         val owner = newWork()
         replaceWork(owner)
@@ -231,7 +231,7 @@ class ScannerViewModel internal constructor(
             is ScannerUiState.Scanning,
             ScannerUiState.ProcessingImage,
             is ScannerUiState.ShowingResult,
-                -> Unit
+            -> Unit
         }
         mutate(ScannerMutation.ImageProcessingStarted)
         owner.scope.launch {

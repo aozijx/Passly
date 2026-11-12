@@ -79,12 +79,11 @@ class SensitiveRevisionSnapshotCodecTest {
     private fun field(
         cipher: ByteArray,
         keyVersion: Int = 1,
-    ) =
-        EntrySecretFieldEntity(
-            entryId = "entry",
-            fieldKey = "PASSWORD",
-            valueCipher = cipher,
-            keyVersion = keyVersion,
-            updatedAt = 1L,
-        )
+    ) = EntrySecretFieldEntity(
+        entryId = "entry",
+        fieldKey = "PASSWORD",
+        valueCipher = cipher,
+        keyVersion = keyVersion,
+        updatedAt = 1L,
+    )
 }

@@ -16,5 +16,4 @@ interface InteractionSettingsRepository : InteractionSettingsSource {
     suspend fun setSwipeLeftAction(action: SwipeActionType)
 
     suspend fun setSwipeRightAction(action: SwipeActionType)
-
 }

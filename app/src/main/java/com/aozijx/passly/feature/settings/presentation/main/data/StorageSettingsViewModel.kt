@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.feature.settings.data.AppCacheStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -98,7 +99,7 @@ class StorageSettingsViewModel
                     }
                     logRefreshJob?.cancel()
                     if (pageEffects.isActive(owner)) {
-                        _uiState.update { it.copy(logs = StorageSizeUiState.Loading) }
+                        _uiState.update { it.copy(logs = SettingsItemValue.Loading) }
                     }
                     val result = diagnosticsLogStore.clear()
                     if (result != LogClearResult.Cleared) {
@@ -122,7 +123,7 @@ class StorageSettingsViewModel
 
         private suspend fun reportLogClearFailed(owner: Any) {
             if (pageEffects.currentOwner != null) {
-                _uiState.update { it.copy(logs = StorageSizeUiState.Unavailable) }
+                _uiState.update { it.copy(logs = SettingsItemValue.Unavailable) }
             }
             emitEffect(owner, StorageSettingsEffect.LogClearFailed)
         }
@@ -153,8 +154,8 @@ class StorageSettingsViewModel
             if (pageEffects.isActive(owner)) {
                 _uiState.update {
                     it.copy(
-                        cache = StorageSizeUiState.Loading,
-                        logs = StorageSizeUiState.Loading,
+                        cache = SettingsItemValue.Loading,
+                        logs = SettingsItemValue.Loading,
                     )
                 }
             }
@@ -194,7 +195,7 @@ class StorageSettingsViewModel
             isCacheClearInProgress = true
             cacheRefreshJob?.cancel()
             if (pageEffects.isActive(owner)) {
-                _uiState.update { it.copy(cache = StorageSizeUiState.Loading) }
+                _uiState.update { it.copy(cache = SettingsItemValue.Loading) }
             }
             viewModelScope.launch {
                 try {
@@ -219,21 +220,21 @@ class StorageSettingsViewModel
             }
         }
 
-        private suspend fun readCacheSize(): StorageSizeUiState =
+        private suspend fun readCacheSize(): SettingsItemValue =
             try {
-                StorageSizeUiState.Available(ByteSizeFormatter.format(cacheStore.sizeBytes()))
+                SettingsItemValue.Text(ByteSizeFormatter.format(cacheStore.sizeBytes()))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                StorageSizeUiState.Unavailable
+                SettingsItemValue.Unavailable
             }
 
-        private suspend fun readLogSize(): StorageSizeUiState =
+        private suspend fun readLogSize(): SettingsItemValue =
             try {
-                StorageSizeUiState.Available(ByteSizeFormatter.format(diagnosticsLogStore.storageBytes()))
+                SettingsItemValue.Text(ByteSizeFormatter.format(diagnosticsLogStore.storageBytes()))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                StorageSizeUiState.Unavailable
+                SettingsItemValue.Unavailable
             }
     }

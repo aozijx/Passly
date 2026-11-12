@@ -9,6 +9,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 
@@ -40,7 +41,7 @@ internal fun QuickGestureSettingsSection(
                     visible = isSwipeEnabled,
                     reserveLeadingIconSpace = true,
                     title = stringResource(R.string.settings_swipe_gesture_left_action),
-                    value = swipeLeftAction.localizedLabel(),
+                    value = SettingsItemValue.Text(swipeLeftAction.localizedLabel()),
                     onClick = onLeftSwipeActionClick,
                 ),
                 navigationSettingsGroupItem(
@@ -48,7 +49,7 @@ internal fun QuickGestureSettingsSection(
                     visible = isSwipeEnabled,
                     reserveLeadingIconSpace = true,
                     title = stringResource(R.string.settings_swipe_gesture_right_action),
-                    value = swipeRightAction.localizedLabel(),
+                    value = SettingsItemValue.Text(swipeRightAction.localizedLabel()),
                     onClick = onRightSwipeActionClick,
                 ),
                 switchSettingsGroupItem(

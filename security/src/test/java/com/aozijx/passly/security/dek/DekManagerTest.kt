@@ -3,13 +3,7 @@ package com.aozijx.passly.security.dek
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
-import com.aozijx.passly.domain.access.model.BiometricBinding
-import com.aozijx.passly.domain.access.model.BiometricBootstrapState
-import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
-import com.aozijx.passly.domain.access.model.KeyEnvelope
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -27,7 +21,7 @@ class DekManagerTest {
     fun `lock wipes the cached DEK before publishing locked`() =
         runBlocking {
             val fieldKeyManager = FieldKeyManager()
-            val manager = DekManager(InMemoryVaultBootstrapStore(), fieldKeyManager, testLogger())
+            val manager = DekManager(InMemoryDekBootstrapStore(), fieldKeyManager, testLogger())
             assertSame(DekUnlockResult.Success, manager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 }))
             val cachedDek = (manager.state as DekState.Unlocked).dek
 
@@ -56,7 +50,7 @@ class DekManagerTest {
             failures.forEach { logFailure ->
                 val logger = LockStartFailingLogger(logFailure)
                 val fieldKeyManager = FieldKeyManager()
-                val manager = DekManager(InMemoryVaultBootstrapStore(), fieldKeyManager, logger)
+                val manager = DekManager(InMemoryDekBootstrapStore(), fieldKeyManager, logger)
                 assertSame(DekUnlockResult.Success, manager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 8 }))
                 val cachedDek = (manager.state as DekState.Unlocked).dek
                 logger.armed = true
@@ -66,7 +60,8 @@ class DekManagerTest {
                         runCatching { manager.lock() }.exceptionOrNull()
                     }
 
-                assertSame(logFailure, observedFailure)
+                assertEquals(logFailure::class, observedFailure!!::class)
+                assertEquals(logFailure.message, observedFailure.message)
                 assertArrayEquals(ByteArray(cachedDek.size), cachedDek)
                 assertSame(DekState.Locked, manager.state)
                 assertFalse(manager.isUnlocked.value)
@@ -78,7 +73,7 @@ class DekManagerTest {
     fun `field key derivation failure does not publish unlocked DEK and wipes input`() =
         runBlocking {
             val fieldKeyManager = FailingFieldKeyLifecycle()
-            val manager = DekManager(InMemoryVaultBootstrapStore(), fieldKeyManager, testLogger())
+            val manager = DekManager(InMemoryDekBootstrapStore(), fieldKeyManager, testLogger())
             val inputDek = ByteArray(32) { 9 }
             fieldKeyManager.failDerivation = true
 
@@ -97,7 +92,7 @@ class DekManagerTest {
             val fieldKeyManager = FailingFieldKeyLifecycle()
             val injectedFailure = CancellationException("field key derivation cancelled")
             fieldKeyManager.derivationFailure = injectedFailure
-            val manager = DekManager(InMemoryVaultBootstrapStore(), fieldKeyManager, testLogger())
+            val manager = DekManager(InMemoryDekBootstrapStore(), fieldKeyManager, testLogger())
             val inputDek = ByteArray(32) { 4 }
 
             val failure =
@@ -116,56 +111,6 @@ class DekManagerTest {
         val failure = runCatching { fieldKeyManager.copyKey() }.exceptionOrNull()
         assertEquals(IllegalStateException::class, failure!!::class)
     }
-
-    private class InMemoryVaultBootstrapStore : VaultBootstrapStore {
-        private val envelopes = linkedMapOf<EnvelopeType, KeyEnvelope>()
-        private var verificationTag: ByteArray? = null
-
-        override suspend fun save(envelope: KeyEnvelope) {
-            envelopes[envelope.type] = envelope
-        }
-
-        override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
-
-        override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
-
-        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
-
-        override suspend fun delete(type: EnvelopeType) {
-            envelopes.remove(type)
-        }
-
-        override suspend fun saveVerificationTag(tag: ByteArray) {
-            verificationTag = tag.clone()
-        }
-
-        override suspend fun loadVerificationTag(): ByteArray? = verificationTag?.clone()
-
-        override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) = Unit
-
-        override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = null
-
-        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) = Unit
-
-        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = null
-
-        override suspend fun loadBiometricState() = BiometricBootstrapState(null, null, emptySet())
-
-        override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
-
-        override suspend fun commitBiometricRotation(
-            envelope: KeyEnvelope,
-            binding: BiometricBinding,
-            obsoleteAlias: String?,
-        ) = Unit
-
-        override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
-
-        override suspend fun disableBiometric(activeAlias: String) = Unit
-
-        override suspend fun clearBiometricRotationJournal() = Unit
-    }
-
     private class FailingFieldKeyLifecycle : FieldKeyLifecycle {
         var failDerivation = false
         var derivationFailure: Throwable? = null

@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.codec.entry
 
+import com.aozijx.passly.core.crypto.SensitiveFieldCryptor
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.data.codec.toStorageKey
-import com.aozijx.passly.core.crypto.SensitiveFieldCryptor
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
 
@@ -27,4 +27,9 @@ class SecretFieldCodec
             cipher: ByteArray,
         ): String = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
 
+        suspend fun decryptBytes(
+            entryId: String,
+            key: SensitiveFieldKey,
+            cipher: ByteArray,
+        ): ByteArray = fieldEncryptor.decryptBytes(cipher, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
     }

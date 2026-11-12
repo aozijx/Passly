@@ -3,13 +3,13 @@ package com.aozijx.passly.security.authentication.method.credential
 import android.content.Context
 import android.os.SystemClock
 import android.provider.Settings
+import com.aozijx.passly.domain.access.model.AttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptState
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
-import com.aozijx.passly.domain.access.model.AttemptStatus
 import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
 import com.aozijx.passly.domain.access.port.AuthenticationAttemptStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -216,12 +216,11 @@ internal class CredentialAttemptLimiter internal constructor(
     private fun unavailableFailure(
         method: AuthenticationMethod,
         request: AuthenticationRequest,
-    ) =
-        AuthenticationFailure(
-            code = AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE,
-            requestId = request.id,
-            method = method,
-        )
+    ) = AuthenticationFailure(
+        code = AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE,
+        requestId = request.id,
+        method = method,
+    )
 }
 
 private fun Context.currentAttemptTime() =

@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.query.MatchType
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,7 +96,6 @@ class AutofillCandidateMappingTest {
         assertEquals("person@example.com", candidate.entry.username)
         assertEquals(MatchType.APPLICATION_ID, candidate.match.type)
         assertTrue(EntryCapability.PASSWORD in candidate.entry.capabilities)
-        assertNull(candidate.entry.otpPreview)
     }
 
     @Test

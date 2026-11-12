@@ -22,8 +22,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
-import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.backup.BackupDirectoryUiState
+import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.ui.data.BackupDirectoryClearDialog
@@ -134,16 +134,23 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
                 else -> {
                     val message =
                         when (effect) {
-                            DataManagementSettingsEffect.BackupDirectorySelectionCancelled ->
+                            DataManagementSettingsEffect.BackupDirectorySelectionCancelled -> {
                                 selectionCancelledMessage
+                            }
 
-                            DataManagementSettingsEffect.BackupDirectoryPermissionDenied ->
+                            DataManagementSettingsEffect.BackupDirectoryPermissionDenied -> {
                                 permissionDeniedMessage
+                            }
 
-                            DataManagementSettingsEffect.BackupDirectoryUnavailable -> unavailableMessage
+                            DataManagementSettingsEffect.BackupDirectoryUnavailable -> {
+                                unavailableMessage
+                            }
+
                             DataManagementSettingsEffect.BackupDirectoryCleared,
                             DataManagementSettingsEffect.BackupDirectoryOperationFailed,
-                            -> null
+                            -> {
+                                null
+                            }
                         }
                     message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                 }

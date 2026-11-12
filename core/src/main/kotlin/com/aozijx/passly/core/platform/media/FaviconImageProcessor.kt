@@ -31,9 +31,13 @@ class FaviconProcessingException(
 sealed interface FaviconEditorResource {
     val path: String
 
-    data class StagedImage(override val path: String) : FaviconEditorResource
+    data class StagedImage(
+        override val path: String,
+    ) : FaviconEditorResource
 
-    data class PromotedCandidate(override val path: String) : FaviconEditorResource
+    data class PromotedCandidate(
+        override val path: String,
+    ) : FaviconEditorResource
 }
 
 interface FaviconDraftFiles {

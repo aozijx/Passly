@@ -127,10 +127,11 @@ class RecoverySecurityLifecycleTest {
         runBlocking {
             var sealed = false
 
-            val pending = finishRecoveryPasswordProvisioning(
-                seal = { sealed = true },
-                refreshAvailability = { error("derived availability refresh failed") },
-            )
+            val pending =
+                finishRecoveryPasswordProvisioning(
+                    seal = { sealed = true },
+                    refreshAvailability = { error("derived availability refresh failed") },
+                )
 
             assertTrue(sealed)
             assertEquals(setOf(AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH), pending)

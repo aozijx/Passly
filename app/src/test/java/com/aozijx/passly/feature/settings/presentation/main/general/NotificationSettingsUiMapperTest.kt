@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.general
 
-import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.testing.sampleMessageSettings

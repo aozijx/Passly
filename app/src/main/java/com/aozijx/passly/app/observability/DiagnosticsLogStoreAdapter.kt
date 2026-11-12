@@ -28,8 +28,16 @@ internal class DiagnosticsLogStoreAdapter
                         traceId = record.trace.traceId.value,
                         event = record.event.value,
                         errorCode = record.error?.errorCode?.value,
-                        exceptionKind = record.error?.exception?.kind?.name,
-                        exceptionType = record.error?.exception?.type?.value,
+                        exceptionKind =
+                            record.error
+                                ?.exception
+                                ?.kind
+                                ?.name,
+                        exceptionType =
+                            record.error
+                                ?.exception
+                                ?.type
+                                ?.value,
                     )
                 }
             }
@@ -48,5 +56,4 @@ internal class DiagnosticsLogStoreAdapter
             } while (cursor != null && result.size < limit)
             return result
         }
-
     }

@@ -78,6 +78,22 @@ class VaultRestoreFileJournalTest {
     }
 
     @Test
+    fun rollback_missingPrevious_keepsCurrentTarget() {
+        val root = Files.createTempDirectory("passly-restore-journal").toFile()
+        try {
+            val target = root.resolve("attachment.enc").apply { writeBytes("old".toByteArray()) }
+            val journal = VaultRestoreFileJournal()
+            journal.replace(target, "new".toByteArray())
+            assertTrue(root.previousFor(target).delete())
+
+            assertThrows(IOException::class.java) { journal.rollback() }
+            assertArrayEquals("new".toByteArray(), target.readBytes())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun commitFailure_keepsPreviousForRetryWithoutChangingTarget() {
         val root = Files.createTempDirectory("passly-restore-journal").toFile()
         try {

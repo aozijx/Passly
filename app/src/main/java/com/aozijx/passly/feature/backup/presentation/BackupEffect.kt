@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.presentation
 
+import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
@@ -27,6 +28,7 @@ internal sealed interface BackupNoticeEffect : BackupEffect {
 
     data class Failed(
         val operation: BackupOperation,
+        val reasonCode: ReasonCode? = null,
     ) : BackupNoticeEffect
 
     data object ExportCleanupFailed : BackupNoticeEffect

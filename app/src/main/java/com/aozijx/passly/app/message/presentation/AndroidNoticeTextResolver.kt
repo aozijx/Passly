@@ -85,6 +85,10 @@ class AndroidNoticeTextResolver
                     R.string.backup_error_unknown
                 }
 
+                NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED -> {
+                    R.string.backup_import_authentication_failed
+                }
+
                 NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED -> {
                     R.string.backup_directory_permission_ok
                 }

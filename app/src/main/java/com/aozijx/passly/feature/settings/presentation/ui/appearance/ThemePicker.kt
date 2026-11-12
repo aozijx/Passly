@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.core.ui.theme.AppThemeSchemes
 import com.aozijx.passly.core.ui.theme.resolveSeedColors
 
@@ -56,8 +57,7 @@ fun ThemePicker(
             item {
                 Text(
                     text = stringResource(R.string.settings_theme_scheme),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = passlySheetTitleStyle(),
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
             }

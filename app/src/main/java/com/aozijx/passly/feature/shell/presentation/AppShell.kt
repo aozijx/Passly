@@ -74,6 +74,7 @@ internal fun AppShell(
         }
     }
 }
+
 /**
  * Switches authentication domains without retaining outgoing sensitive composition.
  *

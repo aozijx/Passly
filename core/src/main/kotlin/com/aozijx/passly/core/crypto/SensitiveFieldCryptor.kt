@@ -11,4 +11,10 @@ interface SensitiveFieldCryptor {
         encryptedData: ByteArray,
         aad: ByteArray,
     ): String
+
+    /** Returns caller-owned plaintext bytes. Implementations should avoid materializing a String. */
+    suspend fun decryptBytes(
+        encryptedData: ByteArray,
+        aad: ByteArray,
+    ): ByteArray = decrypt(encryptedData, aad).toByteArray(Charsets.UTF_8)
 }

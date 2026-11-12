@@ -6,7 +6,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigInput
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
-import com.aozijx.passly.feature.vault.otp.presentation.OtpEditorPolicy
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.feature.vault.otp.presentation.plugin
 
 /** OTP form values. Save progress and errors belong to the page ViewModel state. */
@@ -41,15 +42,9 @@ data class OtpFormState(
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
 
-    val usesCounterField: Boolean get() = type.plugin().editorPolicy is OtpEditorPolicy.Counter
+    val usesCounterField: Boolean get() = OtpTypeDefinitions[type].movingFactor == OtpMovingFactor.COUNTER
 
-    val allowsParameterEditing: Boolean
-        get() =
-            when (val policy = type.plugin().editorPolicy) {
-                is OtpEditorPolicy.FixedTimed -> false
-                is OtpEditorPolicy.Timed -> policy.parameterEditingAllowed
-                is OtpEditorPolicy.Counter -> true
-            }
+    val allowsParameterEditing: Boolean get() = type.plugin().parameterEditingAllowed
 
     val feedback: OtpFormFeedbackUiState
         get() = configInput.parse().toFeedbackUiState(secretHasInput = secret.isNotEmpty())

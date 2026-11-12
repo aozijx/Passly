@@ -16,54 +16,61 @@ import org.junit.Test
 
 class ProtoAuthenticationAttemptStoreTest {
     @Test
-    fun `persists attempts separately for each credential method`() = runTest {
-        val dataStore = InMemoryDataStore(SecurityPreferences.getDefaultInstance())
-        val store = ProtoAuthenticationAttemptStore(dataStore)
+    fun `persists attempts separately for each credential method`() =
+        runTest {
+            val dataStore = InMemoryDataStore(SecurityPreferences.getDefaultInstance())
+            val store = ProtoAuthenticationAttemptStore(dataStore)
 
-        (1..20).map {
-            async {
-                store.update(AuthenticationMethod.APP_PASSWORD) { state ->
-                    state.copy(failedAttempts = state.failedAttempts + 1)
-                }
+            (1..20)
+                .map {
+                    async {
+                        store.update(AuthenticationMethod.APP_PASSWORD) { state ->
+                            state.copy(failedAttempts = state.failedAttempts + 1)
+                        }
+                    }
+                }.awaitAll()
+
+            store.update(AuthenticationMethod.RECOVERY_CODE) {
+                AuthenticationAttemptState(failedAttempts = 2)
             }
-        }.awaitAll()
 
-        store.update(AuthenticationMethod.RECOVERY_CODE) {
-            AuthenticationAttemptState(failedAttempts = 2)
+            assertEquals(20, store.update(AuthenticationMethod.APP_PASSWORD) { it }.failedAttempts)
+            assertEquals(2, store.update(AuthenticationMethod.RECOVERY_CODE) { it }.failedAttempts)
+            assertEquals(
+                "app_password",
+                dataStore.value.credentialAttemptsList
+                    .first { it.failedAttempts == 20 }
+                    .methodKey,
+            )
         }
 
-        assertEquals(20, store.update(AuthenticationMethod.APP_PASSWORD) { it }.failedAttempts)
-        assertEquals(2, store.update(AuthenticationMethod.RECOVERY_CODE) { it }.failedAttempts)
-        assertEquals(
-            "app_password",
-            dataStore.value.credentialAttemptsList.first { it.failedAttempts == 20 }.methodKey,
-        )
-    }
-
     @Test
-    fun `round trips lockout clocks and boot identity`() = runTest {
-        val dataStore = InMemoryDataStore(SecurityPreferences.getDefaultInstance())
-        val store = ProtoAuthenticationAttemptStore(dataStore)
-        val locked =
-            AuthenticationAttemptState(
-                failedAttempts = 5,
-                lockedUntilEpochMs = 2_000_000L,
-                lockedUntilElapsedRealtimeMs = 1_500_000L,
-                bootCount = 73,
-            )
+    fun `round trips lockout clocks and boot identity`() =
+        runTest {
+            val dataStore = InMemoryDataStore(SecurityPreferences.getDefaultInstance())
+            val store = ProtoAuthenticationAttemptStore(dataStore)
+            val locked =
+                AuthenticationAttemptState(
+                    failedAttempts = 5,
+                    lockedUntilEpochMs = 2_000_000L,
+                    lockedUntilElapsedRealtimeMs = 1_500_000L,
+                    bootCount = 73,
+                )
 
-        store.update(AuthenticationMethod.APP_PASSWORD) { locked }
+            store.update(AuthenticationMethod.APP_PASSWORD) { locked }
 
-        assertEquals(locked, store.update(AuthenticationMethod.APP_PASSWORD) { it })
-        val serialized = dataStore.value.toByteArray()
-        val restored =
-            ProtoAuthenticationAttemptStore(
-                InMemoryDataStore(SecurityPreferences.parseFrom(serialized)),
-            )
-        assertEquals(locked, restored.update(AuthenticationMethod.APP_PASSWORD) { it })
-    }
+            assertEquals(locked, store.update(AuthenticationMethod.APP_PASSWORD) { it })
+            val serialized = dataStore.value.toByteArray()
+            val restored =
+                ProtoAuthenticationAttemptStore(
+                    InMemoryDataStore(SecurityPreferences.parseFrom(serialized)),
+                )
+            assertEquals(locked, restored.update(AuthenticationMethod.APP_PASSWORD) { it })
+        }
 
-    private class InMemoryDataStore<T>(initial: T) : DataStore<T> {
+    private class InMemoryDataStore<T>(
+        initial: T,
+    ) : DataStore<T> {
         private val mutex = Mutex()
         private val state = MutableStateFlow(initial)
         val value: T get() = state.value

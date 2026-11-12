@@ -47,12 +47,11 @@ internal fun sampleMessageSettings(
     optionalMessagesEnabled: Boolean = true,
     systemNotificationsEnabled: Boolean = true,
     topicSettings: Map<MessageTopic, TopicMessageSettings> = emptyMap(),
-) =
-    MessageSettings(
-        optionalMessagesEnabled = optionalMessagesEnabled,
-        systemNotificationsEnabled = systemNotificationsEnabled,
-        topicSettings = completeMessageTopicSettings() + topicSettings,
-    )
+) = MessageSettings(
+    optionalMessagesEnabled = optionalMessagesEnabled,
+    systemNotificationsEnabled = systemNotificationsEnabled,
+    topicSettings = completeMessageTopicSettings() + topicSettings,
+)
 
 internal fun completeMessageTopicSettings() =
     mapOf(
@@ -66,13 +65,12 @@ internal fun completeMessageTopicSettings() =
 internal fun sampleCardPresentation(
     entryTypeKey: String,
     variantKey: String,
-) =
-    EntryCardPresentation(
-        entryTypeKey = entryTypeKey,
-        variantKey = variantKey,
-        density = CardDensity.STANDARD,
-        showIcon = true,
-        showFavorite = true,
-        showSecondaryText = true,
-        showQuickAction = true,
-    )
+) = EntryCardPresentation(
+    entryTypeKey = entryTypeKey,
+    variantKey = variantKey,
+    density = CardDensity.STANDARD,
+    showIcon = true,
+    showFavorite = true,
+    showSecondaryText = true,
+    showQuickAction = true,
+)

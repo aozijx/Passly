@@ -3,16 +3,18 @@ package com.aozijx.passly.feature.autofill.presentation.legacy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
-import com.aozijx.passly.feature.autofill.presentation.rememberTargetAppIcon
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillWebConfirmationDialog
 
 @Composable
 internal fun AutofillFillRoute(
     request: AutofillFillRequest,
     viewModel: AutofillFillViewModel,
+    entryIcon: @Composable (EntryListItem, Modifier) -> Unit,
     onResult: (AutofillFillResult) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -23,7 +25,7 @@ internal fun AutofillFillRoute(
     AutofillCompletionEffect(state, onResult)
     AutofillFillContent(
         state = state,
-        targetAppPackageName = request.packageName,
+        entryIcon = entryIcon,
         onCandidateSelected = { entryId ->
             viewModel.onAction(AutofillFillUiAction.CandidateSelected(entryId))
         },
@@ -57,7 +59,7 @@ private fun AutofillCompletionEffect(
 @Composable
 private fun AutofillFillContent(
     state: AutofillFillUiState,
-    targetAppPackageName: String,
+    entryIcon: @Composable (EntryListItem, Modifier) -> Unit,
     onCandidateSelected: (EntryId) -> Unit,
     onConfirmWebRecipient: () -> Unit,
     onConfirmWebEntry: () -> Unit,
@@ -75,7 +77,7 @@ private fun AutofillFillContent(
         is AutofillFillUiState.ShowCandidates -> {
             AutofillCandidateBottomSheet(
                 candidates = state.candidates,
-                targetAppIcon = rememberTargetAppIcon(targetAppPackageName),
+                entryIcon = entryIcon,
                 onCandidateSelected = onCandidateSelected,
                 onCancel = onCancel,
             )

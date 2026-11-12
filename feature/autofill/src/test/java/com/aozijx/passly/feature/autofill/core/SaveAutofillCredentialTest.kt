@@ -5,16 +5,16 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
+import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlinx.coroutines.runBlocking
 
 class SaveAutofillCredentialTest {
     @Test
@@ -46,7 +46,9 @@ class SaveAutofillCredentialTest {
             assertEquals(EntryType.LOGIN, savedDraft.type)
             assertEquals(null, savedDraft[FieldKey.USERNAME])
             assertEquals(EntryDraftValue.Text("secret"), savedDraft[FieldKey.PASSWORD])
-            assertTrue(savedDraft.values.keys.all { it in setOf(FieldKey.TITLE, FieldKey.PASSWORD, FieldKey.PRIMARY_URL, FieldKey.DOMAINS) })
+            assertTrue(
+                savedDraft.values.keys.all { it in setOf(FieldKey.TITLE, FieldKey.PASSWORD, FieldKey.PRIMARY_URL, FieldKey.DOMAINS) },
+            )
         }
 
     @Test

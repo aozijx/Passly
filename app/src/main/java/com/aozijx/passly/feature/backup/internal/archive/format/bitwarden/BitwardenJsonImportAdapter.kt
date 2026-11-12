@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
@@ -10,8 +11,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
-import com.aozijx.passly.domain.entry.otp.OtpSecretCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
+import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
@@ -31,6 +32,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 /**
  * Imports Bitwarden plaintext JSON exports into Passly's canonical bundle.
@@ -53,35 +55,28 @@ internal class BitwardenJsonImportAdapter
             strategy: BackupImportStrategy,
         ): BackupBundle =
             try {
-                decodeParsed(parser.parse(input))
+                decodeParsed(parser.parse(input, ::validateImportSupport))
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: BackupFailed) {
                 throw error
             } catch (_: OtpGenerationError) {
-                throw BackupFailed()
+                throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
             } catch (error: Exception) {
-                throw BackupFailed()
+                throw BackupFailed(
+                    throwableType = error.javaClass.simpleName,
+                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                )
             }
 
         internal fun decodeParsed(export: BitwardenExport): BackupBundle {
             if (export.encrypted) {
-                throw BackupFailed()
+                throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
             }
             val folderNames = export.folders.associate { it.id to it.name }
             val now = System.currentTimeMillis()
             val importedRecords =
                 export.items.mapIndexed { index, item ->
-                    if (item.type !in 1..4) {
-                        throw BackupFailed()
-                    }
-                    if (!item.login?.fido2Credentials.isNullOrEmpty()) {
-                        throw BackupFailed()
-                    }
-                    if (item.attachments.isNotEmpty()) {
-                        throw BackupFailed()
-                    }
-                    if (item.passwordHistory.isNotEmpty()) {
-                        throw BackupFailed()
-                    }
                     item.toBackupRecords(index, folderNames, now)
                 }
             val bundle =
@@ -98,6 +93,13 @@ internal class BitwardenJsonImportAdapter
                 )
             BackupBundleValidator.validate(bundle, requireResourceData = false)
             return bundle
+        }
+
+        internal fun validateImportSupport(item: BitwardenItem) {
+            if (item.type !in 1..4) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+            if (!item.login?.fido2Credentials.isNullOrEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+            if (item.attachments.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+            if (item.passwordHistory.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
         }
 
         private fun BitwardenItem.toBackupRecords(
@@ -208,7 +210,7 @@ internal class BitwardenJsonImportAdapter
                     identity?.let { source ->
                         val idNumber =
                             source.ssn ?: source.passportNumber ?: source.licenseNumber
-                                ?: throw BackupFailed()
+                                ?: throw BackupFailed(reasonCode = Reasons.BackupDocumentMalformed.value)
                         fields += archiveField(FieldKey.ID_NUMBER, BackupFieldValue.text(idNumber))
                         listOf(
                             "称谓" to source.title,
@@ -311,7 +313,7 @@ internal class BitwardenJsonImportAdapter
                     }
 
                     OtpUriParseResult.Malformed, OtpUriParseResult.Unsupported -> {
-                        throw BackupFailed()
+                        throw BackupFailed(reasonCode = Reasons.BackupDocumentMalformed.value)
                     }
 
                     OtpUriParseResult.NotOtp -> {

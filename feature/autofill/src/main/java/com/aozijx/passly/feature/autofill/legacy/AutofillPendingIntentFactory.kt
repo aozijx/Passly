@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
@@ -26,7 +25,9 @@ internal class AutofillPendingIntentFactory
             context: Context,
             interactionId: AutofillInteractionId,
             entryId: EntryId,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             uiMode: AutofillPresentation,
             roleIds: Map<FieldRole, List<AutofillId>>,
             inlineRequest: InlineSuggestionsRequest? = null,
@@ -41,7 +42,9 @@ internal class AutofillPendingIntentFactory
                 putExtra(AutofillIntentExtras.ENTRY_ID, entryId.value)
                 putCommonExtras(
                     interactionId,
-                    parsed,
+                    packageName,
+                    webDomain,
+                    editableIds,
                     uiMode,
                     roleIds,
                     LegacyAutofillResultTarget.DATASET,
@@ -53,7 +56,9 @@ internal class AutofillPendingIntentFactory
         fun createPickerIntent(
             context: Context,
             interactionId: AutofillInteractionId,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             uiMode: AutofillPresentation,
             roleIds: Map<FieldRole, List<AutofillId>>,
             inlineRequest: InlineSuggestionsRequest? = null,
@@ -63,7 +68,9 @@ internal class AutofillPendingIntentFactory
                 setIdentifier(requestId)
                 putCommonExtras(
                     interactionId,
-                    parsed,
+                    packageName,
+                    webDomain,
+                    editableIds,
                     uiMode,
                     roleIds,
                     LegacyAutofillResultTarget.DATASET,
@@ -75,7 +82,9 @@ internal class AutofillPendingIntentFactory
         fun createUnlockIntent(
             context: Context,
             interactionId: AutofillInteractionId,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             uiMode: AutofillPresentation,
             roleIds: Map<FieldRole, List<AutofillId>>,
             resultTarget: LegacyAutofillResultTarget,
@@ -86,7 +95,9 @@ internal class AutofillPendingIntentFactory
                 setIdentifier(requestId)
                 putCommonExtras(
                     interactionId,
-                    parsed,
+                    packageName,
+                    webDomain,
+                    editableIds,
                     uiMode,
                     roleIds,
                     resultTarget,
@@ -97,7 +108,9 @@ internal class AutofillPendingIntentFactory
 
         private fun Intent.putCommonExtras(
             interactionId: AutofillInteractionId,
-            parsed: ParsedStructure,
+            packageName: String?,
+            webDomain: String?,
+            editableIds: List<AutofillId>,
             uiMode: AutofillPresentation,
             roleIds: Map<FieldRole, List<AutofillId>>,
             resultTarget: LegacyAutofillResultTarget,
@@ -107,9 +120,9 @@ internal class AutofillPendingIntentFactory
             putExtra(AutofillIntentExtras.UI_MODE, uiMode.wireKey)
             inlineRequest?.let { putExtra(AutofillIntentExtras.INLINE_REQUEST, it) }
             putExtra(AutofillIntentExtras.RESULT_TARGET, resultTarget.wireValue)
-            putExtra(AutofillIntentExtras.PACKAGE_NAME, parsed.packageName)
-            putExtra(AutofillIntentExtras.WEB_DOMAIN, parsed.webDomain)
-            putExtra(AutofillIntentExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
+            putExtra(AutofillIntentExtras.PACKAGE_NAME, packageName)
+            putExtra(AutofillIntentExtras.WEB_DOMAIN, webDomain)
+            putExtra(AutofillIntentExtras.EDITABLE_IDS, editableIds.toTypedArray())
             roleIds[FieldRole.USERNAME]
                 ?.takeIf(List<AutofillId>::isNotEmpty)
                 ?.let { putExtra(AutofillIntentExtras.USERNAME_IDS, ArrayList(it)) }

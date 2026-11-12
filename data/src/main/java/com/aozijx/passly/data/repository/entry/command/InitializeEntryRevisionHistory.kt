@@ -7,8 +7,6 @@ import com.aozijx.passly.data.local.datastore.RevisionHistoryMaintenanceStore
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /** Runs the destructive revision-format reset exactly once for this installation. */
 @Singleton
@@ -23,50 +21,30 @@ internal class InitializeEntryRevisionHistory
         private val entryResourceCleaner: EntryResourceCleaner,
         private val postCommitCleanup: PostCommitCleanup,
     ) {
-        private val mutex = Mutex()
-
-        suspend fun execute(): AppResult<Unit> =
-            mutex.withLock {
-                val completedGeneration =
-                    AppResult.runSuspendCatching {
-                        maintenanceStore.completedGeneration()
-                    }
-                if (completedGeneration is AppResult.Failure) return@withLock completedGeneration
-                if ((completedGeneration as AppResult.Success).data >= CURRENT_GENERATION) {
-                    return@withLock AppResult.success(Unit)
-                }
-                val rebuild =
+        private val initializationFlow =
+            EntryRevisionHistoryInitializationFlow(
+                currentGeneration = CURRENT_GENERATION,
+                completedGeneration = {
+                    AppResult.runSuspendCatching { maintenanceStore.completedGeneration() }
+                },
+                rebuild = {
                     databaseTransactions.write("entry_revision_history_initialize") {
                         val oldIcons = entryRevisionQueryDao().getAllIconReferences()
                         rebuilder.rebuildInTransaction(this, clock.now())
                         oldIcons.forEach(entryResourceCleaner::discardUnreferencedIcon)
                         attachmentGarbageCollector.scheduleInTransaction(this)
                     }
-                when (rebuild) {
-                    is AppResult.Failure -> {
-                        rebuild
-                    }
+                },
+                markCompleted = { generation ->
+                    AppResult.runSuspendCatching { maintenanceStore.markCompleted(generation) }
+                },
+                afterCommitCleanup = {
+                    postCommitCleanup.run { attachmentGarbageCollector.drain() }
+                    postCommitCleanup.run { entryResourceCleaner.drainPendingIcons() }
+                },
+            )
 
-                    is AppResult.Success -> {
-                        when (
-                            val marked =
-                                AppResult.runSuspendCatching {
-                                    maintenanceStore.markCompleted(CURRENT_GENERATION)
-                                }
-                        ) {
-                            is AppResult.Failure -> {
-                                marked
-                            }
-
-                            is AppResult.Success -> {
-                                postCommitCleanup.run { attachmentGarbageCollector.drain() }
-                                postCommitCleanup.run { entryResourceCleaner.drainPendingIcons() }
-                                AppResult.success(Unit)
-                            }
-                        }
-                    }
-                }
-            }
+        suspend fun execute(): AppResult<Unit> = initializationFlow.execute()
 
         private companion object {
             const val CURRENT_GENERATION = 1

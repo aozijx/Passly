@@ -8,7 +8,6 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
-import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Reasons
@@ -16,9 +15,10 @@ import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.feature.autofill.R
+import com.aozijx.passly.feature.autofill.core.interactionIdOrNull
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerUnlockResult
-import com.aozijx.passly.feature.autofill.core.interactionIdOrNull
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,13 +61,14 @@ internal class CredentialBeginGetHandler
             val interactionId = discovery.interactionIdOrNull()
             return try {
                 CredentialBeginGetResult(
-                    response = buildResponse(
-                        discovery = discovery,
-                        passwordOptions = passwordOptions,
-                        context = context,
-                        includeUnlockAction = true,
-                        discoveryStartedAt = discoveryStartedAt,
-                    ),
+                    response =
+                        buildResponse(
+                            discovery = discovery,
+                            passwordOptions = passwordOptions,
+                            context = context,
+                            includeUnlockAction = true,
+                            discoveryStartedAt = discoveryStartedAt,
+                        ),
                     interactionId = interactionId,
                 )
             } catch (cancelled: CancellationException) {

@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.core.error.model.BACKUP_FAILED
+import com.aozijx.passly.core.error.model.CatalogErrorCodes
 import com.aozijx.passly.core.error.model.CRYPTO_DATA_CORRUPTED
 import com.aozijx.passly.core.error.model.CRYPTO_ERROR
 import com.aozijx.passly.core.error.model.DATABASE_INIT_FAILED
@@ -30,7 +30,7 @@ fun AppError.toUiErrorMessage(
         when (code) {
             DATABASE_LOCKED -> R.string.ui_error_database_locked
             DATABASE_INIT_FAILED -> R.string.ui_error_database_init_failed
-            BACKUP_FAILED -> R.string.ui_error_backup_failed
+            CatalogErrorCodes.BACKUP_FAILED -> R.string.ui_error_backup_failed
             NETWORK_ERROR -> R.string.ui_error_network
             FILE_IO_ERROR -> R.string.ui_error_file_io
             CRYPTO_ERROR -> R.string.ui_error_crypto

@@ -41,7 +41,7 @@ Room 实例或越过锁定边界持有 DAO。
 `DatabaseCleaner` 使用此入口。附件 GC 仍在文件副作用前检查完整会话，并通过 Full Vault transaction/query API 访问数据库。
 Room 观察 Flow 由 `AppDatabaseSession.observeFullVaultWhenReadable()` 从 Security access-state provider 读取认证 Flow，
 再组合 Runtime lock/generation gate。Reset 与锁定、恢复模式、
-Autofill 释放之间尚未完成的跨层终态验收见[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
+Autofill 释放之间尚未完成的跨层终态验收见[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37)。
 
 备份协议与交互属于 `app/feature/backup`；Feature 只能通过明确的快照适配边界接触数据库数据，不能把
 Room Entity 当作可移植协议。
@@ -136,7 +136,7 @@ stateDiagram-v2
 
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定先把 session gate 转为 `SEALED`，拒绝新 lease，再等待 active lease 排空并关闭数据库，最后由 Security owner 擦除 DEK 与会话密钥。及时排空时，关闭发生在 active lease 归零之后。
-- `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 也会在发布 `SOFT_LOCKED` 后等待既有 lease，5 秒超时或调用方取消时请求 owner 取消并等待实际排空，不关闭 handle。Runtime 的 lease 与资源生命周期验收记录见[Session 关闭与 DEK 擦除审查](../../project/reviews/2026-11-07-session-close-and-dek-wipe.md)。真实 Security/Data 并发终态与 reset/lock 交错仍由[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)跟踪。
+- `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 也会在发布 `SOFT_LOCKED` 后等待既有 lease，5 秒超时或调用方取消时请求 owner 取消并等待实际排空，不关闭 handle。Runtime 的 lease 与资源生命周期验收记录见[Session 关闭与 DEK 擦除审查](../../project/reviews/2026-11-07-session-close-and-dek-wipe.md)。真实 Security/Data 并发终态与 reset/lock 交错仍由[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37)跟踪。
 - `SOFT_LOCKED` 拒绝新 lease。既有操作正常完成时 soft-lock 等待其结束；5 秒排空超时或调用方取消会请求取消 owner，Runtime 仍等到实际退出后才返回，数据库 handle 保持打开。`VaultSessionController` 等待 Runtime soft-lock 排空后再擦除敏感会话 key；Data 命令在 lease 内、DAO block 前再次检查授权。真实 Security/Data 并发终态仍由维护 TODO Task 37 追踪。
 - 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
 - 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；Room Schema 版本随结构迁移递增，Secret Payload、Revision 与备份协议各自遵守其格式合同。

@@ -14,10 +14,11 @@ internal object AutofillWebOriginResolver {
         claims: Iterable<String?>,
         structureTruncated: Boolean = false,
     ): AutofillWebOriginResolution {
-        val parsedClaims = claims.mapNotNull { claim ->
-            val raw = claim?.trim()?.takeIf(String::isNotEmpty) ?: return@mapNotNull null
-            raw to AutofillScope.normalizeDomain(raw)
-        }
+        val parsedClaims =
+            claims.mapNotNull { claim ->
+                val raw = claim?.trim()?.takeIf(String::isNotEmpty) ?: return@mapNotNull null
+                raw to AutofillScope.normalizeDomain(raw)
+            }
         if (parsedClaims.isEmpty()) return AutofillWebOriginResolution(domain = null, ambiguous = false)
 
         val identities =

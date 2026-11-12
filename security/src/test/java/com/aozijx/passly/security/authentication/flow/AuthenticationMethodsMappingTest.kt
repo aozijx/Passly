@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class AuthenticationAvailabilityResolverTest {
+class AuthenticationMethodsMappingTest {
     @Test
     fun `hardware availability only gates biometric configuration`() {
         val credentials =

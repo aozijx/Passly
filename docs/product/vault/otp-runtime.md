@@ -30,7 +30,7 @@ DetailViewModel.copyOtpCode()
   -> HOTP: generateHotpCode(entryId) -> consumeHotpCode(entryId)
   -> CopyOtpCodeUseCase 检查 coroutine Job 与 canDeliver，再调用
      SensitiveClipboardWriter.writeSensitiveIf(code, canWrite)
-  -> 仅 Copied 且 owner 仍有效时记录 ActivityType.COPY_PASSWORD
+  -> 仅 Copied 且 owner 仍有效时记录 ActivityType.COPY_OTP_CODE
 ```
 
 HOTP 的 `consumeHotpCode(entryId, expectedCounter)` 在一个数据库事务内确认预览计数器仍有效、生成验证码并写入下一计数器；计数器已变化时返回 `CounterChanged` 并刷新预览，不消费错误的码。事务成功后验证码才返回给复制用例。普通异常会映射为本次复制不可用，不自动重试消费；用户再次主动复制时才会重新尝试。取消和 fatal `Error` 继续传播。该更新不生成条目修订或内容编辑记录。认证拒绝、复制未完成或详情 owner 失效时不允许将验证码写入剪贴板。页面关闭或会话锁定若发生在事务挂起期间，事务可能已经推进计数器；此时旧运行时令牌会丢弃返回码，用户重新授权后会生成下一码。

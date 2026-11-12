@@ -7,8 +7,8 @@ import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
-import com.aozijx.passly.domain.autofill.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
+import com.aozijx.passly.domain.autofill.port.AutofillInboxRecordStore
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException

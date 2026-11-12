@@ -49,5 +49,4 @@ interface EntryRevisionCommandDao {
         """,
     )
     suspend fun deleteForDeletedEntries(): Int
-
 }

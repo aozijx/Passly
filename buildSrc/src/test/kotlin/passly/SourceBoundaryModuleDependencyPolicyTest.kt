@@ -368,7 +368,9 @@ class SourceBoundaryModuleDependencyPolicyTest {
     fun autofillFeatureUiCannotDependOnAppVaultIcons() {
         val appOwnedIconImport =
             EditorSource(
-                path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/ui/AutofillCandidateBottomSheet.kt",
+                path =
+                    "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/" +
+                        "presentation/legacy/ui/AutofillCandidateBottomSheet.kt",
                 content = "import com.aozijx.passly.presentation.shared.components.VaultItemIcon",
             )
 
@@ -401,11 +403,15 @@ class SourceBoundaryModuleDependencyPolicyTest {
         val sources =
             listOf(
                 EditorSource(
-                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPlatformAdapter.kt",
+                    path =
+                        "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/" +
+                            "credential/service/CredentialPlatformAdapter.kt",
                     content = "import com.aozijx.passly.domain.entry.port.EntryQueryRepository",
                 ),
                 EditorSource(
-                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/adapter/LegacyPlatformAdapter.kt",
+                    path =
+                        "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/" +
+                            "legacy/service/adapter/LegacyPlatformAdapter.kt",
                     content = "import com.aozijx.passly.domain.access.port.AuthenticationRequester",
                 ),
             )

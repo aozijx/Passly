@@ -163,7 +163,6 @@ internal fun VaultRoute(
         entries = vaultViewModel.entries,
         onItemAction = onItemAction,
         otpUiStateFlow = remember(vaultViewModel) { vaultViewModel::otpUiStateFlow },
-        onAcquireOtp = remember(vaultViewModel) { vaultViewModel::acquireOtp },
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         onAction = vaultViewModel::onAction,

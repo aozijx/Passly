@@ -62,7 +62,10 @@ internal class StartAutofillInteraction
                         unlockLease.borrowIfOwned(snapshot.id)
                     ) {
                         when (val update = store.authorizeFromExistingSession(snapshot.id)) {
-                            is AutofillInteractionUpdate.Updated -> update.snapshot
+                            is AutofillInteractionUpdate.Updated -> {
+                                update.snapshot
+                            }
+
                             is AutofillInteractionUpdate.Rejected -> {
                                 unlockLease.release(snapshot.id)
                                 snapshot

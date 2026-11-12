@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.activity.toEntity
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
@@ -26,10 +27,17 @@ internal class EntryActivityWriter
             activityType: ActivityType,
             now: Long,
             context: EntryActivityContext = EntryActivityContext.Lifecycle,
+            affectedFields: Set<FieldKey> = emptySet(),
         ) {
             with(db) {
                 entryActivityCommandDao().insertIdempotent(
-                    EntryActivity(entryId = entryId, activityType = activityType, context = context, createdAt = now).toEntity(),
+                    EntryActivity(
+                        entryId = entryId,
+                        activityType = activityType,
+                        context = context,
+                        affectedFields = affectedFields,
+                        createdAt = now,
+                    ).toEntity(),
                 )
             }
         }

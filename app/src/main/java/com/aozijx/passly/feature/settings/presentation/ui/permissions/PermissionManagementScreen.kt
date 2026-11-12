@@ -19,6 +19,7 @@ import com.aozijx.passly.feature.settings.presentation.permissions.PermissionMan
 import com.aozijx.passly.feature.settings.presentation.permissions.PermissionManagementUiState
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.model.SettingsItemValue
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
 
@@ -43,7 +44,7 @@ internal fun PermissionManagementScreen(
                             key = "permissions.runtime.${item.permission.name}",
                             title = stringResource(item.permission.titleRes),
                             subtitle = stringResource(item.access.summaryRes),
-                            value = stringResource(item.access.actionLabelRes),
+                            value = SettingsItemValue.Text(stringResource(item.access.actionLabelRes)),
                             onClick = {
                                 onAction(PermissionManagementScreenAction.RuntimePermissionSelected(item.permission))
                             },
@@ -78,7 +79,7 @@ internal fun PermissionManagementScreen(
                                     key = "permissions.backup.directory",
                                     title = stringResource(R.string.settings_permissions_backup_directory),
                                     subtitle = directoryStatus,
-                                    value = stringResource(R.string.settings_permissions_backup_manage),
+                                    value = SettingsItemValue.Text(stringResource(R.string.settings_permissions_backup_manage)),
                                     onClick = {
                                         onAction(PermissionManagementScreenAction.OpenBackupSettings)
                                     },

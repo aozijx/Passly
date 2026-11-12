@@ -52,11 +52,20 @@ fun RecoveryPasswordDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
-            PasswordField(newPassword, onNewPasswordChange, !state.isSaving, stringResource(R.string.recovery_mode_new_password), newPasswordVisible) {
+            PasswordField(
+                newPassword,
+                onNewPasswordChange,
+                !state.isSaving,
+                stringResource(R.string.recovery_mode_new_password),
+                newPasswordVisible,
+            ) {
                 onToggleNewPasswordVisibility()
             }
             when (val strengthState = strength) {
-                PasswordStrengthUiState.Hidden -> Unit
+                PasswordStrengthUiState.Hidden -> {
+                    Unit
+                }
+
                 is PasswordStrengthUiState.Visible -> {
                     Spacer(Modifier.height(8.dp))
                     PasswordStrengthIndicator(
@@ -91,6 +100,7 @@ private fun com.aozijx.passly.domain.sensitive.SensitiveValue.toUiString(): Stri
         chars.fill('\u0000')
     }
 }
+
 @Composable
 private fun PasswordField(
     value: String,
@@ -128,10 +138,14 @@ private fun PasswordField(
                 error is RecoveryPasswordDialogError.Message -> {
                     { Text(stringResource(error.messageRes)) }
                 }
+
                 confirmationState == PasswordConfirmationUiState.Mismatch -> {
                     { Text(stringResource(R.string.recovery_mode_password_mismatch_or_empty)) }
                 }
-                else -> null
+
+                else -> {
+                    null
+                }
             },
     )
 }

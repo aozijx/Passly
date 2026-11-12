@@ -115,7 +115,9 @@ class SourceBoundaryModuleOwnershipPolicyTest {
                     content = "import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity",
                 ),
                 EditorSource(
-                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPendingIntentFactory.kt",
+                    path =
+                        "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/" +
+                            "credential/service/CredentialPendingIntentFactory.kt",
                     content = "import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity",
                 ),
             )
@@ -243,5 +245,4 @@ class SourceBoundaryModuleOwnershipPolicyTest {
                 .ruleId,
         )
     }
-
 }

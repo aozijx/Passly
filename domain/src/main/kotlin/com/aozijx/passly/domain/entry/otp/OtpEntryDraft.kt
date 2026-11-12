@@ -5,7 +5,8 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
 /** A creation draft from an existing configuration; identity metadata is not form-normalized. */
@@ -19,13 +20,13 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
                 definition,
                 FieldKey.OTP_SECRET,
                 EntryDraftValue.Text(requireNotNull(secret) { "OTP secret is unavailable" }),
-            ).withValue(definition, FieldKey.OTP_TYPE, EntryDraftValue.Text(type.name))
+            ).withValue(definition, FieldKey.OTP_TYPE, EntryDraftValue.Text(OtpTypeDefinitions[type].key))
             .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
             .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithm.name))
             .withValue(definition, FieldKey.OTP_ENCODING, EntryDraftValue.Text(encoding.name))
 
     draft =
-        if (type == OtpType.HOTP) {
+        if (OtpTypeDefinitions[type].movingFactor == OtpMovingFactor.COUNTER) {
             draft.withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
         } else {
             draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
@@ -41,12 +42,7 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
 
 /** Display-only trimming must not change the stored issuer or account. */
 fun OtpConfig.suggestedEntryTitle(
-    fallback: String =
-        when (type) {
-            OtpType.TOTP -> "TOTP"
-            OtpType.HOTP -> "HOTP"
-            OtpType.STEAM -> "Steam"
-        },
+    fallback: String = OtpTypeDefinitions[type].defaultEntryTitle,
 ): String =
     listOfNotNull(
         issuer?.trim()?.takeIf(String::isNotEmpty),

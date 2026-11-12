@@ -10,7 +10,7 @@ class SourceBoundaryPresentationPolicyTest {
             EditorSource(
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/VaultScreen.kt",
                 content =
-                    "entryPages: Map<VaultAddTypeUiModel, Flow<PagingData<VaultListItemUiModel>>>",
+                    "entryPages: Map<AddType, Flow<PagingData<VaultListItemUiModel>>>",
             )
 
         assertEquals(
@@ -180,7 +180,9 @@ class SourceBoundaryPresentationPolicyTest {
                     "appearance settings",
                     listOf(
                         EditorSource(
-                            path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/appearance/AppearanceSettingsViewModel.kt",
+                            path =
+                                "app/src/main/java/com/aozijx/passly/feature/settings/presentation/" +
+                                    "appearance/AppearanceSettingsViewModel.kt",
                             content =
                                 """
                                 import com.aozijx.passly.domain.settings.model.SettingsCommand
@@ -235,7 +237,9 @@ class SourceBoundaryPresentationPolicyTest {
                     "backup settings",
                     listOf(
                         EditorSource(
-                            path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/backup/DataManagementSettingsViewModel.kt",
+                            path =
+                                "app/src/main/java/com/aozijx/passly/feature/settings/presentation/" +
+                                    "backup/DataManagementSettingsViewModel.kt",
                             content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
                         ),
                         EditorSource(
@@ -263,7 +267,9 @@ class SourceBoundaryPresentationPolicyTest {
                     "interaction consumers",
                     listOf(
                         EditorSource(
-                            path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt",
+                            path =
+                                "app/src/main/java/com/aozijx/passly/feature/settings/presentation/" +
+                                    "autofill/AutofillSettingsViewModel.kt",
                             content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
                         ),
                         EditorSource(

@@ -71,6 +71,13 @@ class NotificationSettingsViewModel
                     if (pending.enableWhenGranted) emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
                 }
 
+                is NotificationSettingsAction.RuntimePermissionRequestNotStarted -> {
+                    val pending = pendingPermissionRequest ?: return
+                    if (pending.request !== action.request) return
+                    if (pending.owner?.let(pageEffects::isActive) != true) return
+                    pendingPermissionRequest = null
+                }
+
                 NotificationSettingsAction.OpenSystemNotificationSettings -> {
                     emitEffect(NotificationSettingsEffect.OpenSystemNotificationSettings)
                 }
@@ -117,13 +124,12 @@ class NotificationSettingsViewModel
             }
         }
 
-        internal fun canLaunchRuntimePermissionRequest(request: NotificationPermissionRequest): Boolean {
-            return pendingPermissionRequest?.let { pending ->
+        internal fun canLaunchRuntimePermissionRequest(request: NotificationPermissionRequest): Boolean =
+            pendingPermissionRequest?.let { pending ->
                 pending.request === request &&
                     pending.enableWhenGranted &&
                     pending.owner?.let(pageEffects::isActive) == true
             } == true
-        }
 
         private fun completeRuntimePermissionRequest(request: NotificationPermissionRequest) {
             val pending = pendingPermissionRequest ?: return
@@ -206,7 +212,6 @@ class NotificationSettingsViewModel
                 ?.takeIf { it.owner === owner }
                 ?.let { pendingPermissionRequest = null }
         }
-
     }
 
 private val SystemNotificationState.isPlatformAvailable: Boolean

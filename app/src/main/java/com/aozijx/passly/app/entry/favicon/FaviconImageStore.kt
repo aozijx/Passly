@@ -38,7 +38,7 @@ class FaviconImageStore
                 .orEmpty()
                 .filter {
                     it.isFile &&
-                        it.extension.equals(WEBP_EXTENSION.removePrefix("."), ignoreCase = true) &&
+                        it.extension.lowercase() in setOf(WEBP_EXTENSION.removePrefix("."), GIF_EXTENSION.removePrefix(".")) &&
                         PROMOTED_FILE_PREFIXES.any(it.name::startsWith)
                 }.map(File::getAbsolutePath)
 
@@ -63,14 +63,27 @@ class FaviconImageStore
                     }
                     if (total == 0) throw FaviconImageException(FaviconImageFailure.EMPTY_INPUT)
                 }
-                return target.absolutePath
+                return if (target.hasGifSignature()) {
+                    target.withExtension(GIF_EXTENSION).also { gifTarget ->
+                        if (!target.renameTo(gifTarget)) {
+                            throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
+                        }
+                    }.absolutePath
+                } else {
+                    target.absolutePath
+                }
             } catch (error: Throwable) {
                 cleanupFaviconFileAfterFailure(target, error)
                 throw error
             }
         }
 
-        fun createTransformOutput(): File = createStagingFile(WEBP_EXTENSION)
+        fun createTransformOutput(extension: String): File {
+            if (extension != WEBP_EXTENSION && extension != GIF_EXTENSION) {
+                throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
+            }
+            return createStagingFile(extension)
+        }
 
         fun requireStaged(path: String): File {
             val root = stagingRoot().apply(File::mkdirs).canonicalFile
@@ -97,7 +110,11 @@ class FaviconImageStore
         fun promote(stagedPath: String): String {
             val source = requireStaged(stagedPath)
             val root = VaultResourcePaths.vaultImagesDir(context).apply(File::mkdirs).canonicalFile
-            val target = File(root, "favicon_${UuidCreator.getTimeOrderedEpoch()}$WEBP_EXTENSION").canonicalFile
+            val extension = source.extension.let { ".$it" }
+            if (extension != WEBP_EXTENSION && extension != GIF_EXTENSION) {
+                throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
+            }
+            val target = File(root, "favicon_${UuidCreator.getTimeOrderedEpoch()}$extension").canonicalFile
             if (target.parentFile != root || !source.renameTo(target)) {
                 throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
             }
@@ -123,11 +140,38 @@ class FaviconImageStore
             }
         }
 
+        private fun File.withExtension(extension: String): File =
+            File(parentFile, "$nameWithoutExtension$extension").canonicalFile.also { target ->
+                if (target.parentFile != parentFile.canonicalFile) {
+                    throw FaviconImageException(FaviconImageFailure.INVALID_STAGING_PATH)
+                }
+            }
+
+        private fun File.hasGifSignature(): Boolean {
+            val signature = ByteArray(GIF_SIGNATURE_SIZE)
+            val bytesRead =
+                inputStream().use { input ->
+                    var offset = 0
+                    while (offset < signature.size) {
+                        val count = input.read(signature, offset, signature.size - offset)
+                        if (count < 0) break
+                        offset += count
+                    }
+                    offset
+                }
+            return bytesRead == signature.size &&
+                (signature.contentEquals(GIF87A) || signature.contentEquals(GIF89A))
+        }
+
         private fun stagingRoot(): File = VaultResourcePaths.vaultImagesStagingDir(context)
 
         companion object {
             private const val INPUT_EXTENSION = ".input"
             private const val WEBP_EXTENSION = ".webp"
+            private const val GIF_EXTENSION = ".gif"
+            private const val GIF_SIGNATURE_SIZE = 6
+            private val GIF87A = "GIF87a".toByteArray(Charsets.US_ASCII)
+            private val GIF89A = "GIF89a".toByteArray(Charsets.US_ASCII)
             private val PROMOTED_FILE_PREFIXES = listOf("favicon_", "restored_")
         }
     }

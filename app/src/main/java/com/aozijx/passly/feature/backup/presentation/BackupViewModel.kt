@@ -7,6 +7,7 @@ import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -25,9 +26,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -134,7 +135,6 @@ internal class BackupViewModel
         }
 
         private fun checkDirectoryPermission(uri: String?) {
-            if (_uiState.value.workflow is BackupWorkflow.Executing) return
             execute(
                 operation = BackupOperation.DIRECTORY_CHECK,
                 password = EmptySensitiveValue,
@@ -179,7 +179,7 @@ internal class BackupViewModel
             val workflow = _uiState.value.workflow as? BackupWorkflow.ConfigureExport ?: return
             val options = workflow.options
             if (!options.canSubmit) return
-            if (!canExecutePending(BackupOperation.EXPORT)) return
+            if (!requireSession(BackupOperation.EXPORT)) return
             if (useConfiguredDirectory) {
                 execute(
                     operation = BackupOperation.EXPORT,
@@ -225,7 +225,7 @@ internal class BackupViewModel
         ) {
             val workflow = _uiState.value.workflow as? BackupWorkflow.AwaitingExportTarget ?: return
             val options = workflow.options
-            if (!options.canSubmit || !canExecutePending(BackupOperation.EXPORT)) return
+            if (!options.canSubmit || !requireSession(BackupOperation.EXPORT)) return
             execute(
                 operation = BackupOperation.EXPORT,
                 password = options.password,
@@ -241,7 +241,7 @@ internal class BackupViewModel
 
         private fun submitImport() {
             val workflow = _uiState.value.workflow as? BackupWorkflow.ConfigureImport ?: return
-            if (!canExecutePending(BackupOperation.IMPORT)) return
+            if (!requireSession(BackupOperation.IMPORT)) return
             val options = workflow.options
             execute(
                 operation = BackupOperation.IMPORT,
@@ -315,7 +315,8 @@ internal class BackupViewModel
                 }
 
                 is BackupExecutionResult.Failure -> {
-                    emitEffect(owner, BackupNoticeEffect.Failed(operation))
+                    val reasonCode = (result.error as? BackupFailed)?.reasonCode?.let(::ReasonCode)
+                    emitEffect(owner, BackupNoticeEffect.Failed(operation, reasonCode))
                     mutateIfExecuting(operation, BackupMutation.OperationFailed(operation, result.error))
                 }
 
@@ -324,11 +325,6 @@ internal class BackupViewModel
                     mutateIfExecuting(operation, BackupMutation.OperationFailed(operation, result.error))
                 }
             }
-        }
-
-        private fun canExecutePending(operation: BackupOperation): Boolean {
-            if (requireSession(operation)) return true
-            return false
         }
 
         private fun requireSession(operation: BackupOperation): Boolean {

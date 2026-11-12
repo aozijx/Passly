@@ -213,7 +213,9 @@ class AttachmentGarbageCollectionWorkerTest {
             enqueuedAt = 10L,
         )
 
-    private class MutableAccess(initiallyAuthorized: Boolean) : SecureSessionAccessState {
+    private class MutableAccess(
+        initiallyAuthorized: Boolean,
+    ) : SecureSessionAccessState {
         private val state =
             MutableStateFlow<AuthenticationState>(
                 if (initiallyAuthorized) AuthenticationState.Authenticated(1L) else AuthenticationState.Locked,

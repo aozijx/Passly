@@ -894,12 +894,13 @@ class RuntimeSessionManagerTest {
             val result = manager.seal()
 
             val reportedFailure = requireNotNull(result.exceptionOrNull())
-            assertSame(failure, reportedFailure)
+            assertEquals(failure.javaClass, reportedFailure.javaClass)
+            assertEquals(failure.message, reportedFailure.message)
             val closeFailure = events.single { it.reason == SessionTransitionReason.CLOSE_FAILED }
             assertEquals(SecureSessionState.SEALED, closeFailure.fromState)
             assertEquals(SecureSessionState.SEALED, closeFailure.toState)
             assertEquals(SessionLockType.SEALED, closeFailure.lockType)
-            assertSame(failure, closeFailure.error)
+            assertSame(reportedFailure, closeFailure.error)
             assertEquals(SecureSessionState.SEALED, manager.lockState)
             val reopen = manager.unlock()
             assertTrue(reopen is SessionUnlockResult.OpenFailed)

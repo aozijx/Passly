@@ -200,6 +200,7 @@ object Events {
     object Backup {
         val Error = EventKey("backup.error.reported")
         val ResourceCleanupFailed = EventKey("backup.resource_cleanup.failed")
+        val Phase = EventKey("backup.operation.phase")
         val ExportStarted = EventKey("backup.export.started")
         val ExportCompleted = EventKey("backup.export.completed")
         val ImportStarted = EventKey("backup.import.started")
@@ -290,6 +291,7 @@ object Events {
             Autofill.FallbackFailed,
             Backup.Error,
             Backup.ResourceCleanupFailed,
+            Backup.Phase,
             Backup.ExportStarted,
             Backup.ExportCompleted,
             Backup.ImportStarted,
@@ -368,6 +370,13 @@ object LogFieldKeys {
     val EntryType = LogFieldKey.enum("entry_type")
     val Presentation = LogFieldKey.enum("presentation")
     val InlineAvailable = LogFieldKey.boolean("inline_available")
+
+    object Backup {
+        val Stage = LogFieldKey.enum("stage")
+        val FailureReason = LogFieldKey.reason("failure_reason")
+        val EntryCount = LogFieldKey.count("entry_count")
+        val ResourceCount = LogFieldKey.count("resource_count")
+    }
 
     object Autofill {
         val FieldCount = LogFieldKey.count("editable_field_count")

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.entry.model.EntryFieldValueType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -8,7 +9,6 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
@@ -34,27 +34,7 @@ internal object KeyedBackupBundleValidator {
         requireResourceData: Boolean,
     ) {
         val document = bundle.document
-        require(document.format == BackupDocument.FORMAT) { "不支持的备份文档格式: ${document.format}" }
-        require(document.version == BackupDocument.CURRENT_VERSION) { "不支持的备份文档版本: ${document.version}" }
-        require(document.exportedAt >= 0) { "备份导出时间无效" }
-        require(document.entries.size <= BackupBundleValidator.MAX_ENTRIES) { "备份条目数量过多" }
-        require(document.resources.size <= BackupBundleValidator.MAX_RESOURCES) { "备份资源数量过多" }
-        require(
-            document.entries
-                .map(BackupEntryRecord::id)
-                .distinct()
-                .size == document.entries.size,
-        ) {
-            "备份包含重复条目 ID"
-        }
-        require(
-            document.resources
-                .map { it.id }
-                .distinct()
-                .size == document.resources.size,
-        ) {
-            "备份包含重复资源 ID"
-        }
+        BackupDocumentStructure.validate(document)
 
         val entryTypes =
             document.entries.associate { entry ->
@@ -205,10 +185,6 @@ internal object KeyedBackupBundleValidator {
         links: List<com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord>,
         entryTypes: Map<String, com.aozijx.passly.domain.entry.model.EntryType>,
     ) {
-        require(links.map { it.id }.distinct().size == links.size) { "备份包含重复关系 ID" }
-        require(links.map { Triple(it.sourceEntryId, it.targetEntryId, it.relationType) }.distinct().size == links.size) {
-            "备份包含重复关系"
-        }
         links.forEach { link ->
             require(BackupBundleValidator.isSafeArchiveId(link.id)) { "关系 ID 无效: ${link.id}" }
             val sourceType = requireNotNull(entryTypes[link.sourceEntryId]) { "关系引用了不存在的条目: ${link.id}" }
@@ -238,17 +214,19 @@ internal object KeyedBackupBundleValidator {
                 "条目包含多个图标资源: $entryId"
             }
         }
-        require(bundle.resourceData.keys.all { it in resourceIds }) { "备份包含未声明的资源数据" }
+        if (!bundle.resourceData.keys.all { it in resourceIds }) {
+            throw BackupIntegrityException(Reasons.BackupResourceManifestMismatch)
+        }
         val attachments =
             document.resources
                 .filter { it.kind == BackupResourceKind.ATTACHMENT }
                 .groupBy({ it.entryId }, { it.id })
-        require(document.entries.all { it.attachmentIds.toSet() == attachments[it.id].orEmpty().toSet() }) {
-            "条目附件清单与资源清单不一致"
+        if (!document.entries.all { it.attachmentIds.toSet() == attachments[it.id].orEmpty().toSet() }) {
+            throw BackupIntegrityException(Reasons.BackupResourceReferenceMismatch)
         }
         if (requireResourceData) {
-            require(bundle.resourceData.keys == resourceIds) {
-                "备份资源元数据与资源内容不完整"
+            if (bundle.resourceData.keys != resourceIds) {
+                throw BackupIntegrityException(Reasons.BackupResourceManifestMismatch)
             }
         }
         var totalBytes = 0L
@@ -259,9 +237,11 @@ internal object KeyedBackupBundleValidator {
             require(record.fileName == null || record.fileName.length <= 512) { "备份资源文件名过长: ${record.id}" }
             require(record.mimeType == null || record.mimeType.length <= 255) { "备份资源 MIME 类型过长: ${record.id}" }
             bundle.resourceData[record.id]?.let { content ->
-                require(content.size.toLong() == record.size) { "备份资源大小不匹配: ${record.id}" }
-                require(BackupBundleValidator.sha256Hex(content).equals(record.sha256, ignoreCase = true)) {
-                    "备份资源校验失败: ${record.id}"
+                if (content.size.toLong() != record.size) {
+                    throw BackupIntegrityException(Reasons.BackupResourceSizeMismatch)
+                }
+                if (!BackupBundleValidator.sha256Hex(content).equals(record.sha256, ignoreCase = true)) {
+                    throw BackupIntegrityException(Reasons.BackupResourceDigestMismatch)
                 }
                 totalBytes += content.size
                 require(totalBytes <= BackupBundleValidator.MAX_TOTAL_RESOURCE_BYTES) { "备份资源总大小超限" }

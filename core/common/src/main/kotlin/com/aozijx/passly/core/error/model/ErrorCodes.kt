@@ -9,9 +9,6 @@ package com.aozijx.passly.core.error.model
 const val DATABASE_LOCKED = "DATABASE_LOCKED"
 const val DATABASE_INIT_FAILED = "DATABASE_INIT_FAILED"
 
-// ─── 备份相关 ──────────────────────────────
-const val BACKUP_FAILED = "BACKUP_FAILED"
-
 // ─── 网络与 IO ─────────────────────────────
 const val NETWORK_ERROR = "NETWORK_ERROR"
 const val FILE_IO_ERROR = "FILE_IO_ERROR"

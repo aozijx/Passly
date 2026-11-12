@@ -770,6 +770,42 @@ object LogStatements {
     }
 
     object Backup {
+        enum class Stage {
+            EXPORT_SNAPSHOT_READY,
+            EXPORT_WRITE_STARTED,
+            EXPORT_WRITE_COMPLETED,
+            IMPORT_FORMAT_SELECTED,
+            IMPORT_DECODE_COMPLETED,
+            IMPORT_RESTORE_STARTED,
+            IMPORT_RESTORE_COMMITTED,
+        }
+
+        fun phase(stage: Stage): LogStatement =
+            InfoStatement(
+                Events.Backup.Phase,
+                fields { enum(LogFieldKeys.Backup.Stage, stage) },
+            )
+
+        fun failureReason(reason: ReasonCode): LogStatement =
+            InfoStatement(
+                Events.Backup.Phase,
+                fields { reason(LogFieldKeys.Backup.FailureReason, reason) },
+            )
+
+        fun phaseWithCounts(
+            stage: Stage,
+            entryCount: Int,
+            resourceCount: Int,
+        ): LogStatement =
+            InfoStatement(
+                Events.Backup.Phase,
+                fields {
+                    enum(LogFieldKeys.Backup.Stage, stage)
+                    count(LogFieldKeys.Backup.EntryCount, entryCount)
+                    count(LogFieldKeys.Backup.ResourceCount, resourceCount)
+                },
+            )
+
         fun directorySettingsOperationFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Backup.Error,

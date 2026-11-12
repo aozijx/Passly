@@ -1,9 +1,25 @@
 package com.aozijx.passly.domain.entry.model.otp
 
+
 enum class OtpType {
     TOTP,
     HOTP,
     STEAM,
+}
+
+enum class OtpMovingFactor {
+    TIME,
+    COUNTER,
+}
+
+enum class OtpOutputFormat {
+    DECIMAL,
+    STEAM_ALPHABET,
+}
+
+enum class OtpAuthUriKind(val schemeAuthority: String) {
+    TIME_BASED("totp"),
+    COUNTER_BASED("hotp"),
 }
 
 enum class OtpHashAlgorithm {
@@ -35,11 +51,22 @@ data class OtpConfig(
 ) {
     init {
         require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
-        require(digits in 5..8) { "OTP digits must be between 5 and 8" }
+        val definition = OtpTypeDefinitions[type]
+        require(digits in definition.allowedDigits) { "OTP digits are not supported by $type" }
         require(periodSeconds == null || periodSeconds > 0) { "OTP period must be positive" }
         require(counter == null || counter >= 0) { "OTP counter cannot be negative" }
-        require(type != OtpType.HOTP || counter != null) { "HOTP requires a counter" }
-        require(type == OtpType.HOTP || periodSeconds != null) { "Time-based OTP requires a period" }
+        require(definition.movingFactor == OtpMovingFactor.COUNTER || periodSeconds != null) {
+            "Time-based OTP requires a period"
+        }
+        require(definition.movingFactor == OtpMovingFactor.TIME || counter != null) {
+            "Counter-based OTP requires a counter"
+        }
+        require(definition.fixedPeriodSeconds == null || periodSeconds == definition.fixedPeriodSeconds) {
+            "OTP type $type requires a fixed period"
+        }
+        require(definition.fixedAlgorithm == null || algorithm == definition.fixedAlgorithm) {
+            "OTP type $type requires a fixed algorithm"
+        }
     }
 
     companion object {

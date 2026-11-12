@@ -18,7 +18,6 @@ import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
@@ -37,6 +36,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -124,9 +125,18 @@ class VaultViewModel
             if (otpPresentation !is OtpPresentation.Applicable || !showCode) {
                 return MutableStateFlow(initialState)
             }
-            return otpStates
-                .map { states -> states[entryId].toOtpUiState(otpPresentation, showCode) }
-                .distinctUntilChanged()
+            return flow {
+                val lease = otpRuntime.acquire(entryId)
+                try {
+                    emitAll(
+                        otpStates
+                            .map { states -> states[entryId].toOtpUiState(otpPresentation, showCode) }
+                            .distinctUntilChanged(),
+                    )
+                } finally {
+                    lease.close()
+                }
+            }
                 .stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
@@ -231,8 +241,6 @@ class VaultViewModel
                 ) { settingsRepository.setSort(requestedSort) }
             }
         }
-
-        internal fun acquireOtp(entryId: String): OtpLease = otpRuntime.acquire(entryId)
 
         init {
             viewModelScope.launch {

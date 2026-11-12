@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.feature.backup.internal.model.BackupCompatibilitySummary
 
@@ -31,7 +30,7 @@ internal object BackupImportPlanner {
             BackupBundleValidator.validate(bundle, requireResourceData = bundle.document.resources.isNotEmpty())
             return BackupImportPlan(bundle, bundle.compatibilitySummary)
         }
-        validateStructuralHeader(bundle.document)
+        BackupDocumentStructure.validate(bundle.document)
         KeyedBackupBundleValidator.validateResourceIntegrity(
             bundle = bundle,
             entryIds = bundle.document.entries.mapTo(linkedSetOf()) { it.id },
@@ -127,38 +126,4 @@ internal object BackupImportPlanner {
         )
     }
 
-    private fun validateStructuralHeader(document: BackupDocument) {
-        require(document.format == BackupDocument.FORMAT) { "不支持的备份文档格式: ${document.format}" }
-        require(document.version == BackupDocument.CURRENT_VERSION) { "不支持的备份文档版本: ${document.version}" }
-        require(document.exportedAt >= 0) { "备份导出时间无效" }
-        require(document.entries.size <= BackupBundleValidator.MAX_ENTRIES) { "备份条目数量过多" }
-        require(document.resources.size <= BackupBundleValidator.MAX_RESOURCES) { "备份资源数量过多" }
-        require(
-            document.entries
-                .map { it.id }
-                .distinct()
-                .size == document.entries.size,
-        ) { "备份包含重复条目 ID" }
-        require(
-            document.resources
-                .map { it.id }
-                .distinct()
-                .size == document.resources.size,
-        ) { "备份包含重复资源 ID" }
-        require(
-            document.links
-                .map { it.id }
-                .distinct()
-                .size == document.links.size,
-        ) { "备份包含重复关系 ID" }
-        require(
-            document.links
-                .map { Triple(it.sourceEntryId, it.targetEntryId, it.relationType) }
-                .distinct()
-                .size == document.links.size,
-        ) { "备份包含重复关系" }
-        require(document.entries.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的条目 ID" }
-        require(document.resources.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的资源 ID" }
-        require(document.links.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的关系 ID" }
-    }
 }

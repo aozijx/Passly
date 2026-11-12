@@ -15,13 +15,13 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleSecuritySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +29,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -160,7 +161,7 @@ class AppShellViewModelTest {
         runTest {
             val fixture = Fixture { throw CancellationException() }
             val effects = mutableListOf<AppShellEffect>()
-            backgroundScope.launch { fixture.model.effects.toList(effects) }
+            backgroundScope.launch { fixture.model.effects.collect { effects += it } }
             runCurrent()
             fixture.model.onAction(AppShellUiAction.RetryDatabaseSession)
             runCurrent()
@@ -198,7 +199,7 @@ class AppShellViewModelTest {
             val release = CompletableDeferred<DatabaseSessionRetryResult>()
             val fixture = Fixture { release.await() }
             val effects = mutableListOf<AppShellEffect>()
-            backgroundScope.launch { fixture.model.effects.toList(effects) }
+            backgroundScope.launch { fixture.model.effects.collect { effects += it } }
             runCurrent()
             fixture.model.onAction(AppShellUiAction.RetryDatabaseSession)
             runCurrent()
@@ -221,7 +222,7 @@ class AppShellViewModelTest {
                     DatabaseSessionRetryResult.Failed(IllegalStateException("late synthetic failure"))
                 }
             val effects = mutableListOf<AppShellEffect>()
-            backgroundScope.launch { fixture.model.effects.toList(effects) }
+            backgroundScope.launch { fixture.model.effects.collect { effects += it } }
             runCurrent()
             fixture.model.onAction(AppShellUiAction.RetryDatabaseSession)
             runCurrent()

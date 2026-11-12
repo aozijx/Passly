@@ -166,6 +166,7 @@ internal object ErrorCatalogParser {
 }
 
 internal data class RenderedErrorCatalog(
+    val commonKotlin: String,
     val coreKotlin: String,
     val appKotlin: String,
     val markdown: String,
@@ -174,6 +175,7 @@ internal data class RenderedErrorCatalog(
 internal object ErrorCatalogRenderer {
     fun render(catalog: ErrorCatalog): RenderedErrorCatalog =
         RenderedErrorCatalog(
+            commonKotlin = renderCommon(catalog),
             coreKotlin = renderCore(catalog),
             appKotlin = renderApp(catalog),
             markdown = renderMarkdown(catalog),
@@ -214,6 +216,16 @@ internal object ErrorCatalogRenderer {
                 )
             }
             appendLine("    )")
+            appendLine("}")
+        }
+
+    private fun renderCommon(catalog: ErrorCatalog): String =
+        buildString {
+            appendLine("// Generated from config/observability/error-catalog.json. Do not edit.")
+            appendLine("package com.aozijx.passly.core.error.model")
+            appendLine()
+            appendLine("object CatalogErrorCodes {")
+            catalog.errors.forEach { appendLine("    const val ${it.code} = \"${it.code}\"") }
             appendLine("}")
         }
 
@@ -276,6 +288,10 @@ abstract class GenerateErrorCatalogTask : DefaultTask() {
 
     @get:Optional
     @get:org.gradle.api.tasks.OutputDirectory
+    abstract val commonOutputDirectory: DirectoryProperty
+
+    @get:Optional
+    @get:org.gradle.api.tasks.OutputDirectory
     abstract val appOutputDirectory: DirectoryProperty
 
     @get:Optional
@@ -289,6 +305,10 @@ abstract class GenerateErrorCatalogTask : DefaultTask() {
             ?.asFile
             ?.resolve("com/aozijx/passly/core/observability/GeneratedErrorCatalog.kt")
             ?.writeGenerated(rendered.coreKotlin)
+        commonOutputDirectory.orNull
+            ?.asFile
+            ?.resolve("com/aozijx/passly/core/error/model/CatalogErrorCodes.kt")
+            ?.writeGenerated(rendered.commonKotlin)
         appOutputDirectory.orNull
             ?.asFile
             ?.resolve("com/aozijx/passly/app/message/presentation/GeneratedErrorMessageResolver.kt")

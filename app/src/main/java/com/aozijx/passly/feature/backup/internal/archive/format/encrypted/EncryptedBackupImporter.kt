@@ -1,15 +1,19 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
-import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.BackupImportPlanner
+import com.aozijx.passly.feature.backup.internal.archive.BackupIntegrityException
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.zip.ZipException
+import javax.crypto.AEADBadTagException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -47,10 +51,11 @@ class EncryptedBackupImporter
                             content.resources.mapKeys { (name, _) ->
                                 name.removePrefix(BackupZipCodec.RESOURCE_ENTRY_PREFIX)
                             }
-                        BackupImportPlanner.plan(
-                            BackupBundle(document = document, resourceData = resources),
-                            strategy,
-                        ).bundle
+                        BackupImportPlanner
+                            .plan(
+                                BackupBundle(document = document, resourceData = resources),
+                                strategy,
+                            ).bundle
                     }
                 handedOff = true
                 return bundle
@@ -58,8 +63,25 @@ class EncryptedBackupImporter
                 throw cancelled
             } catch (error: BackupFailed) {
                 throw error
+            } catch (error: BackupTruncatedException) {
+                throw BackupFailed(throwableType = "EOFException", reasonCode = error.reasonCode.value)
+            } catch (error: BackupIntegrityException) {
+                throw BackupFailed(reasonCode = error.reasonCode.value)
+            } catch (error: AEADBadTagException) {
+                throw BackupFailed(
+                    throwableType = error.javaClass.simpleName,
+                    reasonCode = Reasons.BackupAuthenticationFailed.value,
+                )
+            } catch (error: ZipException) {
+                throw BackupFailed(
+                    throwableType = error.javaClass.simpleName,
+                    reasonCode = Reasons.BackupZipMalformed.value,
+                )
             } catch (error: Exception) {
-                throw BackupFailed(throwableType = error.javaClass.simpleName)
+                throw BackupFailed(
+                    throwableType = error.javaClass.simpleName,
+                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                )
             } finally {
                 archive?.documentJson?.fill(0)
                 if (!handedOff) archive?.resources?.values?.forEach { it.fill(0) }
@@ -67,14 +89,15 @@ class EncryptedBackupImporter
         }
 
         private companion object {
-            val DISCARD_OUTPUT = object : OutputStream() {
-                override fun write(value: Int) = Unit
+            val DISCARD_OUTPUT =
+                object : OutputStream() {
+                    override fun write(value: Int) = Unit
 
-                override fun write(
-                    buffer: ByteArray,
-                    offset: Int,
-                    length: Int,
-                ) = Unit
-            }
+                    override fun write(
+                        buffer: ByteArray,
+                        offset: Int,
+                        length: Int,
+                    ) = Unit
+                }
         }
     }

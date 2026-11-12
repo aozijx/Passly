@@ -12,9 +12,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
 import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -59,13 +59,19 @@ class AndroidAutofillLaunchTargetTest {
                     }
                 }
 
-                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+                override fun onActivityCreated(
+                    activity: Activity,
+                    savedInstanceState: Bundle?,
+                ) = Unit
 
                 override fun onActivityStarted(activity: Activity) = Unit
 
                 override fun onActivityResumed(activity: Activity) = Unit
 
-                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+                override fun onActivitySaveInstanceState(
+                    activity: Activity,
+                    outState: Bundle,
+                ) = Unit
 
                 override fun onActivityStopped(activity: Activity) = Unit
 
@@ -104,7 +110,10 @@ class AndroidAutofillLaunchTargetTest {
                     }
                 }
 
-                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+                override fun onActivityCreated(
+                    activity: Activity,
+                    savedInstanceState: Bundle?,
+                ) = Unit
 
                 override fun onActivityStarted(activity: Activity) = Unit
 
@@ -112,7 +121,10 @@ class AndroidAutofillLaunchTargetTest {
 
                 override fun onActivityPaused(activity: Activity) = Unit
 
-                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+                override fun onActivitySaveInstanceState(
+                    activity: Activity,
+                    outState: Bundle,
+                ) = Unit
 
                 override fun onActivityStopped(activity: Activity) = Unit
             }

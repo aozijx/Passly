@@ -20,11 +20,12 @@ internal data class ScannerViewfinderFrame(
             containerHeight: Dp,
             density: Density,
         ): ScannerViewfinderFrame {
-            val size = minOf(
-                containerWidth * VIEWFINDER_WIDTH_RATIO,
-                containerHeight * VIEWFINDER_HEIGHT_RATIO,
-                VIEWFINDER_MAX_SIZE,
-            )
+            val size =
+                minOf(
+                    containerWidth * VIEWFINDER_WIDTH_RATIO,
+                    containerHeight * VIEWFINDER_HEIGHT_RATIO,
+                    VIEWFINDER_MAX_SIZE,
+                )
             val sizePx = with(density) { size.toPx() }
             val leftPx = with(density) { ((containerWidth - size) / 2).toPx() }
             val topPx = with(density) { ((containerHeight - size) / 2).toPx() }

@@ -1,8 +1,9 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
+import com.aozijx.passly.feature.backup.internal.archive.BackupIntegrityException
 import com.aozijx.passly.feature.backup.internal.archive.io.WipingByteArrayOutputStream
-import java.io.ByteArrayInputStream
 import java.io.FilterInputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -53,10 +54,10 @@ internal object BackupZipCodec {
                 while (entry != null) {
                     entryCount++
                     require(entryCount <= BackupBundleValidator.MAX_ENTRIES + 1) { "备份归档条目数量过多" }
-                    require(!entry.isDirectory) { "备份中不允许目录条目" }
+                    if (entry.isDirectory) throw BackupIntegrityException(Reasons.BackupZipInvalidEntry)
                     when (entry.name) {
                         DOCUMENT_ENTRY_NAME -> {
-                            require(documentJson == null) { "备份包含重复文档条目" }
+                            if (documentJson != null) throw BackupIntegrityException(Reasons.BackupZipDuplicateEntry)
                             val content = zip.readLimited(BackupBundleValidator.MAX_DOCUMENT_BYTES)
                             documentJson = content
                             totalBytes = Math.addExact(totalBytes, content.size.toLong())
@@ -64,10 +65,9 @@ internal object BackupZipCodec {
 
                         else -> {
                             validateEntryName(entry.name)
+                            if (entry.name in resources) throw BackupIntegrityException(Reasons.BackupZipDuplicateEntry)
                             val content = zip.readLimited(BackupBundleValidator.MAX_RESOURCE_BYTES)
-                            require(resources.put(entry.name, content) == null) {
-                                "备份包含重复资源条目: ${entry.name}"
-                            }
+                            resources[entry.name] = content
                             totalBytes = Math.addExact(totalBytes, content.size.toLong())
                         }
                     }
@@ -77,7 +77,7 @@ internal object BackupZipCodec {
                 }
             }
             return ZipContent(
-                documentJson = requireNotNull(documentJson) { "备份缺少文档条目" },
+                documentJson = documentJson ?: throw BackupIntegrityException(Reasons.BackupZipDocumentMissing),
                 resources = resources,
             )
         } catch (error: Throwable) {
@@ -93,9 +93,11 @@ internal object BackupZipCodec {
     )
 
     private fun validateEntryName(name: String) {
-        require(name.startsWith(RESOURCE_ENTRY_PREFIX)) { "未知备份条目: $name" }
-        require(name.length > RESOURCE_ENTRY_PREFIX.length) { "备份资源名称为空" }
-        require(".." !in name && '\\' !in name && !name.startsWith('/')) { "非法备份路径: $name" }
+        if (!name.startsWith(RESOURCE_ENTRY_PREFIX) || name.length <= RESOURCE_ENTRY_PREFIX.length ||
+            ".." in name || '\\' in name || name.startsWith('/')
+        ) {
+            throw BackupIntegrityException(Reasons.BackupZipInvalidEntry)
+        }
     }
 
     private fun ZipInputStream.readLimited(maxBytes: Int): ByteArray {
@@ -117,11 +119,15 @@ internal object BackupZipCodec {
         }
     }
 
-    private class NonClosingInputStream(input: InputStream) : FilterInputStream(input) {
+    private class NonClosingInputStream(
+        input: InputStream,
+    ) : FilterInputStream(input) {
         override fun close() = Unit
     }
 
-    private class NonClosingOutputStream(output: OutputStream) : OutputStream() {
+    private class NonClosingOutputStream(
+        output: OutputStream,
+    ) : OutputStream() {
         private val delegate = output
 
         override fun write(value: Int) = delegate.write(value)

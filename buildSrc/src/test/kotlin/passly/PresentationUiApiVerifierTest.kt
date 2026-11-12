@@ -71,8 +71,9 @@ class PresentationUiApiVerifierTest {
 
                             @Composable
                             internal fun VaultContent(
-                                one: String, two: String, three: String, four: String,
+                                one: Map<String, List<Int>>, two: String, three: String, four: String,
                                 five: String, six: String, seven: String, eight: String,
+                                rowScope: RowScope,
                                 modifier: Modifier = Modifier,
                                 content: @Composable () -> Unit,
                             ) = Unit
@@ -109,16 +110,15 @@ class PresentationUiApiVerifierTest {
     private fun longComposable(
         path: String,
         functionName: String,
-    ) =
-        EditorSource(
-            path = path,
-            content =
-                """
-                @Composable
-                internal fun $functionName(
-                    one: String, two: String, three: String, four: String, five: String,
-                    six: String, seven: String, eight: String, nine: String,
-                ) = Unit
-                """.trimIndent(),
-        )
+    ): EditorSource {
+        val content =
+            """
+            @Composable
+            internal fun $functionName(
+                one: String, two: String, three: String, four: String, five: String,
+                six: String, seven: String, eight: String, nine: String,
+            ) = Unit
+            """.trimIndent()
+        return EditorSource(path = path, content = content)
+    }
 }

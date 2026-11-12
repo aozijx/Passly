@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.codec
 
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
@@ -55,8 +56,9 @@ class StorageEnumMappingsTest {
             ActivityType.entries,
             mapOf(
                 ActivityType.VIEW to "VIEW",
-                ActivityType.COPY_USERNAME to "COPY_USERNAME",
-                ActivityType.COPY_PASSWORD to "COPY_PASSWORD",
+                ActivityType.REVEAL_FIELDS to "REVEAL_FIELDS",
+                ActivityType.COPY_FIELD to "COPY_FIELD",
+                ActivityType.COPY_OTP_CODE to "COPY_OTP_CODE",
                 ActivityType.AUTOFILL to "AUTOFILL",
                 ActivityType.EXPORT to "EXPORT",
                 ActivityType.IMPORT to "IMPORT",
@@ -68,6 +70,63 @@ class StorageEnumMappingsTest {
             ),
             ActivityType::toStorageKey,
             ::activityTypeFromStorageKey,
+        )
+        assertMapping(
+            FieldKey.entries,
+            mapOf(
+                FieldKey.TITLE to "TITLE",
+                FieldKey.USERNAME to "USERNAME",
+                FieldKey.EMAIL to "EMAIL",
+                FieldKey.PASSWORD to "PASSWORD",
+                FieldKey.NOTES to "NOTES",
+                FieldKey.TAGS to "TAGS",
+                FieldKey.PRIMARY_URL to "PRIMARY_URL",
+                FieldKey.DOMAINS to "DOMAINS",
+                FieldKey.APPLICATION_IDS to "APPLICATION_IDS",
+                FieldKey.EXPIRES_AT to "EXPIRES_AT",
+                FieldKey.FAVORITE to "FAVORITE",
+                FieldKey.CUSTOM_FIELDS to "CUSTOM_FIELDS",
+                FieldKey.OTP_TYPE to "OTP_TYPE",
+                FieldKey.OTP_SECRET to "OTP_SECRET",
+                FieldKey.OTP_ISSUER to "OTP_ISSUER",
+                FieldKey.OTP_ACCOUNT_NAME to "OTP_ACCOUNT_NAME",
+                FieldKey.OTP_PERIOD to "OTP_PERIOD",
+                FieldKey.OTP_COUNTER to "OTP_COUNTER",
+                FieldKey.OTP_DIGITS to "OTP_DIGITS",
+                FieldKey.OTP_ALGORITHM to "OTP_ALGORITHM",
+                FieldKey.OTP_ENCODING to "OTP_ENCODING",
+                FieldKey.PASSKEY_CREDENTIAL_ID to "PASSKEY_CREDENTIAL_ID",
+                FieldKey.PASSKEY_RELYING_PARTY_ID to "PASSKEY_RELYING_PARTY_ID",
+                FieldKey.PASSKEY_USER_HANDLE to "PASSKEY_USER_HANDLE",
+                FieldKey.PASSKEY_DATA to "PASSKEY_DATA",
+                FieldKey.RECOVERY_CODES to "RECOVERY_CODES",
+                FieldKey.HARDWARE_INFO to "HARDWARE_INFO",
+                FieldKey.SSH_KEY to "SSH_KEY",
+                FieldKey.SSH_PUBLIC_KEY to "SSH_PUBLIC_KEY",
+                FieldKey.SSH_PASSPHRASE to "SSH_PASSPHRASE",
+                FieldKey.SEED_PHRASE to "SEED_PHRASE",
+                FieldKey.CARD_TYPE to "CARD_TYPE",
+                FieldKey.CARD_NUMBER to "CARD_NUMBER",
+                FieldKey.CARD_EXPIRATION to "CARD_EXPIRATION",
+                FieldKey.CARD_CVV to "CARD_CVV",
+                FieldKey.CARD_HOLDER to "CARD_HOLDER",
+                FieldKey.CARD_ISSUING_BANK to "CARD_ISSUING_BANK",
+                FieldKey.CARD_BANK_BRANCH to "CARD_BANK_BRANCH",
+                FieldKey.CARD_PRODUCT to "CARD_PRODUCT",
+                FieldKey.CARD_CURRENCY to "CARD_CURRENCY",
+                FieldKey.CARD_BANK_PHONE to "CARD_BANK_PHONE",
+                FieldKey.PAYMENT_PIN to "PAYMENT_PIN",
+                FieldKey.PAYMENT_PLATFORM to "PAYMENT_PLATFORM",
+                FieldKey.BILLING_ADDRESS to "BILLING_ADDRESS",
+                FieldKey.SECURITY_QUESTION to "SECURITY_QUESTION",
+                FieldKey.SECURITY_ANSWER to "SECURITY_ANSWER",
+                FieldKey.ID_NUMBER to "ID_NUMBER",
+                FieldKey.WIFI_SSID to "WIFI_SSID",
+                FieldKey.WIFI_SECURITY to "WIFI_SECURITY",
+                FieldKey.WIFI_HIDDEN to "WIFI_HIDDEN",
+            ),
+            FieldKey::toStorageKey,
+            ::fieldKeyFromStorageKey,
         )
         assertMapping(
             EntryRelationType.entries,
@@ -145,6 +204,9 @@ class StorageEnumMappingsTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             activityTypeFromStorageKey("FUTURE_OR_CORRUPT")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            fieldKeyFromStorageKey("FUTURE_OR_CORRUPT")
         }
         assertThrows(IllegalArgumentException::class.java) {
             entryRelationTypeFromStorageKey("FUTURE_OR_CORRUPT")

@@ -104,5 +104,4 @@ internal object BackupArchiveKeyRegistry {
     fun relationTypeKey(type: EntryRelationType): String = relationKeys.getValue(type)
 
     fun relationType(key: String): EntryRelationType? = relations[key]
-
 }

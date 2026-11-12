@@ -117,7 +117,7 @@ fatal `Error` 继续传播。若提交后取消，调用方应重查 Repository/
 语义明确的 session API，不再携带授权谓词或重复注入访问状态。session API 在取 lease 前保留既有拒绝结果，并在 lease 内、
 DAO block 前再次检查。统一事务 runner 与直接 Repository 因此共用同一命令 admission 边界。已进入 DAO block 的写事务由
 Runtime lease drain 等待其提交或回滚；锁定后的新命令不会进入 DAO。reset、恢复模式与 Autofill 释放路径的跨层终态验收
-仍见[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
+仍见[维护 TODO Task 37](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-37)。
 
 `SecretPayload` 保持扁平的版本 1 JSON 结构。`EntrySecretMapper` 是根边界：编码时核对凭据种类与预期
 `EntryType`；解码时拒绝未知 schema 版本、多个凭据槽位及槽位与条目类型不匹配。它以穷尽 `when` 显式映射

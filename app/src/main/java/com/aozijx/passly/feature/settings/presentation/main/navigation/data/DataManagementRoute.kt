@@ -4,8 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,7 +21,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute
 import com.aozijx.passly.feature.settings.presentation.main.data.StorageSettingsAction
@@ -36,7 +33,6 @@ import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondary
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DataManagementRoute(
     onOpenTrash: () -> Unit,
@@ -113,34 +109,16 @@ internal fun DataManagementRoute(
             SettingsSection {
                 CacheSettingsSection(
                     state = state.cache,
-                    onClearCache = { viewModel.onAction(StorageSettingsAction.ClearCache) },
+                    onAction = viewModel::onAction,
                 )
                 Spacer(Modifier.height(24.dp))
                 LogSettingsSection(
                     state = state.logs,
-                    logRecordingMode = (state.logRecordingMode as? RecoverableReadState.Ready)?.value,
+                    logRecordingMode = state.logRecordingMode,
                     onOpenDiagnostics = onOpenDiagnostics,
-                    onLogRecordingModeChange = { mode ->
-                        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(mode))
-                    },
+                    onAction = viewModel::onAction,
                     onClearLogs = { showLogClearConfirmation = true },
                 )
-                when (state.logRecordingMode) {
-                    RecoverableReadState.Loading -> {
-                        CircularProgressIndicator()
-                    }
-
-                    is RecoverableReadState.Failed -> {
-                        Text(stringResource(R.string.settings_read_failed))
-                        TextButton(onClick = { viewModel.onAction(StorageSettingsAction.RetryLogRecordingMode) }) {
-                            Text(stringResource(R.string.retry))
-                        }
-                    }
-
-                    is RecoverableReadState.Ready -> {
-                        Unit
-                    }
-                }
             }
         }
     }
