@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.local.database.entity.EntryEntity
-import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
@@ -19,10 +18,7 @@ class EntryListItemMapperTest {
             )
 
         val item =
-            EntryListItemMapper.assemble(
-                entity = entity,
-                summary = EntryProfile(title = "Steam"),
-            )
+            EntryListItemMapper.fromEntity(entity)
 
         assertEquals(OtpType.STEAM, item.otpType)
     }

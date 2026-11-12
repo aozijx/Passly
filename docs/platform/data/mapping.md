@@ -24,6 +24,10 @@ Entry 数据分为三类，不能用一条统一的“Blob 解密链”描述：
 | 低敏 Secret 结构 | `entry_secret_fields/STRUCT_BUNDLE` 密文 | `SecretBundleCodec` + `EntrySecretMapper` |
 | 高敏单字段 | `entry_secret_fields/<fieldKey>` 独立密文 | `SecretFieldCodec` + `SensitiveFieldSetMapper` |
 
+Vault 分页、回收站与 Autofill 候选使用轻量 `EntryListItem`，不经 `EntryAssembler` 读取 Secret。
+Data 的 `EntryListItemMapper.fromEntity()` 在一个入口内组合 `EntryProfileMapper`、identity、capability flags，
+并接收分页行额外提供的 usage 与 account projection；调用方只负责传入查询行和这些查询专属字段。
+
 读取普通详情时：
 
 ```text

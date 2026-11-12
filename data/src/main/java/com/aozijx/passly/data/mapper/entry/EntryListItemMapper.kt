@@ -1,21 +1,22 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.local.database.entity.EntryEntity
-import com.aozijx.passly.domain.entry.model.EntryProfile
-import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryUsage
 
-object EntryListItemMapper {
-    fun assemble(
+internal object EntryListItemMapper {
+    fun fromEntity(
         entity: EntryEntity,
-        summary: EntryProfile,
+        usage: EntryUsage = EntryUsage(),
+        accountId: EntryId? = null,
     ): EntryListItem =
         EntryListItem(
             identity = entity.toDomainIdentity(),
-            profile = summary,
-            usage = EntryUsage(),
+            profile = EntryProfileMapper.fromEntity(entity),
+            usage = usage,
             capabilities = entity.capabilityFlags.toEntryCapabilities(),
             otpType = entity.otpType,
+            accountId = accountId,
         )
 }

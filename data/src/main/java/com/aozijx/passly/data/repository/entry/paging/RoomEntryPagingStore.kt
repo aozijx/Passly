@@ -7,7 +7,6 @@ import androidx.paging.map
 import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
-import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
@@ -33,12 +32,8 @@ internal class RoomEntryPagingStore
                     entryQueryDao().paging(buildEntryPagingQuery(query))
                 }.flow.map { pagingData ->
                     pagingData.map { row ->
-                        val item =
-                            EntryListItemMapper.assemble(
-                                entity = row.entry,
-                                summary = EntryProfileMapper.fromEntity(row.entry),
-                            )
-                        item.copy(
+                        EntryListItemMapper.fromEntity(
+                            entity = row.entry,
                             usage =
                                 EntryUsage(
                                     count = row.usageCount,
