@@ -1,7 +1,7 @@
 # 数据库
 
 状态：当前实现（Room Schema v1）。本文描述当前代码；旧本地开发 Schema 当前不提供迁移。
-Room schema 结构发生变化时递增版本，并按数据合同选择显式 migration，或明确限定版本范围的开发数据重置流程。Room 提供自动与手动增量迁移；无可用 migration 且未配置 destructive fallback 时，打开数据库会失败；destructive fallback 会删除表数据，不能作为静默恢复策略（见[Room 迁移文档](https://developer.android.com/training/data-storage/room/migrating-db-versions)）。当前旧开发库不迁移，使用旧结构的本地开发数据库前需清除应用数据或重新安装，再验证当前 Schema。初始化异常路径不得静默删除数据库。
+当前 Schema 保持版本 1；本地开发数据库若与当前字段结构不匹配，需清除应用数据或重新安装后再验证。项目不提供旧开发 Schema 迁移或 destructive fallback。初始化异常路径不得静默删除数据库。
 
 ## 所有权与访问边界
 
