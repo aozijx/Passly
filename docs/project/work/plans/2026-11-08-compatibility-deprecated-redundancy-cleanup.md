@@ -22,3 +22,13 @@
 ### `core/platform/packageinfo`（2026-11-12）
 
 已核对包名目录、图标加载器、Compose 状态帮助函数、Hilt 绑定和仓库调用方。`InstalledAppCatalog` 同时实现 Domain 的 [`ApplicationLabelResolver`](../../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/ApplicationLabelResolver.kt) 与 Core 的 [`InstalledAppDirectory`](../../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppDirectory.kt)：前者供 Autofill 标签解析，后者供新增密码和详情关联应用的元数据/可启动列表；两者语义不同，不能合并成重复端口。Core 的 [`InstalledAppCatalogModule`](../../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppCatalogModule.kt) 分别绑定两个端口。图标路径由[`InstalledAppIconLoader`](../../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppIconLoader.kt)、[`InstalledAppServicesProvider`](../../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppServicesProvider.kt) 和[`rememberInstalledAppIconBitmap`](../../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppIconState.kt)组成；Vault 图标组件和详情/新增密码页面仍有生产调用，缓存、Android PackageManager 访问、图像转换及 Compose 生命周期边界均有实际职责。App 单测通过目录端口替身覆盖相应页面行为；Core 中没有该目录的独立测试文件。没有发现可确认删除的声明或重复路径。此次为静态源码、调用方和 DI 审查，没有改实现或运行测试；其余 Core 包及其他模块仍待审计。
+
+## 本轮已完成的局部调用闭包（2026-11-12）
+
+以下结果仅覆盖列出的 Vault/App/Domain/Data 路径；不代表这些模块或全仓审计结束。
+
+- Vault 字段读取的固定纯映射不再通过 App Hilt 注入：所有 Detail、Copy、Reveal 与 revision compare 调用直接使用 Domain `EntryFieldReader`；原映射测试和各消费方测试已迁移。提交 `881d5f322`。`:app:compileDebugUnitTestKotlin :domain:compileTestKotlin` 通过；只编译测试源码，未执行测试。
+- `EntryListItemMapper` 现一次完成 Room entry row 到轻量 Domain `EntryListItem` 的身份、Profile、能力、OTP 类型及可选 usage/account projection 组装；分页、回收站和 Autofill 调用迁移，旧 `assemble(entity, summary)` 删除。提交 `95f43d712`。`:data:compileDebugUnitTestKotlin :app:compileDebugUnitTestKotlin` 通过；首次编译发现 mapper 测试残留旧调用，迁移后重编译通过，未执行测试。
+- 无向 `EntryLink` 的另一端判断集中于 Domain `EntryLink.otherEndpoint()`，Details 与 Related Password operations 不再各自实现端点方向判断。提交 `dca99dd65`。`:app:compileDebugUnitTestKotlin :domain:compileTestKotlin` 通过，原有 link canonicalization/self-link 测试保留并增加端点查询断言；未执行测试。
+- 修订历史列表 affected-fields 与差异行共用 `DetailRevisionFieldLabelUiState.resolveText()`。提交 `d6ae88c00`。`:app:compileDebugUnitTestKotlin` 通过；未执行测试。该构建提示既有 `FaviconImageStore.kt:145` nullable receiver 警告，与本修改无关。
+- 针对 `EntryQueryDao` 与 `EntryLinkQueryDao` 按声明检索当前生产和 instrumentation 调用方：批量入口仍分别服务重建、备份、关系解析和事务；未发现本轮可安全删除的 DAO 查询。此项是局部检查，其他 DAO 和 Data 契约仍待审计。
