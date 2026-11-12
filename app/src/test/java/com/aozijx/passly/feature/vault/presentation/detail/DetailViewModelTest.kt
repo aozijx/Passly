@@ -408,7 +408,7 @@ class DetailViewModelTest {
                 runCurrent()
                 val oldCode =
                     fixture.otpRuntime.states.value
-                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
+                        .getValue(ENTRY_ID.value) as OtpCodeState.TimedReady
                 fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
                 runCurrent()
                 fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
@@ -429,7 +429,7 @@ class DetailViewModelTest {
 
                 val restoredCode =
                     fixture.otpRuntime.states.value
-                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
+                        .getValue(ENTRY_ID.value) as OtpCodeState.TimedReady
                 assertTrue(oldCode.code != restoredCode.code)
             } finally {
                 otpLease.close()
@@ -457,7 +457,7 @@ class DetailViewModelTest {
                 runCurrent()
                 val originalCode =
                     fixture.otpRuntime.states.value
-                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
+                        .getValue(ENTRY_ID.value) as OtpCodeState.TimedReady
                 fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
                 runCurrent()
                 fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
@@ -470,7 +470,7 @@ class DetailViewModelTest {
                     originalCode.code ==
                         (
                             fixture.otpRuntime.states.value
-                                .getValue(ENTRY_ID.value) as OtpCodeState.Ready
+                                .getValue(ENTRY_ID.value) as OtpCodeState.TimedReady
                         ).code,
                 )
                 assertEquals(1, repository.readCount)

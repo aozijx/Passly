@@ -18,7 +18,6 @@ internal object CardStylePreviewFixtures {
         OtpUiState.TimedReady(
             currentCode = "123 456",
             nextCode = "654 321",
-            progress = 0.4f,
             windowEndMillis = 30_000L,
             periodSeconds = 30,
         )

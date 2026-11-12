@@ -6,26 +6,18 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 sealed interface OtpCodeState {
     data object Pending : OtpCodeState
 
-    sealed interface Ready : OtpCodeState {
-        val code: String
-        val progress: Float
-    }
-
     data class TimedReady(
-        override val code: String,
+        val code: String,
         val nextCode: String,
-        override val progress: Float,
         val windowEndMillis: Long,
         val periodSeconds: Int,
-    ) : Ready
+    ) : OtpCodeState
 
     data class HotpReady(
-        override val code: String,
+        val code: String,
         val counter: Long = 0L,
         val canRollbackPrevious: Boolean = false,
-    ) : Ready {
-        override val progress: Float = 0f
-    }
+    ) : OtpCodeState
 
     data class Failed(
         val error: OtpGenerationError,

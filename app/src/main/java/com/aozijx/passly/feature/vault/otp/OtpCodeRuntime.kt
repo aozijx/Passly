@@ -217,7 +217,6 @@ internal class OtpCodeRuntime(
                     is OtpResult.Success -> {
                         OtpCodeState.TimedReady(
                             code = genResult.code,
-                            progress = computeProgress(nowSeconds, period),
                             nextCode = nextResult.code,
                             windowEndMillis = (nowSeconds / period + 1) * period * 1000L,
                             periodSeconds = period,
@@ -499,14 +498,6 @@ internal class OtpCodeRuntime(
         period: Int,
         policy: OtpRuntimePolicy,
     ): Boolean = policy.copyNextTotpNearExpiry && period - (nowSeconds % period) <= 3
-
-    private fun computeProgress(
-        nowSeconds: Long,
-        period: Int,
-    ): Float {
-        val remaining = period - (nowSeconds % period)
-        return remaining.toFloat() / period
-    }
 
     private suspend fun activateTrackedEntry(entryId: String) {
         if (!sessionUnlocked || !isRequested(entryId)) return

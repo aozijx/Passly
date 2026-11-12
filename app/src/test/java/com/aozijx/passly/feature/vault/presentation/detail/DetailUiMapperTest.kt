@@ -344,7 +344,6 @@ class DetailUiMapperTest {
             OtpCodeState.TimedReady(
                 code = "123456",
                 nextCode = "654321",
-                progress = 0.25f,
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
             ).toOtpUiState(OtpType.TOTP)
@@ -352,11 +351,11 @@ class DetailUiMapperTest {
         require(ui is OtpUiState.TimedReady)
         assertEquals("123 456", ui.currentCode)
         assertEquals("123 456", ui.displayCodeOrPlaceholder)
-        assertEquals(0.25f, ui.progress)
+        assertEquals(30_000L, ui.windowEndMillis)
     }
 
     @Test
-    fun missingOtpRuntimeStateMapsToAnExplicitPlaceholderAndInactiveProgress() {
+    fun missingOtpRuntimeStateMapsToAnExplicitPlaceholder() {
         val ui = (null as OtpCodeState?).toOtpUiState(OtpType.TOTP)
 
         assertEquals(OtpUiState.NotRequested, ui)

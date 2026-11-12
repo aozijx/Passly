@@ -28,7 +28,6 @@ private fun OtpCodeState.toUiModel(formatter: (String) -> String): OtpUiState =
             OtpUiState.TimedReady(
                 currentCode = formatter(code),
                 nextCode = formatter(nextCode),
-                progress = progress,
                 windowEndMillis = windowEndMillis,
                 periodSeconds = periodSeconds,
             )

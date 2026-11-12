@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 
 internal data class OtpWindowProgressState(
@@ -18,9 +17,8 @@ internal fun rememberOtpWindowProgress(
     expiringThreshold: Float = DEFAULT_EXPIRING_PROGRESS_THRESHOLD,
 ): OtpWindowProgressState {
     val sharedProgressTime = LocalOtpProgressTime.current
-    val fallbackProgressState = rememberUpdatedState((state as? OtpUiState.TimedReady)?.progress ?: 0f)
     val progress =
-        remember(state, sharedProgressTime, fallbackProgressState) {
+        remember(state, sharedProgressTime) {
             derivedStateOf {
                 when (state) {
                     is OtpUiState.TimedReady -> {
@@ -30,7 +28,7 @@ internal fun rememberOtpWindowProgress(
                             .toFloat() / periodMillis
                     }
 
-                    else -> fallbackProgressState.value
+                    else -> 0f
                 }
             }
         }

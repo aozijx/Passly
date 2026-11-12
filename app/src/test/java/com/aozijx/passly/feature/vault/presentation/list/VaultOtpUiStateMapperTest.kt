@@ -12,10 +12,10 @@ import org.junit.Test
 class OtpUiStateMapperTest {
     @Test
     fun `keeps steam code formatting specific to its algorithm`() {
-        val state = OtpCodeState.TimedReady("ABCDE", "FGHIJ", 0.5f, 30_000L, 30)
+        val state = OtpCodeState.TimedReady("ABCDE", "FGHIJ", 30_000L, 30)
 
         assertEquals(
-            OtpUiState.TimedReady("ABCDE", "FGHIJ", 0.5f, 30_000L, 30),
+            OtpUiState.TimedReady("ABCDE", "FGHIJ", 30_000L, 30),
             state.toOtpUiState(OtpType.STEAM, showCode = true),
         )
     }
@@ -26,7 +26,6 @@ class OtpUiStateMapperTest {
             OtpCodeState.TimedReady(
                 code = "123456",
                 nextCode = "654321",
-                progress = 0.5f,
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
             )
@@ -35,7 +34,6 @@ class OtpUiStateMapperTest {
             OtpUiState.TimedReady(
                 currentCode = "123 456",
                 nextCode = "654 321",
-                progress = 0.5f,
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
             ),
@@ -58,7 +56,6 @@ class OtpUiStateMapperTest {
             OtpCodeState.TimedReady(
                 code = "123456",
                 nextCode = "654321",
-                progress = 0.5f,
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
             )

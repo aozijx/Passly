@@ -16,7 +16,6 @@ sealed interface OtpUiState {
     data class TimedReady(
         val currentCode: String,
         val nextCode: String,
-        val progress: Float,
         val windowEndMillis: Long,
         val periodSeconds: Int,
     ) : OtpUiState

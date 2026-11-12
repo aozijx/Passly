@@ -286,13 +286,13 @@ class OtpCodeRuntimeTest {
             nowMillis = 1_000
             advanceTimeBy(1_000)
             runCurrent()
-            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.Ready)
+            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.TimedReady)
             assertEquals(1, loadCount)
 
             config = validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
             runtime.entryChanged("crypto-retry")
             runCurrent()
-            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.Ready)
+            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.TimedReady)
             assertEquals(2, loadCount)
         }
 
@@ -323,7 +323,7 @@ class OtpCodeRuntimeTest {
             config = validTotpConfig()
             runtime.entryChanged("permanent-failure")
             runCurrent()
-            assertTrue(runtime.states.value["permanent-failure"] is OtpCodeState.Ready)
+            assertTrue(runtime.states.value["permanent-failure"] is OtpCodeState.TimedReady)
             assertEquals(2, loadCount)
         }
 
@@ -1223,7 +1223,12 @@ class OtpCodeRuntimeTest {
             scope.cancel()
         }
 
-    private fun OtpCodeRuntime.readyCode(entryId: String): String? = (states.value[entryId] as? OtpCodeState.Ready)?.code
+    private fun OtpCodeRuntime.readyCode(entryId: String): String? =
+        when (val state = states.value[entryId]) {
+            is OtpCodeState.TimedReady -> state.code
+            is OtpCodeState.HotpReady -> state.code
+            OtpCodeState.Pending, is OtpCodeState.Failed, null -> null
+        }
 
     private fun testRuntime(
         scope: CoroutineScope,

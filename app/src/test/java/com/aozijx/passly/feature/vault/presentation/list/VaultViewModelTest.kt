@@ -300,7 +300,7 @@ class VaultViewModelTest {
 
             try {
                 runCurrent()
-                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready)
+                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.TimedReady)
 
                 viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
                 gate.started.await()
@@ -311,7 +311,7 @@ class VaultViewModelTest {
                 assertTrue("a departed page must not write its pending OTP", clipboardValues.isEmpty())
                 assertTrue(
                     "Vault graph retains OTP state across row and page transitions",
-                    viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready,
+                    viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.TimedReady,
                 )
             } finally {
                 gate.resume.complete(Unit)
@@ -339,7 +339,7 @@ class VaultViewModelTest {
 
             try {
                 runCurrent()
-                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready)
+                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.TimedReady)
 
                 viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
                 gate.started.await()
@@ -393,7 +393,6 @@ class VaultViewModelTest {
                         OtpCodeState.TimedReady(
                             code = "123456",
                             nextCode = "654321",
-                            progress = 0.5f,
                             windowEndMillis = 30_000L,
                             periodSeconds = 30,
                         ),
@@ -417,7 +416,6 @@ class VaultViewModelTest {
                 OtpUiState.TimedReady(
                     currentCode = "123 456",
                     nextCode = "654 321",
-                    progress = 0.5f,
                     windowEndMillis = 30_000L,
                     periodSeconds = 30,
                 ),
@@ -438,7 +436,6 @@ class VaultViewModelTest {
                     OtpUiState.TimedReady(
                         currentCode = "123 456",
                         nextCode = "654 321",
-                        progress = 0.5f,
                         windowEndMillis = 30_000L,
                         periodSeconds = 30,
                     ),
