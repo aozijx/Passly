@@ -92,7 +92,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 ### Task 73：把官方 Android 检查纳入维护复核并处理已发现的质量项
 
 - [ ] 按本轮 app/Autofill Lint 新报告裁定剩余项，不沿用旧数量；清理 EmptySuperCall、冗余 API、UseKtx、资源时保留清理/持久时序及中英文合同。
-- [ ] 依赖升级独立验证：catalog 当前 palette 1.1.0、Material3 1.5.0-rc01、DataStore 1.3.0、SQLCipher 4.20.0 已更新；旧“14 条升级提示”不再整体列为未实施。
+- [ ] 依赖升级独立验证：按仓库当前 [version catalog](../../../gradle/libs.versions.toml) 和实际升级改动，核对受影响模块的依赖解析、编译及必要测试是否有可追溯的执行证据，并记录命令与结果；旧“14 条升级提示”只作历史背景，不作为当前未完成数量。
 - [ ] APK Analyzer 保存交付/release APK 的 DEX、资源、native、assets 基线；历史 debug 体积不是 release 优化收益，设备/性能验收按功能 owner 执行。
 
 <a id="task-83"></a>
