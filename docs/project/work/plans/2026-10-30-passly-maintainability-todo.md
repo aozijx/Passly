@@ -48,7 +48,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 <a id="task-42"></a>
 
 ### Task 42：验收完整表单编辑的 Route/NavHost 失败交接
-- [ ] 补齐并执行 Compose Route/NavHost 或设备宿主验收：Detail 预加载失败 Toast 的可见性、重复点击重试、STOPPED 时取消及条目/认证 owner 替换后丢弃迟到反馈；完整编辑导航失败后的提示与 seed 清理；编辑器无效/已消费 seed 的返回后重试；配置重建与迟到 callback。已有 JVM 行为、Session/Coordinator 测试不证明真实宿主交互。已完成实现合同及历史验收见[完整表单编辑边界审查](../../reviews/2026-11-11-full-form-editing-boundaries.md)与[seed Coordinator owner 审查](../../reviews/2026-11-08-vault-presentation-boundaries.md#2026-11-12-entryeditorseedcoordinator-owner-审查)。
+- [ ] 在 Compose Route/NavHost 或设备宿主验收 Detail 预加载失败提示与重试、STOPPED 取消和 owner 替换、编辑导航失败提示与 seed 清理、无效/已消费 seed 返回重试，以及配置重建和迟到 callback。JVM 与 Session/Coordinator 测试不代替宿主交互；当前合同和已有验收证据见[完整表单编辑审查](../../reviews/2026-11-11-full-form-editing-boundaries.md)及[seed Coordinator owner 审查](../../reviews/2026-11-08-vault-presentation-boundaries.md#2026-11-12-entryeditorseedcoordinator-owner-审查)。
 
 
 <a id="task-40"></a>
@@ -200,7 +200,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 ### Task 29：验收 App Password 草稿的真实宿主生命周期清理
 
-- [ ] 在连接设备或 AVD 后运行 `AppPasswordDialogCoordinatorLifecycleTest`，记录 API 与结果；再以真实 Activity 配置重建验证草稿按认证文档规定清空。现有 Coordinator/ViewModel 单测覆盖迟到输入、授权和操作结果 owner；Compose 仪器测试覆盖 Route 从组合中移除后清空旧 Coordinator、重新组合后建立空状态，但尚未设备执行，也不模拟 Activity recreation。Coordinator 的局部 state、敏感草稿和 `DisposableEffect` owner 已完成结构审查并保留，见[App Password 对话框生命周期审查](../../reviews/2026-11-11-app-password-dialog-lifecycle.md)。
+- [ ] 在设备或 AVD 上运行 `AppPasswordDialogCoordinatorLifecycleTest` 并记录 API/结果；再通过真实 Activity 配置重建验证草稿按认证合同清空。当前 owner 合同、Compose 测试覆盖及其与 Activity recreation 的边界见[App Password 对话框生命周期审查](../../reviews/2026-11-11-app-password-dialog-lifecycle.md)。
 
 <a id="task-31"></a>
 
