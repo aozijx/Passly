@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Singleton
-class DatabaseResetGatewayAdapter
+internal class DatabaseResetGatewayAdapter
     @Inject
     constructor(
         private val controller: DatabaseResetController,

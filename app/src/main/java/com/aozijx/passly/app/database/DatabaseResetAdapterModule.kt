@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class DatabaseResetAdapterModule {
+internal abstract class DatabaseResetAdapterModule {
     @Binds
     @Singleton
     abstract fun bindDatabaseResetGateway(implementation: DatabaseResetGatewayAdapter): DatabaseResetGateway

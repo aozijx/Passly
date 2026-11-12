@@ -12,7 +12,7 @@ import javax.inject.Singleton
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object EntryPolicyModule {
+internal object EntryPolicyModule {
     @Provides
     @Singleton
     fun provideEntryDraftMaterializer(): EntryDraftMaterializer = EntryDraftMaterializer()

@@ -33,7 +33,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class NoticeModule {
+internal abstract class NoticeModule {
     @Binds
     @Singleton
     abstract fun bindNoticeDeduplicator(impl: DefaultNoticeDeduplicator): NoticeDeduplicator

@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class EntryCreationModule {
+internal abstract class EntryCreationModule {
     @Binds
     abstract fun bindEntryCreation(implementation: CreateEntryUseCase): EntryCreation
 
