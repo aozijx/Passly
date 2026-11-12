@@ -35,7 +35,8 @@
 
 ### Task 1：确定目标架构与 GoF 使用边界
 
-- [ ] 依据当前模块与包边界确认目标仍是分层 MVVM + UDF。将 `:app` 中的流程明确为 Feature/Application 工作流；只有稳定、跨层共享且不依赖页面状态的规则进入 Domain；持久化继续由 Data；认证、密钥与会话访问继续由 Security/Runtime 拥有。
+目标结构和层职责已在[架构概览](../../../platform/architecture/overview.md)、[包边界](../../../platform/architecture/package-boundaries.md)与[状态管理规范](../../../engineering/development/architecture-and-state.md)中明确；Domain/模块依赖审查记录见[边界扫描](../../reviews/2026-11-07-domain-boundary-scan.md)和[职责凝聚迁移](../../reviews/2026-11-07-domain-cohesion-migration.md)。本 Task 只保留尚未完成的方案比较与模式使用规则。
+
 - [ ] 在架构决策记录中比较至少三条路线：现有模块内分层加固；按已验证的依赖闭包/构建隔离证据拆分其他 Feature Gradle 模块；全局事件/Actor 或总线驱动。`:feature:autofill` 已完成切换，不再作为未来拆分候选；本项只评估是否需要更多模块。记录复杂度、边界收益、迁移成本及状态/取消风险。
 - [ ] 单独比较 Gradle 模块拆分、Android 独立进程和独立持久化/服务三个不同决策。新增 Gradle module 只改变编译依赖/API 边界，不形成 crash/process isolation；`android:process` 则引入独立 Application/Hilt 单例、IPC 和跨进程数据/状态合同。不得用“加模块”满足进程隔离需求，也不得用“独立进程”代替 durable log write。
 - [ ] 日志若考虑独立进程，先定义故障类型、事件交付、最大丢失窗口、IPC 失败回退、Room/DataStore/会话共享和强杀验证；以现有队列、`fd.sync()`、crash flush/emergency-write 机制为对照。
