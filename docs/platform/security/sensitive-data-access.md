@@ -11,7 +11,7 @@
 - 字段已在当前详情页会话中验证并显示：随后复制复用这次显示授权，不重复弹窗；
 - 字段再次隐藏、离开详情页、应用锁定或敏感状态清理后，显示授权失效。
 
-显示授权只存在于 `DetailUiState.revealedFields`，不进入 SavedState、数据库或 Intent。
+显示授权只存在于 `DetailUiState.revealedFields`，不进入 SavedState、数据库或 Intent。`DetailViewModel` 以 `DetailRevealStore` 持有对应 `SensitiveValue` 的擦除责任：隐藏单字段、复制后清除整组、条目访问关闭、会话撤权及 ViewModel 清理时调用 `remove()` 或 `clear()`；替换同一字段时先擦除旧值。UI 状态只是展示投影，Store 管理实际敏感值的清理生命周期。
 
 ## 当前读取边界
 

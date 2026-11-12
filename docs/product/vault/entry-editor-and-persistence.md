@@ -105,7 +105,7 @@ Login 的应用列表加载先经过编辑会话守卫，并在查询前后核�
 Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace 合同处理敏感字段。
 映射与存储边界见[数据映射](../../platform/data/mapping.md)。
 
-详情异步结果通过 `DetailWorkSession` 的独立访问凭据发布。内联草稿在提交后发生修改或重开时，旧完成保留当前编辑；
+`DetailViewModel.load()` 为每次详情访问调用 `DetailWorkSession.open(entryId)`，`clearSensitiveState()` 关闭访问；同一 Active token 供 ViewModel、`DetailPasswordRelationsWorkflow` 与 `DetailRevisionWorkflow` 共享。Session 只持有访问身份，并用 `isCurrent()` 同时检查 token 身份和安全会话授权，不拥有页面 UI 状态或这些工作流的 Job。异步结果通过该访问凭据发布。内联草稿在提交后发生修改或重开时，旧完成保留当前编辑；
 标签提交期间冻结草稿。图标资源另由 `DetailFaviconSession` 与引用检查回收端口管理，不能因页面关闭直接删除已提交文件。
 取消图标裁剪时，即使详情 ViewModel 同时销毁，正在执行的临时输入删除也会在不可取消区完成；未完成的临时文件另由进程启动时的 staging 清理兜底。
 这些都是现有详情机制，不代表四类创建页已经共享统一 Session。

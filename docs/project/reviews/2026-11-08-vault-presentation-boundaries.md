@@ -44,6 +44,18 @@ Detail 标签编辑以 `DetailTagEditorState` 作为 Route/Composable 消费的�
 
 保留当前共享类，不再为每个表单建立保存 Coordinator 或把类型专属状态搬进通用 Session：现有 Session 有真实跨类型保存合同，但没有拥有四种表单状态的职责。该项从 Task 84 剩余 Coordinator 审查清单移除；四个 ViewModel 其余业务与依赖边界仍待逐项检查。
 
+## 2026-11-12 DetailWorkSession owner 审查
+
+`DetailViewModel` 唯一创建 `DetailWorkSession`，在 `load()` 为每次访问打开新 Active token，并在 `clearSensitiveState()` 关闭。ViewModel、`DetailPasswordRelationsWorkflow` 与 `DetailRevisionWorkflow` 共用这一个访问身份；`isCurrent()` 以 token 对象身份和安全会话授权共同拒绝旧访问结果。`persist()` 收口 `EditEntryUseCase` 调用、持久成功后的图标资源提交回调、详情 presentation、reducer mutation 与保存结果；`publishReveals()` 在访问失效或发布异常时擦除未交付的敏感值。Session 不持有 UI state 或子工作流 Job，页面 reducer、关系操作、修订任务仍由现有 owner 管理。
+
+保留 `DetailWorkSession` 这一共享边界：若删除它，多个 Detail 工作流就要重复实现相同的 visit/token、授权与迟到发布检查，或新增只转发 token 和 mutation 的层。合同已说明于[条目编辑与写入专题](../../product/vault/entry-editor-and-persistence.md#已有条目的逐项编辑)。`DetailWorkSessionTest` 覆盖访问替换、锁定、保存、tag 查询和敏感 reveal 清理；`DetailPasswordRelationsWorkflowTest` 覆盖关系操作在访问替换/授权撤销后的隔离。本次只核对源码与测试源码，未重跑；修订 metadata Flow 的失败重订阅、锁定及访问替换仍按 Task 83 跟踪。
+
+## 2026-11-12 Detail QR 与 reveal store owner 审查
+
+`DetailQrSession` 由 `DetailViewModel` 持有，使用 ViewModel scope 观察访问授权并管理当前 generation/request Job、互斥 QR 状态、导出字符擦除及 `QrCodeMatrix` 关闭；锁定、页面停止/关闭、条目切换或 ViewModel 清理都会使请求失效并擦除结果。该类有真实的敏感内容和矩阵生命周期，不是可移除的状态转发层，现有合同见[条目二维码专题](../../product/vault/qr-display.md)。
+
+`DetailRevealStore` 由 `DetailViewModel` 持有字段明文的擦除责任，`DetailUiState.revealedFields` 仅作为显示投影；隐藏、复制后清除、访问关闭或撤权时清理实际 `SensitiveValue`。`DetailRevisionRevealStore` 则由 `DetailRevisionWorkflow` 独立持有历史敏感值，供历史 reveal projection 使用并在值替换、页面关闭或清理时擦除。两者的 owner 不同，不合并成共享全局 Store；正式边界见[敏感数据读取与显示](../../platform/security/sensitive-data-access.md)和[条目修订历史](../../product/vault/entry-revision-history.md)。`DetailQrSessionTest`、`DetailRevealStoreTest` 与 `DetailRevisionRevealStoreTest` 源码分别覆盖请求撤销/擦除和 Store 擦除。本次仅核对源码，未重跑测试。
+
 ## 后续事项
 
 跨 Feature 的 ViewModel 职责审计仍由维护 TODO 的 Task 83 跟踪；本次 Vault 页面审查只关闭其 Vault 子范围，不代替 Task 83 的整体验收。
