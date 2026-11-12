@@ -35,3 +35,4 @@
 - Data 的 Entry/Activity mapper 只被 Data repository、codec 和事务实现调用，没有跨 `:data` 的生产消费者；将 assembler、profile/secret mapper、capability write mapping 与 activity mapper 收窄为 `internal`，映射逻辑不变。`:app:compileDebugUnitTestKotlin` 通过，覆盖 Data 与 App 生产/测试源码编译；未执行测试。
 - Security authentication 的顶层 owner/helper 声明定向检索中，低调用数项仍分别被当前生产流程和行为测试使用：会话复用策略、认证方式映射、Android prompt spec/error classification、secret input ownership 和 biometric alias cleanup 均不是旧路径；本轮未发现可删除项。该结果不是 Security 全模块审计结论。
 - Autofill `AutofillInteractionSource.LEGACY` 与 `AutofillInboxSource.LEGACY_SERVICE` 仍由 Android Autofill Service/Legacy entry、interaction store 和观测调用，受 Android 平台交互和 Inbox 来源合同保护；只移除已经没有生产状态的旧 `LEGACY_SAVE` 结果类型。Autofill 其余实现仍待审计。
+- Core 的 observability/UI 声明定向复核中，`ObservabilityIdGenerator` 有 App DI 与 logger/trace tests 消费；`FatalLogStatement` 保留 `unhandledException()` 的 fatal 分类返回合同；`PasslySheetTitle` 有 Autofill 与 Vault 两个调用点，样式函数在更多页面复用。未发现本轮可删除项；Core 其余包仍待审计。
