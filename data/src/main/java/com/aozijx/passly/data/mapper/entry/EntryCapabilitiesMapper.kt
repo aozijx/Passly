@@ -16,7 +16,7 @@ private val orderedCapabilities =
         EntryCapability.CUSTOM_FIELDS,
     )
 
-fun EntryCapabilities.toDatabaseFlags(): Int =
+internal fun EntryCapabilities.toDatabaseFlags(): Int =
     orderedCapabilities.foldIndexed(0) { index, flags, capability ->
         if (capability in this) flags or (1 shl index) else flags
     }

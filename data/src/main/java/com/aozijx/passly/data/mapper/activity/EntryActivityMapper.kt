@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 
-fun EntryActivityEntity.toDomain(): EntryActivity =
+internal fun EntryActivityEntity.toDomain(): EntryActivity =
     EntryActivity(
         activityId = activityId,
         entryId = entryId,
@@ -23,7 +23,7 @@ fun EntryActivityEntity.toDomain(): EntryActivity =
         affectedFields = affectedFieldKeys.map(::fieldKeyFromStorageKey).toSet(),
     )
 
-fun EntryActivity.toEntity(): EntryActivityEntity =
+internal fun EntryActivity.toEntity(): EntryActivityEntity =
     EntryActivityEntity(
         activityId = activityId,
         entryId = entryId,

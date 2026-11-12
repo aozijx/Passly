@@ -34,7 +34,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
-object EntrySecretMapper {
+internal object EntrySecretMapper {
     fun toPayload(
         secret: EntrySecret,
         expectedType: EntryType,

@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryProfile
 
-object EntryProfileMapper {
+internal object EntryProfileMapper {
     fun fromEntity(entity: EntryEntity): EntryProfile =
         EntryProfile(
             title = entity.title,

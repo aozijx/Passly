@@ -18,7 +18,7 @@ internal fun EntryEntity.toDomainIdentity(): EntryIdentity =
         timestamps = EntryTimestamps(createdAt, updatedAt, deletedAt),
     )
 
-object EntryAssembler {
+internal object EntryAssembler {
     fun assembleFromDatabase(
         entity: EntryEntity,
         summary: EntryProfile,
