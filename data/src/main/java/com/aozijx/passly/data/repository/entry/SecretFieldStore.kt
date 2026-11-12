@@ -30,7 +30,7 @@ import javax.inject.Inject
  * context (or a `DatabaseTransactionRunner` write) — never from inside another session
  * call, because the session lease is not reentrant.
  */
-class SecretFieldStore
+internal class SecretFieldStore
     @Inject
     internal constructor(
         private val fieldCodec: SecretFieldCodec,

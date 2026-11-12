@@ -7,7 +7,7 @@ import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 
 @Dao
-interface AttachmentRefCommandDao {
+internal interface AttachmentRefCommandDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(attachment: AttachmentRefEntity)
 

@@ -6,7 +6,7 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface EntryLinkQueryDao {
+internal interface EntryLinkQueryDao {
     @Query("SELECT * FROM entry_links ORDER BY createdAt ASC")
     fun observeAll(): Flow<List<EntryLinkEntity>>
 

@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface EntryActivityQueryDao {
+internal interface EntryActivityQueryDao {
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC, activityId DESC")
     fun observeByEntryId(entryId: String): Flow<List<EntryActivityEntity>>
 

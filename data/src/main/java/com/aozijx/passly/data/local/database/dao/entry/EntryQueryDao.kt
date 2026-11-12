@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface EntryQueryDao {
+internal interface EntryQueryDao {
     // ---- observe (Flow) ----
 
     @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")

@@ -38,7 +38,7 @@ internal fun EntrySecret.hasStoredChanges(
 
 /**
  * Projects each credential's field-level values once for extraction and edit classification.
- * Backup calls the public `SecretFieldStore` boundary rather than this mapper; this mapping is
+ * Backup calls the owning module's `SecretFieldStore` boundary rather than this mapper; this mapping is
  * private to Data's persistence and revision-snapshot implementation.
  */
 private fun EntryCredential.sensitiveFieldProjection(): Map<SensitiveFieldKey, String?> =

@@ -22,7 +22,7 @@ import androidx.room.PrimaryKey
         Index(value = ["iconCustomReference"]),
     ],
 )
-data class EntryRevisionEntity(
+internal data class EntryRevisionEntity(
     @PrimaryKey
     val revisionId: String,
     val entryId: String,

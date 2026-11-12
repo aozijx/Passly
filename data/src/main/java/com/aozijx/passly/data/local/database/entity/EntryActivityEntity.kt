@@ -23,7 +23,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
         Index(value = ["activityType", "entryId", "createdAt"]),
     ],
 )
-data class EntryActivityEntity(
+internal data class EntryActivityEntity(
     @PrimaryKey
     val activityId: String,
     val entryId: String,

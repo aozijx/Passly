@@ -7,7 +7,7 @@ import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 
 @Dao
-interface EntryRevisionCommandDao {
+internal interface EntryRevisionCommandDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(revision: EntryRevisionEntity)
 

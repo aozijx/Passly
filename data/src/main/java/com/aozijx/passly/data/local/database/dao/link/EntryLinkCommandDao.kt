@@ -9,7 +9,7 @@ import androidx.room.Update
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 
 @Dao
-interface EntryLinkCommandDao {
+internal interface EntryLinkCommandDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAllStrict(links: List<EntryLinkEntity>)
 

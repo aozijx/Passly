@@ -27,7 +27,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Singleton
-class AttachmentResourceGarbageCollector
+internal class AttachmentResourceGarbageCollector
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,

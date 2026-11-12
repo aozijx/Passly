@@ -7,7 +7,7 @@ import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 
 @Dao
-interface EntryActivityCommandDao {
+internal interface EntryActivityCommandDao {
     // === Strict Insert (ignore duplicate) ===
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

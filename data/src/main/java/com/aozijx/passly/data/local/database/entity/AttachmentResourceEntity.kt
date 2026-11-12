@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
  * retry bookkeeping that used to live in a separate `attachment_gc_queue` table.
  */
 @Entity(tableName = "attachment_resources")
-data class AttachmentResourceEntity(
+internal data class AttachmentResourceEntity(
     @PrimaryKey
     val resourceId: String,
     val fileSize: Long,
@@ -22,7 +22,7 @@ data class AttachmentResourceEntity(
     val lastAttemptAt: Long? = null,
 )
 
-object AttachmentResourceState {
+internal object AttachmentResourceState {
     const val ACTIVE = "ACTIVE"
     const val PENDING_GC = "PENDING_GC"
 }

@@ -8,7 +8,7 @@ import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 
 @Dao
-interface AttachmentResourceDao {
+internal interface AttachmentResourceDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(resource: AttachmentResourceEntity)
 

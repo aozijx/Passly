@@ -8,7 +8,7 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Dao
-interface EntryCommandDao {
+internal interface EntryCommandDao {
     // === Strict Insert (fail on duplicate PK) ===
 
     @Insert(onConflict = OnConflictStrategy.ABORT)

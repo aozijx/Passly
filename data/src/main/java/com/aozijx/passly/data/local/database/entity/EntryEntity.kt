@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
         Index(value = ["iconCustomReference"]),
     ],
 )
-data class EntryEntity(
+internal data class EntryEntity(
     @PrimaryKey
     val entryId: String,
     val entryType: EntryType = EntryType.LOGIN,

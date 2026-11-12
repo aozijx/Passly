@@ -5,7 +5,7 @@ import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 
 @Dao
-interface SecretFieldQueryDao {
+internal interface SecretFieldQueryDao {
     @Query(
         """
         SELECT * FROM entry_secret_fields

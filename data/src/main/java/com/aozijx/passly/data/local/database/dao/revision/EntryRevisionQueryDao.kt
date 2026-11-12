@@ -6,7 +6,7 @@ import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface EntryRevisionQueryDao {
+internal interface EntryRevisionQueryDao {
     @Query("SELECT * FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC")
     fun observeByEntryId(entryId: String): Flow<List<EntryRevisionEntity>>
 

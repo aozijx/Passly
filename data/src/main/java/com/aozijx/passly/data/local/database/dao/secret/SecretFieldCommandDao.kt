@@ -8,7 +8,7 @@ import androidx.room.Upsert
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 
 @Dao
-interface SecretFieldCommandDao {
+internal interface SecretFieldCommandDao {
     @Upsert
     suspend fun upsert(field: EntrySecretFieldEntity)
 

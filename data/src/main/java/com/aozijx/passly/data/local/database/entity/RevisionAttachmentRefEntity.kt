@@ -24,7 +24,7 @@ import androidx.room.Index
     ],
     indices = [Index(value = ["resourceId"])],
 )
-data class RevisionAttachmentRefEntity(
+internal data class RevisionAttachmentRefEntity(
     val revisionId: String,
     val attachmentId: String,
     val resourceId: String,

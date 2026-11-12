@@ -5,7 +5,7 @@ import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 
 @Dao
-interface AttachmentRefQueryDao {
+internal interface AttachmentRefQueryDao {
     @Query("SELECT * FROM attachment_refs WHERE attachmentId = :attachmentId LIMIT 1")
     suspend fun getById(attachmentId: String): AttachmentRefEntity?
 

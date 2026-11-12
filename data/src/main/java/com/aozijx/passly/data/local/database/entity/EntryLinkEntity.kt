@@ -29,7 +29,7 @@ import androidx.room.PrimaryKey
         ),
     ],
 )
-data class EntryLinkEntity(
+internal data class EntryLinkEntity(
     @PrimaryKey
     val linkId: String,
     val firstEntryId: String,

@@ -52,7 +52,7 @@ import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
     OtpTypeConverter::class,
     StringSetConverter::class,
 )
-abstract class AppDatabase : RoomDatabase() {
+internal abstract class AppDatabase : RoomDatabase() {
     abstract fun entryQueryDao(): EntryQueryDao
 
     abstract fun entryCommandDao(): EntryCommandDao

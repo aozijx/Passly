@@ -27,7 +27,7 @@ import androidx.room.PrimaryKey
         Index(value = ["resourceId"]),
     ],
 )
-data class AttachmentRefEntity(
+internal data class AttachmentRefEntity(
     @PrimaryKey
     val attachmentId: String,
     val resourceId: String,

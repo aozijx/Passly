@@ -20,7 +20,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
  * 不知道：Auth 状态、Session 生命周期、DEK 来源
  */
 @Singleton
-class DatabaseProvider
+internal class DatabaseProvider
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
