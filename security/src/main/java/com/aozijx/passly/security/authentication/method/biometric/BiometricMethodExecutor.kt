@@ -64,7 +64,7 @@ internal class BiometricMethodExecutor
                         logger.log(
                             LogStatements.Security.vaultOperationFailed(
                                 preparation.cause,
-                                Reasons.KeyStoreUnavailable,
+                                Reasons.Security.Keystore.KeyStoreUnavailable,
                             ),
                         )
                         return failure(AuthenticationFailureCode.CRYPTO_OBJECT_INVALID, request)

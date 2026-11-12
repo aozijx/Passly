@@ -1,6 +1,6 @@
 # Scanner 行为与设备验收
 
-相机、图片和结果交接的当前实现合同见[扫描输入与生命周期](../../../product/scanner/input-lifecycle.md)、[二维码扫描总览](../../../product/scanner/overview.md)和[扫描结果交接](../../../product/scanner/result-handoff.md)。相机 Host 的资源 owner 复核见[Scanner 相机与结果确认审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)；其权限变化、重组和执行中释放验收由[并发计划 Task 4](2026-11-06-app-architecture-concurrency-todo.md#task-4)跟踪。
+相机、图片和结果交接的当前实现合同见[扫描输入与生命周期](../../../product/scanner/input-lifecycle.md)、[二维码扫描总览](../../../product/scanner/overview.md)和[扫描结果交接](../../../product/scanner/result-handoff.md)。相机 Host 的资源 owner 复核见[Scanner 相机与结果确认审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)；其权限变化、重组和执行中释放验收由[并发计划 Task 5](2026-11-06-app-architecture-concurrency-todo.md#task-5)跟踪。
 
 ## 行为回归
 

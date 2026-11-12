@@ -1,11 +1,7 @@
 package com.aozijx.passly.core.observability
 
 import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.core.error.model.CONFLICT
 import com.aozijx.passly.core.error.model.ErrorSeverity
-import com.aozijx.passly.core.error.model.NOT_FOUND
-import com.aozijx.passly.core.error.model.SESSION_MODE_RESTRICTED
-import com.aozijx.passly.core.error.model.VALIDATION_ERROR
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.core.observability.sink.LogDropCounts
 
@@ -97,8 +93,8 @@ object LogStatements {
                     boolean(LogFieldKeys.Recoverable, error.recoverable)
                     operation(LogFieldKeys.Operation, context.operation)
                 }
-            val errorCode = ErrorCode(error.code)
-            val reason = ReasonCode(error.code)
+            val errorCode = error.errorCode()
+            val reason = error.failureReason()
             return when (error.severity) {
                 ErrorSeverity.WARNING -> WarningStatement(event, errorCode, reason, error, fields)
                 ErrorSeverity.ERROR -> ErrorStatement(event, errorCode, reason, error, fields)
@@ -130,8 +126,8 @@ object LogStatements {
         fun nativeLibraryLoadFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Application.NativeLibraryLoadFailed,
-                ErrorCodes.Application.NativeLibraryLoadFailed,
-                Reasons.NativeLibraryUnavailable,
+                ErrorCodes.Application.Native.NativeLibraryLoadFailed,
+                Reasons.Application.Native.NativeLibraryUnavailable,
                 throwable,
                 LogFields.Empty,
             )
@@ -139,8 +135,8 @@ object LogStatements {
         fun unhandledException(throwable: Throwable): FatalLogStatement =
             FatalStatement(
                 Events.Application.UnhandledException,
-                ErrorCodes.Application.ApplicationUnhandledException,
-                Reasons.UnknownFailure,
+                ErrorCodes.Application.Runtime.ApplicationUnhandledException,
+                Reasons.Application.Fallback.UnknownFailure,
                 throwable,
                 LogFields.Empty,
             )
@@ -148,8 +144,8 @@ object LogStatements {
         fun packageIconNotFound(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Application.PackageIconUnavailable,
-                ErrorCodes.Application.PackageIconUnavailable,
-                Reasons.PackageNotInstalled,
+                ErrorCodes.Application.Package.PackageIconUnavailable,
+                Reasons.Application.Package.PackageNotInstalled,
                 throwable,
                 LogFields.Empty,
             )
@@ -157,8 +153,8 @@ object LogStatements {
         fun packageIconDecodeFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Application.PackageIconUnavailable,
-                ErrorCodes.Application.PackageIconUnavailable,
-                Reasons.ImageDecodeFailed,
+                ErrorCodes.Application.Package.PackageIconUnavailable,
+                Reasons.Application.Image.ImageDecodeFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -166,8 +162,8 @@ object LogStatements {
         fun resourceCleanupFailed(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Application.ResourceCleanupFailed,
-                ErrorCodes.Application.ResourceCleanupFailed,
-                Reasons.FileDeleteFailed,
+                ErrorCodes.Application.Resources.ResourceCleanupFailed,
+                Reasons.Application.Storage.FileDeleteFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -193,8 +189,8 @@ object LogStatements {
         fun diagnosticsExportFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Application.DiagnosticsExportFailed,
-                ErrorCodes.Application.DiagnosticsExportFailed,
-                Reasons.StorageFailure,
+                ErrorCodes.Application.Diagnostics.DiagnosticsExportFailed,
+                Reasons.Application.Storage.StorageFailure,
                 throwable,
                 LogFields.Empty,
             )
@@ -202,8 +198,8 @@ object LogStatements {
         fun scannedOtpInvalid(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Application.ScannedOtpInvalid,
-                ErrorCodes.Application.ScannedOtpInvalid,
-                Reasons.InvalidInput,
+                ErrorCodes.Application.Scanner.ScannedOtpInvalid,
+                Reasons.Application.Validation.InvalidInput,
                 throwable,
                 LogFields.Empty,
             )
@@ -211,8 +207,8 @@ object LogStatements {
         fun scannerFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Application.ScannerFailed,
-                ErrorCodes.Application.ScannerFailed,
-                Reasons.ScannerProcessingFailed,
+                ErrorCodes.Application.Scanner.ScannerFailed,
+                Reasons.Application.Scanner.ScannerProcessingFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -261,7 +257,7 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.Database.DatabaseSessionOpenFailed,
+                ErrorCodes.Database.Session.DatabaseSessionOpenFailed,
                 reason,
                 throwable,
                 fields,
@@ -274,7 +270,7 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.Database.DatabaseSessionCloseFailed,
+                ErrorCodes.Database.Session.DatabaseSessionCloseFailed,
                 reason,
                 throwable,
                 fields,
@@ -286,7 +282,7 @@ object LogStatements {
         ): LogStatement =
             DegradedStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.Database.DatabaseSessionCloseFailed,
+                ErrorCodes.Database.Session.DatabaseSessionCloseFailed,
                 reason,
                 fields,
             )
@@ -296,8 +292,8 @@ object LogStatements {
         fun openFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Database.OpenFailed,
-                ErrorCodes.Database.DatabaseOpenFailed,
-                Reasons.DatabaseOpenFailed,
+                ErrorCodes.Database.OpenReset.DatabaseOpenFailed,
+                Reasons.Database.OpenReset.DatabaseOpenFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -305,8 +301,8 @@ object LogStatements {
         fun resetFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Database.ResetFailed,
-                ErrorCodes.Database.DatabaseResetFailed,
-                Reasons.DatabaseResetFailed,
+                ErrorCodes.Database.OpenReset.DatabaseResetFailed,
+                Reasons.Database.OpenReset.DatabaseResetFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -352,7 +348,7 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Security.LockFailed,
-                ErrorCodes.Security.SecurityLockFailed,
+                ErrorCodes.Security.Lock.SecurityLockFailed,
                 reason,
                 throwable,
                 fields,
@@ -370,19 +366,19 @@ object LogStatements {
         fun authenticationRejected(fields: LogFields): LogStatement =
             DegradedStatement(
                 Events.Security.AuthenticationRejected,
-                ErrorCodes.Security.AuthenticationFailed,
-                Reasons.AuthenticationRejected,
+                ErrorCodes.Security.Authentication.AuthenticationFailed,
+                Reasons.Security.Authentication.AuthenticationRejected,
                 fields,
             )
 
         fun authenticationFailed(
             throwable: Throwable,
             fields: LogFields,
-            reason: ReasonCode = Reasons.UnknownFailure,
+            reason: ReasonCode = Reasons.Application.Fallback.UnknownFailure,
         ): LogStatement =
             ErrorStatement(
                 Events.Security.AuthenticationFailed,
-                ErrorCodes.Security.AuthenticationFailed,
+                ErrorCodes.Security.Authentication.AuthenticationFailed,
                 reason,
                 throwable,
                 fields,
@@ -396,7 +392,7 @@ object LogStatements {
             if (degraded) {
                 WarningStatement(
                     Events.Security.BiometricPromptFailed,
-                    ErrorCodes.Security.BiometricPromptFailed,
+                    ErrorCodes.Security.Biometric.BiometricPromptFailed,
                     reason,
                     throwable,
                     LogFields.Empty,
@@ -404,7 +400,7 @@ object LogStatements {
             } else {
                 ErrorStatement(
                     Events.Security.BiometricPromptFailed,
-                    ErrorCodes.Security.BiometricPromptFailed,
+                    ErrorCodes.Security.Biometric.BiometricPromptFailed,
                     reason,
                     throwable,
                     LogFields.Empty,
@@ -414,16 +410,16 @@ object LogStatements {
         fun biometricRotationCleanupDeferred(): LogStatement =
             DegradedStatement(
                 Events.Security.BiometricRotationCleanupDeferred,
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 LogFields.Empty,
             )
 
         fun biometricRotationCleanupFailed(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Security.BiometricRotationCleanupDeferred,
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 throwable,
                 LogFields.Empty,
             )
@@ -472,7 +468,7 @@ object LogStatements {
             if (degraded) {
                 WarningStatement(
                     Events.Security.VaultOperationFailed,
-                    ErrorCodes.Security.VaultOperationFailed,
+                    ErrorCodes.Security.Vault.VaultOperationFailed,
                     reason,
                     throwable,
                     LogFields.Empty,
@@ -480,7 +476,7 @@ object LogStatements {
             } else {
                 ErrorStatement(
                     Events.Security.VaultOperationFailed,
-                    ErrorCodes.Security.VaultOperationFailed,
+                    ErrorCodes.Security.Vault.VaultOperationFailed,
                     reason,
                     throwable,
                     LogFields.Empty,
@@ -604,7 +600,7 @@ object LogStatements {
         ): LogStatement =
             DegradedStatement(
                 Events.Autofill.FallbackUnavailable,
-                ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
+                ErrorCodes.Autofill.Discovery.AutofillDiscoveryUnavailable,
                 reason,
                 fields,
             )
@@ -617,8 +613,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.FallbackFailed,
-                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                Reasons.PlatformCallbackFailed,
+                ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                Reasons.Autofill.Platform.PlatformCallbackFailed,
                 throwable,
                 fields,
             )
@@ -656,19 +652,19 @@ object LogStatements {
         ): LogStatement =
             DegradedStatement(
                 Events.Autofill.DiscoveryUnavailable,
-                ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
+                ErrorCodes.Autofill.Discovery.AutofillDiscoveryUnavailable,
                 reason,
                 failureKind?.let { fields.withEnum(LogFieldKeys.Autofill.FailureKind, it) } ?: fields,
             )
 
         fun discoveryFailed(
             throwable: Throwable,
-            reason: ReasonCode = Reasons.UnknownFailure,
+            reason: ReasonCode = Reasons.Application.Fallback.UnknownFailure,
             fields: LogFields = LogFields.Empty,
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.DiscoveryUnavailable,
-                ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
+                ErrorCodes.Autofill.Discovery.AutofillDiscoveryUnavailable,
                 reason,
                 throwable,
                 fields,
@@ -696,8 +692,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.ResultDeliveryFailed,
-                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                Reasons.PlatformCallbackFailed,
+                ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                Reasons.Autofill.Platform.PlatformCallbackFailed,
                 throwable,
                 LogFields.Empty.withElapsed(elapsedMs),
             )
@@ -708,8 +704,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.ResultDeliveryFailed,
-                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                Reasons.PlatformCallbackFailed,
+                ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                Reasons.Autofill.Platform.PlatformCallbackFailed,
                 throwable,
                 fields { enum(LogFieldKeys.Source, source) },
             )
@@ -728,8 +724,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.SessionCloseFailed,
-                ErrorCodes.Autofill.AutofillSessionCloseFailed,
-                Reasons.SessionCloseFailed,
+                ErrorCodes.Autofill.Session.AutofillSessionCloseFailed,
+                Reasons.Database.Session.SessionCloseFailed,
                 throwable,
                 LogFields.Empty.withElapsed(elapsedMs),
             )
@@ -743,18 +739,30 @@ object LogStatements {
         fun saveUnavailable(reason: ReasonCode): LogStatement =
             DegradedStatement(
                 Events.Autofill.SaveFailed,
-                ErrorCodes.Autofill.AutofillSaveFailed,
+                ErrorCodes.Autofill.Save.AutofillSaveFailed,
                 reason,
                 LogFields.Empty,
             )
 
         fun saveFailed(
             throwable: Throwable,
-            reason: ReasonCode = Reasons.StorageFailure,
+            reason: ReasonCode = Reasons.Application.Storage.StorageFailure,
         ): LogStatement =
             ErrorStatement(
                 Events.Autofill.SaveFailed,
-                ErrorCodes.Autofill.AutofillSaveFailed,
+                ErrorCodes.Autofill.Save.AutofillSaveFailed,
+                reason,
+                throwable,
+                LogFields.Empty,
+            )
+
+        fun inboxKeyProvisionFailed(
+            throwable: Throwable,
+            reason: ReasonCode,
+        ): LogStatement =
+            WarningStatement(
+                Events.Autofill.InboxKeyProvisionFailed,
+                ErrorCodes.Autofill.Inbox.AutofillInboxKeyProvisionFailed,
                 reason,
                 throwable,
                 LogFields.Empty,
@@ -809,8 +817,8 @@ object LogStatements {
         fun directorySettingsOperationFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Backup.Error,
-                ErrorCodes.Application.ApplicationUnhandledException,
-                Reasons.StorageFailure,
+                ErrorCodes.Application.Runtime.ApplicationUnhandledException,
+                Reasons.Application.Storage.StorageFailure,
                 throwable,
                 LogFields.Empty,
             )
@@ -818,8 +826,8 @@ object LogStatements {
         fun directoryGrantReleaseFailed(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Backup.ResourceCleanupFailed,
-                ErrorCodes.Application.ResourceCleanupFailed,
-                Reasons.StorageFailure,
+                ErrorCodes.Application.Resources.ResourceCleanupFailed,
+                Reasons.Application.Storage.StorageFailure,
                 throwable,
                 LogFields.Empty,
             )
@@ -837,8 +845,8 @@ object LogStatements {
         fun resourceCleanupFailed(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Backup.ResourceCleanupFailed,
-                ErrorCodes.Application.ResourceCleanupFailed,
-                Reasons.FileDeleteFailed,
+                ErrorCodes.Application.Resources.ResourceCleanupFailed,
+                Reasons.Application.Storage.FileDeleteFailed,
                 throwable,
                 LogFields.Empty,
             )
@@ -876,7 +884,7 @@ object LogStatements {
                 ErrorSeverity.WARNING -> {
                     WarningStatement(
                         Events.Vault.EntryCreateFailed,
-                        ErrorCodes.Vault.VaultEntryCreateFailed,
+                        ErrorCodes.Vault.Entry.VaultEntryCreateFailed,
                         reason,
                         error,
                         fields,
@@ -886,7 +894,7 @@ object LogStatements {
                 ErrorSeverity.ERROR -> {
                     ErrorStatement(
                         Events.Vault.EntryCreateFailed,
-                        ErrorCodes.Vault.VaultEntryCreateFailed,
+                        ErrorCodes.Vault.Entry.VaultEntryCreateFailed,
                         reason,
                         error,
                         fields,
@@ -903,8 +911,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Vault.EntryCreateFailed,
-                ErrorCodes.Vault.VaultEntryCreateFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Vault.Entry.VaultEntryCreateFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 throwable,
                 entryFields(entryType, trigger).withElapsed(elapsedMs),
             )
@@ -930,7 +938,7 @@ object LogStatements {
                 ErrorSeverity.WARNING -> {
                     WarningStatement(
                         Events.Vault.EntryUpdateFailed,
-                        ErrorCodes.Vault.VaultEntryUpdateFailed,
+                        ErrorCodes.Vault.Entry.VaultEntryUpdateFailed,
                         failureReason(error),
                         error,
                         fields,
@@ -940,7 +948,7 @@ object LogStatements {
                 ErrorSeverity.ERROR -> {
                     ErrorStatement(
                         Events.Vault.EntryUpdateFailed,
-                        ErrorCodes.Vault.VaultEntryUpdateFailed,
+                        ErrorCodes.Vault.Entry.VaultEntryUpdateFailed,
                         failureReason(error),
                         error,
                         fields,
@@ -956,8 +964,8 @@ object LogStatements {
         ): LogStatement =
             ErrorStatement(
                 Events.Vault.EntryUpdateFailed,
-                ErrorCodes.Vault.VaultEntryUpdateFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Vault.Entry.VaultEntryUpdateFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 throwable,
                 entryTypeFields(entryType).withElapsed(elapsedMs),
             )
@@ -977,14 +985,16 @@ object LogStatements {
             }
 
         private fun failureReason(error: AppError): ReasonCode =
-            when (error.code) {
-                SESSION_MODE_RESTRICTED -> Reasons.SessionRestricted
-                VALIDATION_ERROR -> Reasons.InvalidInput
-                NOT_FOUND -> Reasons.NotFound
-                CONFLICT -> Reasons.Conflict
-                else -> Reasons.UnknownFailure
-            }
+            error.failureReason()
     }
+
+private fun AppError.errorCode(): ErrorCode = ErrorCode(code.value)
+
+private fun AppError.failureReason(): ReasonCode =
+    reasonCode?.let(::ReasonCode)
+        ?: checkNotNull(ErrorCatalog.find(errorCode())) {
+            "AppError code is not registered in the error catalog"
+        }.defaultReason
 
     private fun LogFields.withElapsed(elapsedMs: Long): LogFields = withDuration(LogFieldKeys.ElapsedMs, elapsedMs.coerceAtLeast(0))
 }

@@ -55,7 +55,9 @@
 - [ ] 全量搜索生产代码中的 `Dispatchers.*`、`withContext`、`flowOn`、`CoroutineDispatcher` 注入和 Dispatcher qualifier，按 CPU 密集、阻塞 IO、UI/主线程、串行专用执行器归类；检查调用方是否在错误层切线程，以及测试能否注入/替换执行上下文。
 - [ ] 定义 main-safe 合同：Repository、数据源、Security 和平台能力负责让自身阻塞工作不占调用者主线程；ViewModel/UseCase 不猜测下层线程。Room、DataStore 等已提供挂起/异步 API 的调用不额外包装 `Dispatchers.IO`，纯轻量映射也不无差别切线程。
 - [ ] 决定是否提供少量有语义的 `@IoDispatcher` / `@DefaultDispatcher` 等 qualifier，以及 qualifier 所属模块和注入范围。复用 Backup 现有 dispatcher 经验，但不建立无边界的全局线程配置库；对依赖阻塞专用线程或严格单线程语义的能力单独说明。
-- [ ] 检查 `RoomEntryListQueryRepository.getActiveByType()` 的列表映射是否需要独立执行上下文，只在有线程归属或验证收益时迁移。唯一生产消费者是 [`RelatedPasswordOperationsImpl.activeLogins()`](../../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/RelatedPasswordOperationsImpl.kt)；需核对 DAO 返回后列表映射所在的调用线程，不按统一风格机械切换。
+- [ ] 在有代表性的数据库规模和目标设备上测量 `RoomEntryListQueryRepository.getActiveByType()` 的列表映射耗时，再决定是否将 CPU 映射移出主线程；不可仅凭其他 Flow 使用 `flowOn` 就机械切换。
+
+  源码核查已完成：唯一生产消费者 [`RelatedPasswordOperationsImpl.activeLogins()`](../../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/RelatedPasswordOperationsImpl.kt) 经 [`DetailPasswordRelationsWorkflow`](../../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordRelationsWorkflow.kt) 使用 [`DetailViewModel.viewModelScope`](../../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)；DAO 挂起查询完成后，列表映射在调用者上下文继续。当前 mapper 仅组装列表项、身份和 Profile，并复用 Entity 已有的集合字段。查询没有条数上限，是否值得切换仍需真实数据量和主线程耗时证据。
 
 已排除的线程候选：
 
@@ -77,7 +79,7 @@
 
 - [ ] 审查 `SingleThreadKdfRunner`：单线程排队是否由 KDF 资源/成本策略要求；验证取消后 worker secret 擦除、迟到结果丢弃、executor shutdown 与排队任务结束行为。评估 `CoroutineDispatcher.limitedParallelism(1)` 或 channel worker 时必须证明等价的串行和秘密清理语义，禁止只为统一技术栈改写。
 - [ ] 审查 `EncryptedLogRecordStore` 的有界 `ThreadPoolExecutor`、溢出/紧急线程、优先级驱逐、`flush(timeout)`、shutdown 与日志丢失窗口。当前专用写队列承担串行文件写和同步 flush；若考虑 Channel/协程 actor，需比较队列背压、fatal logging、线程中断及 shutdown 语义并复用已有并发测试。
-- [ ] 补相机 host 生命周期行为验证：覆盖权限变化/组合重建使旧 provider listener 失效、无重复绑定，以及 analyzer 正在处理时停止 session 并关闭 scanner/executor 的清理顺序。当前源码审查没有专用 Host/Session 测试，不能代替实际异步与设备行为验证。
+- [ ] 补相机 host 生命周期行为验证：覆盖权限变化/组合重建使旧 provider listener 失效、无重复绑定，以及 analyzer 正在处理时停止 session 并关闭 scanner/executor 的清理顺序。owner 分类与源码合同见[Scanner 相机与结果确认 owner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)；当前源码审查没有专用 Host/Session 测试，不能代替实际异步与设备行为验证。
 - [ ] 审查 Runtime Session、Autofill lease/timeout、Clipboard 清理、Favicon 与附件资源回收等自建 scope/dispatcher。`Job.cancel()` 仅表示取消请求；对仍在使用安全资源的任务，须等 lease/事务退出或依赖可验证 abort 合同后才可关闭资源。
 
 ### Task 6：制定状态、Flow 与并发失败合同

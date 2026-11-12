@@ -5,7 +5,6 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.data.BuildConfig
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
-import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.OtpTypeConverter
 import com.aozijx.passly.data.local.database.converter.StringSetConverter
@@ -49,7 +48,6 @@ import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
 )
 @TypeConverters(
     EntryTypeConverter::class,
-    EntryRelationTypeConverter::class,
     ActivityTypeConverter::class,
     OtpTypeConverter::class,
     StringSetConverter::class,

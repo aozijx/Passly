@@ -175,7 +175,7 @@ class DataManagementSettingsViewModelTest {
             assertEquals(0, access.acquired)
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
-            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(Reasons.Application.Storage.StorageFailure, logger.events.single().reason)
             assertEquals(
                 IOException::class.java,
                 logger.events
@@ -220,7 +220,7 @@ class DataManagementSettingsViewModelTest {
             )
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
-            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(Reasons.Application.Storage.StorageFailure, logger.events.single().reason)
             assertEquals(
                 IOException::class.java,
                 logger.events

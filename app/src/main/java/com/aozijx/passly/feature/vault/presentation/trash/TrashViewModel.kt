@@ -4,13 +4,11 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.trash.TrashCommandResult
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
-import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -205,13 +203,7 @@ internal class TrashViewModel
                 }
 
                 is TrashCommandResult.Failed -> {
-                    val message =
-                        if (result.error is SessionModeRestricted) {
-                            UiErrorMessage(R.string.trash_error_session_restricted)
-                        } else {
-                            result.error.toUiErrorMessage(fallback)
-                        }
-                    mutate(TrashMutation.ActionFailed(message))
+                    mutate(TrashMutation.ActionFailed(result.error.toUiErrorMessage(fallback)))
                 }
             }
         }

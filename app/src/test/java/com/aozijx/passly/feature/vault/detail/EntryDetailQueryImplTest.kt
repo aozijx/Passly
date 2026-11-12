@@ -15,7 +15,6 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -48,10 +47,10 @@ class EntryDetailQueryImplTest {
                     entryLinkRepository =
                         TestLinks(
                             listOf(
-                                link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-                                link("otp", "otp", "login", EntryRelationType.OTP_FOR),
-                                link("sibling-member", "sibling", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-                                link("related", "login", "sibling", EntryRelationType.RELATED_TO),
+                                link("member", "login", "account"),
+                                link("otp", "otp", "login"),
+                                link("sibling-member", "sibling", "account"),
+                                link("related", "login", "sibling"),
                             ),
                         ),
                 )
@@ -83,10 +82,10 @@ class EntryDetailQueryImplTest {
                     entryLinkRepository =
                         TestLinks(
                             listOf(
-                                link("valid", "sibling", "login", EntryRelationType.RELATED_TO),
-                                link("ineligible", "login", "otp", EntryRelationType.RELATED_TO),
-                                link("deleted", "login", "deleted", EntryRelationType.RELATED_TO),
-                                link("other-kind", "otp", "login", EntryRelationType.OTP_FOR),
+                                link("valid", "sibling", "login"),
+                                link("ineligible", "login", "otp"),
+                                link("deleted", "login", "deleted"),
+                                link("other-kind", "otp", "login"),
                             ),
                         ),
                 )
@@ -110,7 +109,7 @@ class EntryDetailQueryImplTest {
                     sensitiveFieldRepository = EmptySensitiveFieldRepository,
                     entryLinkRepository =
                         TestLinks(
-                            listOf(link("related", "otp", "login", EntryRelationType.RELATED_TO)),
+                            listOf(link("related", "otp", "login")),
                         ),
                 )
 
@@ -132,7 +131,7 @@ class EntryDetailQueryImplTest {
                     sensitiveFieldRepository = EmptySensitiveFieldRepository,
                     entryLinkRepository =
                         TestLinks(
-                            listOf(link("related", "deleted-source", "login", EntryRelationType.RELATED_TO)),
+                            listOf(link("related", "deleted-source", "login")),
                         ),
                 )
 
@@ -146,21 +145,27 @@ class EntryDetailQueryImplTest {
     fun `account group id projection retains graph semantics`() {
         val links =
             listOf(
-                link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-                link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+                link("member", "login", "account"),
+                link("otp", "otp", "login"),
+            )
+        val types =
+            mapOf(
+                EntryId("account") to EntryType.ACCOUNT,
+                EntryId("login") to EntryType.LOGIN,
+                EntryId("otp") to EntryType.OTP,
             )
 
         assertEquals(
             linkedSetOf(EntryId("login"), EntryId("otp")),
-            resolveAccountGroupEntryIds(EntryId("account"), EntryType.ACCOUNT, links),
+            resolveAccountGroupEntryIds(EntryId("account"), EntryType.ACCOUNT, links, types),
         )
         assertEquals(
             linkedSetOf(EntryId("account"), EntryId("otp")),
-            resolveAccountGroupEntryIds(EntryId("login"), EntryType.LOGIN, links),
+            resolveAccountGroupEntryIds(EntryId("login"), EntryType.LOGIN, links, types),
         )
         assertEquals(
             emptySet<EntryId>(),
-            resolveAccountGroupEntryIds(EntryId("note"), EntryType.NOTE, links),
+            resolveAccountGroupEntryIds(EntryId("note"), EntryType.NOTE, links, types),
         )
     }
 
@@ -181,6 +186,9 @@ class EntryDetailQueryImplTest {
             batchRequests += entryIds
             return entryIds.mapNotNull(entries::get)
         }
+
+        override suspend fun getTypesByIds(entryIds: List<EntryId>): Map<EntryId, EntryType> =
+            (entries + (current.id to current)).filterKeys { it in entryIds }.mapValues { it.value.type }
     }
 
     private class TestLinks(
@@ -194,7 +202,7 @@ class EntryDetailQueryImplTest {
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
             links.filter {
-                it.sourceEntryId == entryId || it.targetEntryId == entryId
+                it.firstEntryId == entryId || it.secondEntryId == entryId
             }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> = AppResult.Success(Unit)
@@ -242,12 +250,10 @@ class EntryDetailQueryImplTest {
         id: String,
         source: String,
         target: String,
-        type: EntryRelationType,
     ) = EntryLink.create(
         id = EntryLinkId(id),
-        sourceEntryId = EntryId(source),
-        targetEntryId = EntryId(target),
-        relationType = type,
+        firstEntryId = EntryId(source),
+        secondEntryId = EntryId(target),
         createdAt = 1L,
     )
 }

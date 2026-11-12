@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
-import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
@@ -93,10 +92,7 @@ internal object BackupImportPlanner {
             }
         val acceptedLinks =
             bundle.document.links.filter { link ->
-                val relation = BackupArchiveKeyRegistry.relationType(link.relationType) ?: return@filter false
-                val source = acceptedTypes[link.sourceEntryId] ?: return@filter false
-                val target = acceptedTypes[link.targetEntryId] ?: return@filter false
-                EntryLinkPolicy.isAllowed(relation, source, target)
+                link.sourceEntryId in acceptedTypes && link.targetEntryId in acceptedTypes
             }
         val plannedBundle =
             BackupBundle(

@@ -976,6 +976,9 @@ class VaultViewModelTest {
 
         override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entry.takeIf { it.id in entryIds }?.let(::listOf).orEmpty()
 
+        override suspend fun getTypesByIds(entryIds: List<EntryId>) =
+            entry.takeIf { it.id in entryIds }?.let { mapOf(it.id to it.type) }.orEmpty()
+
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 
         override suspend fun updateEntry(

@@ -290,8 +290,8 @@ internal class DetailPasswordRelationsWorkflow(
         } catch (failure: Exception) {
             logger.error(
                 Events.Vault.Error,
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 failure,
             )
             throw failure

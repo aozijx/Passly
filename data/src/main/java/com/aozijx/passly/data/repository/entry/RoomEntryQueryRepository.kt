@@ -6,6 +6,7 @@ import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import javax.inject.Inject
@@ -23,6 +24,18 @@ internal class RoomEntryQueryRepository
         private val secretFieldStore: SecretFieldStore,
     ) : EntryQueryRepository,
         EntryTagQuery {
+        override suspend fun getTypesByIds(entryIds: List<EntryId>): Map<EntryId, EntryType> {
+            if (entryIds.isEmpty()) return emptyMap()
+            return databaseSession.queryFullVault(
+                onDenied = { emptyMap() },
+            ) {
+                entryIds.distinct()
+                    .chunked(MAX_ENTRY_IDS_PER_QUERY)
+                    .flatMap { ids -> entryQueryDao().getTypesByIds(ids.map(EntryId::value)) }
+                    .associate { EntryId(it.entryId) to it.entryType }
+            }
+        }
+
         override suspend fun getById(entryId: EntryId): Entry? {
             return databaseSession.queryFullVault(
                 onDenied = { null },
@@ -41,8 +54,9 @@ internal class RoomEntryQueryRepository
             ) {
                 val requestedIds = entryIds.distinct()
                 val entriesById =
-                    entryQueryDao()
-                        .getByIds(requestedIds.map(EntryId::value))
+                    requestedIds
+                        .chunked(MAX_ENTRY_IDS_PER_QUERY)
+                        .flatMap { ids -> entryQueryDao().getByIds(ids.map(EntryId::value)) }
                         .associateBy { it.entryId }
                 requestedIds.mapNotNull { id ->
                     val metaEntity = entriesById[id.value] ?: return@mapNotNull null
@@ -59,4 +73,8 @@ internal class RoomEntryQueryRepository
             ) {
                 entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
             }
+
+    private companion object {
+        const val MAX_ENTRY_IDS_PER_QUERY = 900
+    }
     }

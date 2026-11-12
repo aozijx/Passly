@@ -1,6 +1,6 @@
 # 扫描输入与生命周期
 
-状态：相机/图片主链路已实现；`Work.HostPaused` 与显式 `Work.Stopped` 已区分。剩余 Route、解码器、候选几何和设备验收见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)；Camera Host 资源生命周期验收由[并发计划 Task 4](../../project/work/plans/2026-11-06-app-architecture-concurrency-todo.md#task-4)跟踪。
+状态：相机/图片主链路已实现；`Work.HostPaused` 与显式 `Work.Stopped` 已区分。剩余 Route、解码器、候选几何和设备验收见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)；Camera Host 资源生命周期验收由[并发计划 Task 5](../../project/work/plans/2026-11-06-app-architecture-concurrency-todo.md#task-5)跟踪。
 
 相机帧和相册图片都产生原始扫码文本，但输入资源及取消合同不同。`ScannerCameraHost` 持有 CameraX/ML Kit 与 `ImageProxy`；`ScannerViewModel` 持有扫描任务 owner、扫描 UI state、单个带消费确认的反馈状态及剪贴板写入；`ScannerRoute` 持有相册选择、生命周期 effect 与 owner 提供的结果计划。扫码层不解析内容类型，调用方在自己的业务入口转换。
 

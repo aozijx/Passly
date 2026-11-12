@@ -12,7 +12,6 @@ import com.aozijx.passly.data.repository.entry.command.PostCommitCleanup
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,35 +64,30 @@ internal class RoomEntryLinkRepository
                     val endpoints =
                         entryQueryDao()
                             .getByIds(
-                                listOf(link.sourceEntryId.value, link.targetEntryId.value),
+                                listOf(link.firstEntryId.value, link.secondEntryId.value),
                             ).associateBy { it.entryId }
-                    val source = endpoints[link.sourceEntryId.value]
-                    val target = endpoints[link.targetEntryId.value]
+                    val first = endpoints[link.firstEntryId.value]
+                    val second = endpoints[link.secondEntryId.value]
                     if (
-                        source == null || target == null ||
-                        source.deletedAt != null || target.deletedAt != null ||
-                        !EntryLinkPolicy.isAllowed(
-                            relationType = link.relationType,
-                            sourceType = source.entryType,
-                            targetType = target.entryType,
-                        )
+                        first == null || second == null ||
+                        first.deletedAt != null || second.deletedAt != null
                     ) {
                         throw ValidationError()
                     }
                     val previous = entryLinkQueryDao().getById(link.id.value)
-                    if (previous != null && previous.sourceEntryId == link.sourceEntryId.value &&
-                        previous.targetEntryId == link.targetEntryId.value && previous.relationType == link.relationType
+                    if (previous != null && previous.firstEntryId == link.firstEntryId.value &&
+                        previous.secondEntryId == link.secondEntryId.value
                     ) {
                         return@write Unit
                     }
                     entryLinkCommandDao().upsert(link.toEntity())
                     val affectedEntryIds =
                         buildSet {
-                            add(link.sourceEntryId.value)
-                            add(link.targetEntryId.value)
+                            add(link.firstEntryId.value)
+                            add(link.secondEntryId.value)
                             previous?.let {
-                                add(it.sourceEntryId)
-                                add(it.targetEntryId)
+                                add(it.firstEntryId)
+                                add(it.secondEntryId)
                             }
                         }
                     val now = clock.now()
@@ -114,7 +108,7 @@ internal class RoomEntryLinkRepository
                     entryLinkCommandDao().deleteById(linkId.value)
                     if (link != null) {
                         val now = clock.now()
-                        setOf(link.sourceEntryId, link.targetEntryId).forEach {
+                        setOf(link.firstEntryId, link.secondEntryId).forEach {
                             revisionWriter.snapshotCurrent(this, it, now, secretFieldStore)
                         }
                         attachmentGarbageCollector.scheduleInTransaction(this)
@@ -129,9 +123,8 @@ internal class RoomEntryLinkRepository
         private fun EntryLinkEntity.toDomain(): EntryLink =
             EntryLink.create(
                 id = EntryLinkId(linkId),
-                sourceEntryId = EntryId(sourceEntryId),
-                targetEntryId = EntryId(targetEntryId),
-                relationType = relationType,
+                firstEntryId = EntryId(firstEntryId),
+                secondEntryId = EntryId(secondEntryId),
                 createdAt = createdAt,
                 updatedAt = updatedAt,
             )
@@ -139,9 +132,8 @@ internal class RoomEntryLinkRepository
         private fun EntryLink.toEntity(): EntryLinkEntity =
             EntryLinkEntity(
                 linkId = id.value,
-                sourceEntryId = sourceEntryId.value,
-                targetEntryId = targetEntryId.value,
-                relationType = relationType,
+                firstEntryId = firstEntryId.value,
+                secondEntryId = secondEntryId.value,
                 createdAt = createdAt,
                 updatedAt = updatedAt,
             )

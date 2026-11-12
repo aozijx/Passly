@@ -72,7 +72,7 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 
 ## Vault OTP 映射断言去重（2026-11-12）
 
-`VaultListUiMapperTest` 原本还包含 timed 与 HOTP runtime 状态到 `OtpUiState` 的投影断言，但这两条只调用 OTP state mapper，并未覆盖 `VaultListUiMapper`；同一映射 owner 已由专属 `OtpUiStateMapperTest` 覆盖，包含 timed current/next code 与进度、HOTP 不生成 next code、pending/failed、hidden/not-applicable/not-requested。已从 Vault list mapper 测试移除这两条重复场景与相应 imports，保留该文件真正验证的 list projection 合同。2026-11-12 最新 `:app:compileDebugUnitTestKotlin` 未能验证本改动：失败发生于 `:app:compileDebugKotlin`，当前生产工作区 OTP UI 合并存在 `OtpPresentation`/`OtpType` 调用合同、`OtpUiState` 派生属性、Detail 映射及 card style 不一致，Backup 编译也有未解析错误类型/常量；测试源码尚未到达编译阶段。待对应生产变更收敛后重跑相关测试；本批改动未提交。
+`VaultListUiMapperTest` 原本还包含 timed 与 HOTP runtime 状态到 `OtpUiState` 的投影断言，但这两条只调用 OTP state mapper，并未覆盖 `VaultListUiMapper`；同一映射 owner 已由专属 `OtpUiStateMapperTest` 覆盖，包含 timed current/next code 与进度、HOTP 不生成 next code、pending/failed、hidden/not-applicable/not-requested。已从 Vault list mapper 测试移除这两条重复场景与相应 imports，保留该文件真正验证的 list projection 合同。2026-11-12 的 `:app:compileDebugUnitTestKotlin` 尝试未能验证本改动：当次失败发生于 `:app:compileDebugKotlin`，当时工作区的 OTP UI 合并存在 `OtpPresentation`/`OtpType` 调用合同、`OtpUiState` 派生属性、Detail 映射及 card style 不一致，Backup 编译也有未解析错误类型/常量；测试源码尚未到达编译阶段。随后当前工作树的 `:app:compileDebugKotlin verifyArchitecture --no-parallel --max-workers=2` 已通过，但没有编译或运行测试源集；仍需重新执行相关测试验证。本批改动未提交。
 
 ## Backup Archive Service 与 Operation Gateway 测试 owner 复核（2026-11-12）
 

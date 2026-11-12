@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 
 /** Stable protocol keys. Kotlin enum names are deliberately not part of the archive format. */
 internal object BackupArchiveKeyRegistry {
@@ -84,15 +83,6 @@ internal object BackupArchiveKeyRegistry {
         )
     private val fieldKeys = fields.entries.associate { (key, value) -> value to key }
 
-    private val relations =
-        mapOf(
-            "member_of_account" to EntryRelationType.MEMBER_OF_ACCOUNT,
-            "otp_for" to EntryRelationType.OTP_FOR,
-            "recovery_for" to EntryRelationType.RECOVERY_FOR,
-            "related_to" to EntryRelationType.RELATED_TO,
-        )
-    private val relationKeys = relations.entries.associate { (key, value) -> value to key }
-
     fun entryTypeKey(type: EntryType): String = entryTypeKeys.getValue(type)
 
     fun entryType(key: String): EntryType? = entryTypes[key]
@@ -101,7 +91,4 @@ internal object BackupArchiveKeyRegistry {
 
     fun field(key: String): FieldKey? = fields[key]
 
-    fun relationTypeKey(type: EntryRelationType): String = relationKeys.getValue(type)
-
-    fun relationType(key: String): EntryRelationType? = relations[key]
 }

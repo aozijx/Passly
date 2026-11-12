@@ -17,8 +17,8 @@ class ErrorCatalogTaskTest {
             parse(
                 errors =
                     """
-                    {"symbol":"One","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one"},
-                    {"symbol":"Two","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"two"}
+                    {"symbol":"One","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one","group_path":["General"]},
+                    {"symbol":"Two","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"two","group_path":["General"]}
                     """.trimIndent(),
             )
         }
@@ -26,7 +26,20 @@ class ErrorCatalogTaskTest {
             parse(
                 errors =
                     """
-                    {"symbol":"One","code":"ONE_ERROR","default_reason":"MISSING","category":"APPLICATION","exposure":"INTERNAL","description":"one"}
+                    {"symbol":"One","code":"ONE_ERROR","default_reason":"MISSING","category":"APPLICATION","exposure":"INTERNAL","description":"one","group_path":["General"]}
+                    """.trimIndent(),
+            )
+        }
+    }
+
+    @Test
+    fun `hierarchy leaf cannot also be a parent object`() {
+        assertFailsWith<IllegalArgumentException> {
+            parse(
+                errors =
+                    """
+                    {"symbol":"Child","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"parent leaf","group_path":["Application"]},
+                    {"symbol":"Leaf","code":"TWO_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"nested leaf","group_path":["Application","Child"]}
                     """.trimIndent(),
             )
         }
@@ -38,7 +51,7 @@ class ErrorCatalogTaskTest {
             parse(
                 errors =
                     """
-                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"USER_ACTIONABLE","description":"one"}
+                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"USER_ACTIONABLE","description":"one","group_path":["General"]}
                     """.trimIndent(),
             )
         }
@@ -46,7 +59,7 @@ class ErrorCatalogTaskTest {
             parse(
                 errors =
                     """
-                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one","message_key":"auth_error_failed"}
+                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one","message_key":"auth_error_failed","group_path":["General"]}
                     """.trimIndent(),
             )
         }
@@ -58,7 +71,7 @@ class ErrorCatalogTaskTest {
             parse(
                 errors =
                     """
-                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"SECURITY","exposure":"USER_ACTIONABLE","description":"Visible failure","message_key":"auth_error_failed"}
+                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"SECURITY","exposure":"USER_ACTIONABLE","description":"Visible failure","message_key":"auth_error_failed","group_path":["Authentication"]}
                     """.trimIndent(),
             )
 
@@ -68,11 +81,11 @@ class ErrorCatalogTaskTest {
         assertEquals(first, second)
         assertTrue(first.coreKotlin.contains("object Security"))
         assertTrue(first.coreKotlin.contains("val One = ErrorCode(\"ONE_ERROR\")"))
-        assertTrue(first.appKotlin.contains("ErrorCodes.Security.One -> R.string.auth_error_failed"))
+        assertTrue(first.appKotlin.contains("ErrorCodes.Security.Authentication.One -> R.string.auth_error_failed"))
         assertTrue(first.appKotlin.contains("else -> null"))
         assertTrue(!first.appKotlin.contains("errorCode.value"))
         assertTrue(first.markdown.contains("### Security"))
-        assertTrue(first.markdown.contains("| `ONE_ERROR` | `KNOWN` | USER_ACTIONABLE | Visible failure |"))
+        assertTrue(first.markdown.contains("| `Security.Authentication.One` (`ONE_ERROR`) | `Application.Fallback.Known` (`KNOWN`) | USER_ACTIONABLE | Visible failure |"))
     }
 
     private fun parse(errors: String): ErrorCatalog =
@@ -83,7 +96,7 @@ class ErrorCatalogTaskTest {
                     {
                       "schema_version": 1,
                       "reasons": [
-                        {"symbol":"Known","code":"KNOWN","description":"Known reason"}
+                        {"symbol":"Known","code":"KNOWN","description":"Known reason","group_path":["Application","Fallback"]}
                       ],
                       "errors": [
                         $errors

@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 internal fun EntryType.toStorageKey(): String =
@@ -193,23 +192,6 @@ internal fun fieldKeyFromStorageKey(key: String): FieldKey =
         "WIFI_SECURITY" -> FieldKey.WIFI_SECURITY
         "WIFI_HIDDEN" -> FieldKey.WIFI_HIDDEN
         else -> invalidStorageKey("field key", key)
-    }
-
-internal fun EntryRelationType.toStorageKey(): String =
-    when (this) {
-        EntryRelationType.MEMBER_OF_ACCOUNT -> "MEMBER_OF_ACCOUNT"
-        EntryRelationType.OTP_FOR -> "OTP_FOR"
-        EntryRelationType.RECOVERY_FOR -> "RECOVERY_FOR"
-        EntryRelationType.RELATED_TO -> "RELATED_TO"
-    }
-
-internal fun entryRelationTypeFromStorageKey(key: String): EntryRelationType =
-    when (key) {
-        "MEMBER_OF_ACCOUNT" -> EntryRelationType.MEMBER_OF_ACCOUNT
-        "OTP_FOR" -> EntryRelationType.OTP_FOR
-        "RECOVERY_FOR" -> EntryRelationType.RECOVERY_FOR
-        "RELATED_TO" -> EntryRelationType.RELATED_TO
-        else -> invalidStorageKey("entry relation type", key)
     }
 
 internal fun SensitiveFieldKey.toStorageKey(): String =

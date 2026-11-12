@@ -12,19 +12,25 @@ import com.aozijx.passly.core.error.model.Unexpected
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.security.GeneralSecurityException
+import java.util.concurrent.CancellationException
 
 /**
  * 异常到 AppError 的映射。独立文件，避免 AppError.kt 循环依赖域子类。
  */
 fun AppError.Companion.fromThrowable(throwable: Throwable): AppError =
-    when (throwable) {
-        is AppError -> throwable
-        is DatabaseException.InvalidPassphraseException -> DatabaseLocked()
-        is DatabaseException -> DatabaseInitFailed(throwableType = throwable.javaClass.simpleName)
-        is CryptoException.TagVerificationFailed -> CryptoDataCorrupted()
-        is CryptoException -> CryptoError(throwableType = throwable.javaClass.simpleName)
-        is FileNotFoundException -> FileIOError(throwableType = throwable.javaClass.simpleName)
-        is IOException -> FileIOError(throwableType = throwable.javaClass.simpleName)
-        is GeneralSecurityException -> CryptoError(throwableType = throwable.javaClass.simpleName)
-        else -> Unexpected(throwableType = throwable.javaClass.simpleName)
+    when {
+        throwable is CancellationException -> throw throwable
+        throwable !is Exception -> throw throwable
+        else ->
+            when (throwable) {
+                is AppError -> throwable
+                is DatabaseException.InvalidPassphraseException -> DatabaseLocked()
+                is DatabaseException -> DatabaseInitFailed(throwableType = throwable.javaClass.simpleName)
+                is CryptoException.TagVerificationFailed -> CryptoDataCorrupted()
+                is CryptoException -> CryptoError(throwableType = throwable.javaClass.simpleName)
+                is FileNotFoundException -> FileIOError(throwableType = throwable.javaClass.simpleName)
+                is IOException -> FileIOError(throwableType = throwable.javaClass.simpleName)
+                is GeneralSecurityException -> CryptoError(throwableType = throwable.javaClass.simpleName)
+                else -> Unexpected(throwableType = throwable.javaClass.simpleName)
+            }
     }

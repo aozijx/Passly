@@ -159,7 +159,7 @@ internal class DiscoverAutofillCandidates
                         logger.log(
                             LogStatements.Autofill.discoveryFailed(
                                 error,
-                                Reasons.DatabaseUnavailable,
+                                Reasons.Database.Availability.DatabaseUnavailable,
                                 LogStatements.Autofill.context(request.source, request.packageName),
                             ),
                         )

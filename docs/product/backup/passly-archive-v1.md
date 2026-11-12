@@ -38,14 +38,13 @@ Steam 固定 SHA1、5 位和 30 秒，不接受冲突配置。
 恢复会校验密钥能被所选编码解码，但保留其合法字符串表示（包括小写与补位），也不修剪 issuer 和账户名。
 原生归档不是手动输入，不对损坏字段做规范化修补。
 
-`BackupArchiveKeyRegistry` 是 Entry type、Field key、Relation type、Resource kind 与 Domain 类型间的唯一
+`BackupArchiveKeyRegistry` 是 Entry type、Field key、Resource kind 与 Domain 类型间的唯一
 映射。外部格式禁止使用 Kotlin `enum.name`、ordinal、`Enum.valueOf()` 或 `enumValueOf()`。字段敏感度只信任
 本地 `EntryTypeDefinition`，备份文件不能降低访问等级。
 
 ## Link 和 Resource
 
-Link 使用 `member_of_account`、`otp_for`、`recovery_for`、`related_to` 等稳定键。导入校验端点、方向、类型、
-重复关系和时间戳。
+Link 记录只包含稳定 ID、两个端点 ID 和创建/更新时间，不包含关系类型键；内部根据两端条目的类型推导账户、OTP、恢复码或普通关联含义。新导出使用规范化端点对，导入拒绝缺失端点和重复的无向端点对。Archive 版本仍为 1；旧 v1 link 中额外的 `relationType` 字段由 `ignoreUnknownKeys` 忽略，识别的端点与时间戳仍按当前字段读取。
 
 Resource 元数据包含 ID、entry ID、kind、size、SHA-256 及可选文件名/MIME/创建时间。每个 Entry 最多一个 icon。
 JSON 使用 Base64；加密 ZIP 使用 `resources/<resource-id>`。路径穿越、重复/未知条目、未声明资源、截断、尾随

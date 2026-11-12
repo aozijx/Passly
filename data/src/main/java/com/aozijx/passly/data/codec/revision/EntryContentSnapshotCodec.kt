@@ -4,7 +4,6 @@ import com.aozijx.passly.core.crypto.FieldEncryptor
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
-import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
 import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
@@ -16,7 +15,6 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -83,9 +81,8 @@ private data class EntryRelationsSnapshot(
 @Serializable
 private data class EntryLinkSnapshot(
     val id: String,
-    val sourceEntryId: String,
-    val targetEntryId: String,
-    val relationType: String,
+    val firstEntryId: String,
+    val secondEntryId: String,
     val createdAt: Long,
     val updatedAt: Long,
 )
@@ -190,7 +187,7 @@ class EntryContentSnapshotCodec
             }
 
         private companion object {
-            const val FORMAT_PREFIX = "content1:"
+            const val FORMAT_PREFIX = "content2:"
             const val MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
         }
     }
@@ -198,9 +195,8 @@ class EntryContentSnapshotCodec
 private fun EntryLink.toSnapshot() =
     EntryLinkSnapshot(
         id.value,
-        sourceEntryId.value,
-        targetEntryId.value,
-        relationType.toStorageKey(),
+        firstEntryId.value,
+        secondEntryId.value,
         createdAt,
         updatedAt,
     )
@@ -208,9 +204,8 @@ private fun EntryLink.toSnapshot() =
 private fun EntryLinkSnapshot.toDomain(): EntryLink =
     EntryLink.create(
         id = EntryLinkId(id),
-        sourceEntryId = EntryId(sourceEntryId),
-        targetEntryId = EntryId(targetEntryId),
-        relationType = entryRelationTypeFromStorageKey(relationType),
+        firstEntryId = EntryId(firstEntryId),
+        secondEntryId = EntryId(secondEntryId),
         createdAt = createdAt,
         updatedAt = updatedAt,
     )

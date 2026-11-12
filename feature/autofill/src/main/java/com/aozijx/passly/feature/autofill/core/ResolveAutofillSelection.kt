@@ -29,6 +29,7 @@ internal class ResolveAutofillSelection
     @Inject
     constructor(
         private val interactionStore: AutofillInteractionStore,
+        private val finishInteraction: FinishAutofillInteraction,
         private val credentialResolver: AutofillCredentialResolver,
         private val authenticationRequester: AuthenticationRequester,
         private val secureSessionAccessState: SecureSessionAccessState,
@@ -102,7 +103,7 @@ internal class ResolveAutofillSelection
                 if (snapshot?.source == com.aozijx.passly.domain.autofill.model.AutofillInteractionSource.LEGACY &&
                     snapshot.scope.webDomain != null
                 ) {
-                    interactionStore.finish(interactionId, AutofillInteractionState.Cancelled)
+                    finishInteraction.cancel(interactionId)
                     return AutofillSelectionOutcome.Unauthorized
                 }
                 reauthenticateAndResolve(interactionId, scope, entryId, requestedFields, strictDomainMatching)

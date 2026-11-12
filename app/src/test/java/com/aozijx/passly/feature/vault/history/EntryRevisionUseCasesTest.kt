@@ -362,6 +362,8 @@ class EntryRevisionUseCasesTest {
         override suspend fun getById(entryId: EntryId) = entry
 
         override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+        override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
     }
 
     private class FakeSensitiveRepository(

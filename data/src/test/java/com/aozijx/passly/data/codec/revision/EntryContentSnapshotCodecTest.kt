@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -32,9 +31,8 @@ class EntryContentSnapshotCodecTest {
                 val link =
                     EntryLink.create(
                         id = EntryLinkId("link-1"),
-                        sourceEntryId = EntryId(ENTRY_ID),
-                        targetEntryId = EntryId("target-entry"),
-                        relationType = EntryRelationType.OTP_FOR,
+                        firstEntryId = EntryId(ENTRY_ID),
+                        secondEntryId = EntryId("target-entry"),
                         createdAt = 100L,
                     )
                 val encrypted = codec.encrypt(summary, secret, ENTRY_ID, EntryType.LOGIN, listOf(link))
@@ -62,7 +60,7 @@ class EntryContentSnapshotCodecTest {
 
                 val encoded = encryptor.decrypt(encrypted, DatabaseRecordAad.revision(ENTRY_ID))
 
-                assertTrue(encoded.startsWith("content1:"))
+                assertTrue(encoded.startsWith("content2:"))
             }
         }
 

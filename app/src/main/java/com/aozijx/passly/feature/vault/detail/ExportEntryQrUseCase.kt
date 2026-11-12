@@ -129,8 +129,8 @@ internal class ExportEntryQrUseCase
                         } catch (failure: Exception) {
                             logger.error(
                                 Events.Vault.Error,
-                                ErrorCodes.Security.VaultOperationFailed,
-                                Reasons.UnknownFailure,
+                                ErrorCodes.Security.Vault.VaultOperationFailed,
+                                Reasons.Application.Fallback.UnknownFailure,
                                 failure,
                                 fields { enum(LogFieldKeys.EntryType, entry.type) },
                             )

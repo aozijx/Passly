@@ -1,6 +1,6 @@
 # Passly 深度维护审查待办
 
-**最近部分复核：2026-11-11。** 本轮将已验收的 Runtime Session lease 生命周期、DatabaseReset 成功反馈计时器，以及通知分发平台测试移出活动待办，并分别归档到正式主题页与审查记录；其余范围仍沿用先前全模块 Kotlin 静态盘点和生产调用闭包证据，不等同于全仓安全扫描或逐行证明。
+**最近部分复核：2026-11-12。** 已验收的 Runtime Session lease 生命周期、DatabaseReset 成功反馈计时器和通知分发平台测试已移出活动待办。Task 84 中 Scanner 相机/结果 Session、数据库重试/设置读取及共享 PageEffects 的 owner 候选已分别复核并归档；尚未完成的 ViewModel、Route 和宿主级验收仍保留。其余范围沿用先前全模块 Kotlin 静态盘点和生产调用闭包证据，不等同于全仓安全扫描或逐行证明。
 
 ## 执行顺序
 
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | 架构与并发 | [架构与并发 TODO](2026-11-06-app-architecture-concurrency-todo.md) | 37、51、80、83、84；具体缺陷先处理，广域提案随后 |
 | Autofill 后续 | [唯一后续清单](2026-11-07-passly-autofill-followups.md) | 21 宿主验收、82 设置策略；其他已完成合同已归入主题文档 |
-| Scanner | [唯一行为与设备验收计划](2026-11-06-scanner-entry-and-framing.md)、[输入与生命周期合同](../../../product/scanner/input-lifecycle.md)、[结果交接合同](../../../product/scanner/result-handoff.md) | [并发计划 Task 4](2026-11-06-app-architecture-concurrency-todo.md#task-4) 只跟踪 Camera Host 资源 lifecycle；Scanner 计划跟踪 picker/Route、解码器、几何和设备验收 |
+| Scanner | [唯一行为与设备验收计划](2026-11-06-scanner-entry-and-framing.md)、[输入与生命周期合同](../../../product/scanner/input-lifecycle.md)、[结果交接合同](../../../product/scanner/result-handoff.md) | [并发计划 Task 5](2026-11-06-app-architecture-concurrency-todo.md#task-5) 只跟踪 Camera Host 资源 lifecycle；Scanner 计划跟踪 picker/Route、解码器、几何和设备验收 |
 | Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42 |
 | Backup / 诊断 | [Backup 格式说明](../../../product/backup/passly-archive-v1.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 40、73、74、77 |
 | 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 37、44–46、59、64；Runtime lease 关闭验收归档在 Session 审查记录 |
@@ -111,15 +111,17 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
   - Shell/宿主：`AppShellViewModel`、`AuthenticationHostOwnerViewModel`。
   - Vault：`VaultViewModel`、`TrashViewModel`、`DetailViewModel`、`ScannedOtpImportViewModel`、四种 `Add*ViewModel`。
-  - Settings/Backup：`AppThemeSettingsViewModel`、`AutofillSettingsViewModel`、`SecuritySettingsViewModel`、`RecoveryCodeSettingsViewModel`、`PrivacySettingsViewModel`、`AppPasswordSettingsViewModel`、`InterfaceSettingsViewModel`、`AppearanceSettingsViewModel`、`PermissionManagementViewModel`、`InteractionSettingsViewModel`、`NotificationSettingsViewModel`、`DiagnosticsViewModel`、`DataManagementSettingsViewModel`、`BackupViewModel`、`StorageSettingsViewModel`。
+  - Settings/Backup：`AutofillSettingsViewModel`、`SecuritySettingsViewModel`、`RecoveryCodeSettingsViewModel`、`PrivacySettingsViewModel`、`AppPasswordSettingsViewModel`、`InterfaceSettingsViewModel`、`AppearanceSettingsViewModel`、`PermissionManagementViewModel`、`InteractionSettingsViewModel`、`NotificationSettingsViewModel`、`DiagnosticsViewModel`、`DataManagementSettingsViewModel`、`BackupViewModel`、`StorageSettingsViewModel`。
   - Autofill：`AutofillFillViewModel`、`CredentialResponseViewModel`、`AccessibilityFillViewModel`，均属于 `:feature:autofill`。
   - Scanner/Unlock/Recovery/Database：`ScannerViewModel`、`UnlockViewModel`、`RecoveryModeViewModel`、`DatabaseResetViewModel`。
 
   同时核对每页 Route/Activity/Content 的实际消费者、DI 绑定、相关测试及调用的 UseCase/Interactor/Repository/Coordinator/Store，不只检查 ViewModel 文件。
+
+  已从本轮待审计名单移除完成分类的 `AppThemeSettingsViewModel`：它是 Autofill 认证 Activity 独立的主题投影与读取重试 owner，保留在该 Activity；详见[AppThemeSettingsViewModel owner 审查](../../reviews/2026-11-12-app-theme-settings-owner.md)。Task 84 仍需继续审计其余 ViewModel 与实际宿主行为。
 - [ ] 在真实 Route/Activity 生命周期中验收 Recovery Code 确认后离页、Activity recreation 与 owner 替换时的 durable commit、disclosure 擦除及旧页面状态隔离。提交结果协调已确定保留在 `RecoveryCodeSettingsViewModel`：它将持久 marker 核对结果投影到当前页面状态；Interactor 已拥有 commit 与 durable marker，不再增加只有回调、不能拥有页面状态的应用操作转发层。单测源码覆盖关键路径但不证明真实宿主行为。当前合同见[认证专题](../../../platform/security/authentication.md#恢复码草稿)，决策与代码证据见[恢复码 owner 审查](../../reviews/2026-11-11-recovery-code-draft-owner.md)。
-- [ ] 审查 `AppShellViewModel` 对外观/界面/安全设置流、认证状态、session lock 及 database failure/retry 的组合是否仍是 Shell 页面所需的屏幕投影和生命周期 owner。沿 `DatabaseSessionRecovery`、`DatabaseSessionRetryCoordinator`、`RecoverableRead` 到具体执行端检查是否有重复 retry 状态机、重复事实副本或可独立取消的子 owner；保留合法的应用 Shell 聚合，不为了减少构造器参数把状态拆进一对一转发 Coordinator。
+- [ ] 审查 `AppShellViewModel` 对外观/界面/安全设置流、认证状态、session lock 及 database failure/retry 的组合是否仍是 Shell 页面所需的屏幕投影和生命周期 owner。`DatabaseSessionRetryCoordinator` 与 `RecoverableRead` 已完成创建者、调用方、状态 owner 和合同审查，结论为职责不同并保留，不再作为合并候选；本项继续核对 Shell 剩余状态组合和可独立取消的子 owner。详见[数据库重试与设置读取 owner 审查](../../reviews/2026-11-12-database-retry-and-recoverable-reads.md)。保留合法的应用 Shell 聚合，不为了减少构造器参数把状态拆进一对一转发 Coordinator。
 - [ ] 对其余大/多流程候选逐项判断：`VaultViewModel` 的 Paging 查询、设置读取、OTP runtime 和条目命令；Credential Manager 的系统请求/结果交付与业务解析；Legacy/Accessibility Autofill 的授权、续接、选择和平台结果；Diagnostics 导出、清理与权限；Recovery Mode 的凭据设置；通知运行时权限的请求 owner。[Autofill 后续清单](2026-11-07-passly-autofill-followups.md)、Task 80 的统一架构审计和 Task 83 的 Detail 项应引用并更新状态，不重复复制缺陷清单；分支映射仅在同一 Presentation owner 确有重复、纯显示元数据时考虑合并。
-- [ ] 沿具体 Route/宿主核对专项流程 owner：Scanner `Work.Active` 与 reducer/UI state、反馈消费确认及宿主暂停恢复/owner 替换/停止清理；Autofill Settings 的偏好与系统服务 Flow 独立失败恢复、页面退出后的旧 effect 丢弃及写入期间状态变化；Backup 文档选择 request ID 与页面 owner、退出重入/迟到回调/执行中关闭及凭据擦除/提交结果；Unlock 认证、尝试刷新和首次密码设置的 owner、取消/fatal 清理及页面反馈。相机识别、decoder、结果交付和 Recovery Code 提交恢复分别由 Scanner 专题、Autofill Task 21 与本 Task 前项维护，不复制范围。
+- [ ] 沿具体 Route/宿主核对剩余专项流程 owner：Scanner 的 `Work.Active` / reducer 与 UI state、反馈消费确认及宿主暂停恢复/owner 替换/停止清理行为；Autofill Settings 的偏好与系统服务 Flow 独立失败恢复、页面退出后的旧 effect 丢弃及写入期间状态变化；Backup 文档选择 request ID 与页面 owner、退出重入/迟到回调/执行中关闭及凭据擦除/提交结果；Unlock 认证、尝试刷新和首次密码设置的 owner、取消/fatal 清理及页面反馈。`ScannerCameraHost` 资源与 `ScannerResultSession` 确认阶段的 owner 分类已完成，见[Scanner 相机与结果确认 owner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)；相机生命周期和业务 handoff 行为仍分别由并发计划 Task 5 与 Scanner 专题跟踪，不重复迁移范围。
 - [ ] 对 Settings、Shell、Diagnostics、Database Reset 和 Recovery Mode 的 ViewModel 按状态真相源、合法状态、长 Flow 失败重订阅、任务取消、敏感清理及 Route effect 核对。
 - [ ] 对每个 ViewModel 依赖分类并验证层边界：可观察的 Domain/Repository 数据、完整业务动作 UseCase/Interactor、窄应用端口、Presentation 状态 owner、平台/持久化实现。继续禁止 ViewModel 间依赖及直接 DAO/Room/Data Entity/具体文件实现；明确哪些 `feature.*.data` 或 `feature.*.internal` 类型实际是跨层实现泄漏，避免仅按 `internal` 包名搬移。核查 `verifyArchitecture` 当前 ViewModel 门禁与 `ViewModelDependencyVerifier` 的覆盖范围；若新增静态边界，只针对已证实错误依赖设计白名单/反例测试，不把合法 Repository Flow 或窄业务端口误禁。
 - [ ] 将本轮的稳定规则同步到 `docs/platform/architecture/viewmodel-ownership.md`、`docs/platform/architecture/package-boundaries.md`、`docs/engineering/development/maintenance-boundaries.md` 及必要功能文档，并使本 TODO 保留未迁移清单与决策证据。迁移需要分批按 Feature 执行；每次必须减少原 ViewModel 的独立业务职责、状态、异步任务组或实现依赖，而不是只变短文件。覆盖取消/重试/离页迟到结果/配置重建/会话锁定/持久提交点/敏感清理；运行对应 ViewModel/Route/宿主测试、相关模块门禁、`verifyArchitecture` 和 `git diff --check`。
@@ -138,7 +140,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 ### Task 35：验收 EntryLink 写入与端点删除竞态
 
-- [ ] 以真实 Room AndroidTest 交错验证端点删除与 `EntryLinkRepository.upsert()`：允许 upsert 先提交后由删除级联清除，或删除先提交后 upsert 拒绝；最终不得留下指向缺失或已删除端点的 link。现有 `EntryLinkConstraintDaoTest.endpointTripleIsUnique_andDeletingEndpointCascadesLink` 已覆盖 DAO 唯一约束、同 ID 更新和级联删除，本项只补 Repository 事务竞态，不重复 DAO 断言。
+- [ ] 以真实 Room AndroidTest 交错验证端点删除与 `EntryLinkRepository.upsert()`：允许 upsert 先提交后由删除级联清除，或删除先提交后 upsert 拒绝；最终不得留下指向缺失或已删除端点的 link。当前 `EntryLinkConstraintDaoTest.endpointPairIsUnique_andDeletingEndpointCascadesLink` 已覆盖 `(firstEntryId, secondEntryId)` 唯一约束、同 ID 更新和级联删除；本项只补 Repository 事务竞态，不重复 DAO 断言。
 
 <a id="task-34"></a>
 
@@ -159,13 +161,13 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 ### Task 74：按测试对象优化单测结构与重复装配
 - [ ] Detail 生产 owner 稳定后再评估是否拆分 `DetailViewModelTest.kt`；本轮检查了 favicon/敏感字段、编辑准备、package picker、activity/revision history、snapshot 与 revision restore 工作流。相似的失败/重试、取消、fatal、session lock 与 entry replacement 保护不同 owner 和终态，未发现可安全删除的重复场景。由于当前 Detail owner 仍在变更，先不搬动宽 fixture；稳定后按独立工作流和生命周期职责决定，不以行数拆分。判断记录见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#detailviewmodeltest-拆分评估)。
 - [ ] 继续全仓 `src/test` 与 `src/androidTest` 逻辑审查，逐项追踪生产 owner、断言输入/状态/副作用及失败/取消清理。已审查模块、各测试保留/删除理由和验证记录见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)；全仓审查仍未完成。
-- [ ] 当前 App 生产编译恢复后，定向编译并运行以下 JVM 测试，验证 OTP 映射测试迁移及 Backup owner 覆盖能通过生产与测试源集编译：
+- [ ] App 生产编译已恢复；仍需定向编译并运行以下 JVM 测试，验证 OTP 映射测试迁移及 Backup owner 覆盖能通过生产与测试源集编译：
   - [`VaultListUiMapperTest`](../../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultListUiMapperTest.kt)
   - [`OtpUiStateMapperTest`](../../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultOtpUiStateMapperTest.kt)
   - [`BackupArchiveServiceImplTest`](../../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt)
   - [`DefaultBackupOperationGatewayTest`](../../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)
 
-  最新编译未到测试源集；失败原因与静态复核结论见[审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)。源代码检查不能替代这项执行验证。
+  当前 `:app:compileDebugKotlin` 已通过，但未覆盖测试源集；最近一次 `:app:compileDebugUnitTestKotlin` 尝试未到测试源集。历史失败原因与静态复核结论见[审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)。源代码检查和生产编译不能替代这项执行验证。
 
 <a id="task-75"></a>
 

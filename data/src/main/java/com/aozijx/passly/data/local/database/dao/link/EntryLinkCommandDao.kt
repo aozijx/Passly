@@ -28,6 +28,6 @@ interface EntryLinkCommandDao {
     @Query("DELETE FROM entry_links WHERE linkId = :linkId")
     suspend fun deleteById(linkId: String): Int
 
-    @Query("DELETE FROM entry_links WHERE sourceEntryId = :entryId OR targetEntryId = :entryId")
+    @Query("DELETE FROM entry_links WHERE firstEntryId = :entryId OR secondEntryId = :entryId")
     suspend fun deleteByEntryId(entryId: String): Int
 }

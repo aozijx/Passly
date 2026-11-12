@@ -52,7 +52,7 @@ internal class PasslyJsonFormatAdapter
             } catch (error: Exception) {
                 throw BackupFailed(
                     throwableType = error.javaClass.simpleName,
-                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                    reasonCode = Reasons.Backup.Document.BackupDocumentMalformed.value,
                 )
             }
     }

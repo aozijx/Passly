@@ -5,9 +5,9 @@ import com.github.f4b6a3.uuid.UuidCreator
 class BackupFailed(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
-    val reasonCode: String? = null,
+    override val reasonCode: String? = null,
 ) : DataError(
-        code = CatalogErrorCodes.BACKUP_FAILED,
+        code = CatalogErrorCodes.Backup.Operation.BACKUP_FAILED,
         recoverable = true,
         severity = ErrorSeverity.ERROR,
         errorId = errorId,

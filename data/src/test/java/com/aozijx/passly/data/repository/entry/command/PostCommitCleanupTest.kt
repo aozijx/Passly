@@ -33,7 +33,7 @@ class PostCommitCleanupTest {
 
             assertSame(committed, result)
             assertEquals(listOf(failure), logger.warnings)
-            assertEquals(listOf(Reasons.StorageFailure), logger.reasons)
+            assertEquals(listOf(Reasons.Application.Storage.StorageFailure), logger.reasons)
         }
 
     @Test

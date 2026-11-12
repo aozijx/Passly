@@ -56,9 +56,8 @@ internal class EntryRevisionWriter
                 entryLinkQueryDao().getByEntryId(entryId).map { link ->
                     EntryLink.create(
                         id = EntryLinkId(link.linkId),
-                        sourceEntryId = EntryId(link.sourceEntryId),
-                        targetEntryId = EntryId(link.targetEntryId),
-                        relationType = link.relationType,
+                        firstEntryId = EntryId(link.firstEntryId),
+                        secondEntryId = EntryId(link.secondEntryId),
                         createdAt = link.createdAt,
                         updatedAt = link.updatedAt,
                     )

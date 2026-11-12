@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -73,9 +72,8 @@ class EntryPagingDaoTest {
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "member",
-                    sourceEntryId = "mail",
-                    targetEntryId = "account",
-                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    firstEntryId = "account",
+                    secondEntryId = "mail",
                     createdAt = 10L,
                     updatedAt = 10L,
                 ),
@@ -160,9 +158,8 @@ class EntryPagingDaoTest {
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "login-account",
-                    sourceEntryId = "login",
-                    targetEntryId = "account",
-                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    firstEntryId = "account",
+                    secondEntryId = "login",
                     createdAt = 1L,
                     updatedAt = 1L,
                 ),
@@ -170,9 +167,8 @@ class EntryPagingDaoTest {
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "otp-login",
-                    sourceEntryId = "otp",
-                    targetEntryId = "login",
-                    relationType = EntryRelationType.OTP_FOR,
+                    firstEntryId = "login",
+                    secondEntryId = "otp",
                     createdAt = 2L,
                     updatedAt = 2L,
                 ),
@@ -180,9 +176,8 @@ class EntryPagingDaoTest {
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "recovery-login",
-                    sourceEntryId = "recovery",
-                    targetEntryId = "login",
-                    relationType = EntryRelationType.RECOVERY_FOR,
+                    firstEntryId = "login",
+                    secondEntryId = "recovery",
                     createdAt = 3L,
                     updatedAt = 3L,
                 ),
@@ -398,9 +393,8 @@ class EntryPagingDaoTest {
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "member-link",
-                    sourceEntryId = "a-member",
-                    targetEntryId = "z-account",
-                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    firstEntryId = "a-member",
+                    secondEntryId = "z-account",
                     createdAt = 10L,
                     updatedAt = 10L,
                 ),

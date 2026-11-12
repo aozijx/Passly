@@ -1,7 +1,7 @@
 # 数据库
 
 状态：当前实现（Room Schema v1）。本文描述当前代码；旧本地开发 Schema 当前不提供迁移。
-当前 Schema 保持版本 1；本地开发数据库若与当前字段结构不匹配，需清除应用数据或重新安装后再验证。项目不提供旧开发 Schema 迁移或 destructive fallback。初始化异常路径不得静默删除数据库。
+当前 Schema 保持版本 1；本次 `entry_links` 从带 `relationType` 的有向关系行改为规范化的 `firstEntryId`/`secondEntryId` 端点对，因此旧本地 v1 数据库必须在开发环境手动清除应用数据或重新安装后才能使用新结构。项目不提供旧开发 Schema 迁移或 destructive fallback。初始化异常路径不得静默删除数据库。
 
 ## 所有权与访问边界
 
@@ -54,12 +54,15 @@ Room Entity 当作可移植协议。
 |---|---|
 | `entries` | Entry 身份、类型、能力位、OTP 类型、可查询的 Profile 元数据和时间戳 |
 | `entry_secret_fields` | `entryId + fieldKey` 定位的密文行；高敏字段逐字段保存，低敏结构聚合在 `STRUCT_BUNDLE` |
-| `entry_links` | Entry 之间的类型化关系；任一端点删除时级联删除 |
+| `entry_links` | Entry 间的规范化端点对；关系含义由两端 `EntryType` 推导，任一端点删除时级联删除 |
 | `entry_revisions` | Entry Profile 与敏感字段集合的完整历史快照密文 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
 | `attachment_resources` | keyed content ID 标识的不可变加密附件资源及其 GC 生命周期状态 |
 | `attachment_refs` | 当前 Entry 对资源的引用、文件名、MIME 和顺序；每行都必须归属现存 Entry |
 | `revision_attachment_refs` | 历史 Revision 对不可变附件资源的引用 |
+
+`entry_links` 只保存稳定 link ID、按字典序排列的 `firstEntryId` / `secondEntryId` 与时间戳；端点对唯一且自链接无效。
+`EntryLinkPolicy` 按两端 Entry 类型推断账号归属、OTP、恢复码或普通关联；账号归属也使用同一 Link 模型。
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`。当前没有 `entry_drafts`、
 `attachment_gc_queue` 或 Autofill Inbox 导入日志表。Inbox 文件队列独立于 SQLCipher；导入幂等性由 draft ID
@@ -79,7 +82,8 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`�
 - Profile 由 `EntryProfileMapper.fromEntity()` 直接映射，不需要先解密摘要 Blob。
 
 数据库列、密文字段键和 Revision 快照中的枚举值通过 `StorageEnumMappings` 显式映射为稳定键。
-持久化协议不得依赖 ordinal；新增领域枚举时必须补齐双向映射与 round-trip 测试。Room converter
+持久化协议不得依赖 ordinal；新增持久化枚举时必须补齐双向映射与 round-trip 测试。由 Entry 类型推导的
+`EntryLinkKind` 不属于持久化枚举。Room converter
 负责 SQL 边界的强类型转换，未知持久化值必须明确失败，不能静默替换成合法默认值。
 
 ## Secret 读取边界

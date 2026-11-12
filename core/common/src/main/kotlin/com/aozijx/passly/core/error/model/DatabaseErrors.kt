@@ -8,7 +8,7 @@ class DatabaseLocked(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-        code = DATABASE_LOCKED,
+        code = CatalogErrorCodes.Database.Key.DATABASE_LOCKED,
         recoverable = true,
         severity = ErrorSeverity.WARNING,
         errorId = errorId,
@@ -19,7 +19,7 @@ class DatabaseInitFailed(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-        code = DATABASE_INIT_FAILED,
+        code = CatalogErrorCodes.Database.Initialization.DATABASE_INIT_FAILED,
         recoverable = false,
         severity = ErrorSeverity.ERROR,
         errorId = errorId,

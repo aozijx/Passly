@@ -108,7 +108,7 @@ internal class AutofillFillViewModel
                             -> {
                                 logger.log(
                                     LogStatements.Autofill.discoveryUnavailable(
-                                        Reasons.AuthenticationRejected,
+                                        Reasons.Security.Authentication.AuthenticationRejected,
                                     ),
                                 )
                                 traceContinuations.discard(request.interactionId.value)
@@ -174,7 +174,7 @@ internal class AutofillFillViewModel
 
                 is AutofillDiscoveryOutcome.NoCandidates -> {
                     logger.log(
-                        LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                        LogStatements.Autofill.discoveryUnavailable(Reasons.Autofill.Matching.NoMatchingEntry),
                     )
                     returnDiscoveryResponse(request, discovery)
                 }
@@ -411,7 +411,7 @@ internal class AutofillFillViewModel
             if (error == null) {
                 logger.log(
                     LogStatements.Autofill.discoveryUnavailable(
-                        reason = Reasons.UnknownFailure,
+                        reason = Reasons.Application.Fallback.UnknownFailure,
                         failureKind = failureKind,
                     ),
                 )

@@ -18,9 +18,9 @@ class ChunkedBackupStreamsTest {
     fun truncatedRecordsIdentifyTheIncompletePart() {
         val encoded = encode(byteArrayOf(1, 2, 3))
         val cases = listOf(
-            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + 1) to Reasons.BackupRecordHeaderTruncated,
-            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1) to Reasons.BackupRecordDataTruncated,
-            encoded.copyOf(encoded.size - BackupContainerV1Spec.RECORD_HEADER_LENGTH - 32) to Reasons.BackupTerminalMissing,
+            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + 1) to Reasons.Backup.Container.BackupRecordHeaderTruncated,
+            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1) to Reasons.Backup.Container.BackupRecordDataTruncated,
+            encoded.copyOf(encoded.size - BackupContainerV1Spec.RECORD_HEADER_LENGTH - 32) to Reasons.Backup.Container.BackupTerminalMissing,
         )
         cases.forEach { (bytes, reason) ->
             val failure = assertThrows(BackupTruncatedException::class.java) {

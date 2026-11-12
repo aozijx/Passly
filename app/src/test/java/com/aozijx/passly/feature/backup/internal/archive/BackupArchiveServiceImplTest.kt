@@ -59,7 +59,7 @@ class BackupArchiveServiceImplTest {
         runTest {
             val snapshotGateway = FakeSnapshotGateway()
             val logger = RecordingTestLogger()
-            val importer = FakeImportAdapter(decodeFailure = BackupIntegrityException(Reasons.BackupResourceDigestMismatch))
+            val importer = FakeImportAdapter(decodeFailure = BackupIntegrityException(Reasons.Backup.Resource.BackupResourceDigestMismatch))
             val service = service(
                 snapshotGateway, FakeBackupFileStore(), RecordingErrorReporter(), FakeExportAdapter(),
                 setOf(importer), UnconfinedTestDispatcher(testScheduler), logger,
@@ -70,12 +70,12 @@ class BackupArchiveServiceImplTest {
             )
 
             assertEquals(
-                Reasons.BackupResourceDigestMismatch.value,
+                Reasons.Backup.Resource.BackupResourceDigestMismatch.value,
                 ((result as AppResult.Failure).error as BackupFailed).reasonCode,
             )
             assertEquals(null, snapshotGateway.restoredBundle)
             assertEquals(
-                LogValue.ReasonCodeValue(Reasons.BackupResourceDigestMismatch),
+                LogValue.ReasonCodeValue(Reasons.Backup.Resource.BackupResourceDigestMismatch),
                 logger.events.last { it.event == Events.Backup.Phase }.fields.values[LogFieldKeys.Backup.FailureReason],
             )
         }
@@ -664,7 +664,7 @@ class BackupArchiveServiceImplTest {
                 val failure = (result as AppResult.Failure).error
                 assertTrue(failure is BackupFailed)
                 assertEquals("EOFException", failure.throwableType)
-                assertEquals(Reasons.BackupTerminalMissing.value, (failure as BackupFailed).reasonCode)
+                assertEquals(Reasons.Backup.Container.BackupTerminalMissing.value, (failure as BackupFailed).reasonCode)
                 assertEquals(1, reporter.reports.size)
                 assertEquals(
                     "backup_import",

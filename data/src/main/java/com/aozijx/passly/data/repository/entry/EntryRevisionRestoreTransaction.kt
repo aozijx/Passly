@@ -229,12 +229,12 @@ internal class EntryRevisionRestoreTransaction
             entryId: EntryId,
             links: List<EntryLink>,
         ) {
-            if (links.any { entryId != it.sourceEntryId && entryId != it.targetEntryId }) {
+            if (links.any { entryId != it.firstEntryId && entryId != it.secondEntryId }) {
                 throw ValidationError()
             }
             val endpointIds =
                 links.flatMapTo(linkedSetOf()) {
-                    listOf(it.sourceEntryId.value, it.targetEntryId.value)
+                    listOf(it.firstEntryId.value, it.secondEntryId.value)
                 }
             if (endpointIds.isEmpty()) return
             val endpoints = db.entryQueryDao().getByIds(endpointIds.toList())
@@ -246,9 +246,8 @@ internal class EntryRevisionRestoreTransaction
         private fun EntryLink.toEntity() =
             EntryLinkEntity(
                 linkId = id.value,
-                sourceEntryId = sourceEntryId.value,
-                targetEntryId = targetEntryId.value,
-                relationType = relationType,
+                firstEntryId = firstEntryId.value,
+                secondEntryId = secondEntryId.value,
                 createdAt = createdAt,
                 updatedAt = updatedAt,
             )

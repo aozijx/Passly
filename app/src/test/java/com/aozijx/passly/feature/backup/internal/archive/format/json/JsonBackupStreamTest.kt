@@ -37,7 +37,7 @@ class JsonBackupStreamTest {
             val failure = org.junit.Assert.assertThrows(BackupIntegrityException::class.java) {
                 dispatcher().decode(ByteArrayInputStream(payload.toByteArray()), null, strategy)
             }
-            assertEquals(Reasons.BackupResourceDigestMismatch, failure.reasonCode)
+            assertEquals(Reasons.Backup.Resource.BackupResourceDigestMismatch, failure.reasonCode)
         }
     }
 

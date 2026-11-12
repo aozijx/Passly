@@ -121,7 +121,7 @@ internal class AccessibilityFillViewModel
                                 else -> {
                                     logger.log(
                                         LogStatements.Autofill.fallbackUnavailable(
-                                            Reasons.AuthenticationRejected,
+                                            Reasons.Security.Authentication.AuthenticationRejected,
                                             logFields,
                                         ),
                                     )
@@ -170,7 +170,7 @@ internal class AccessibilityFillViewModel
                                 }
                             logger.log(
                                 LogStatements.Autofill.fallbackUnavailable(
-                                    Reasons.NoMatchingEntry,
+                                    Reasons.Autofill.Matching.NoMatchingEntry,
                                     logFields,
                                 ),
                             )
@@ -245,7 +245,7 @@ internal class AccessibilityFillViewModel
                         } else {
                             logger.log(
                                 LogStatements.Autofill.fallbackUnavailable(
-                                    Reasons.NoMatchingEntry,
+                                    Reasons.Autofill.Matching.NoMatchingEntry,
                                     logFields,
                                 ),
                             )

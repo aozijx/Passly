@@ -33,13 +33,13 @@ class PrivacyPolicyTest {
             PendingLogEvent(
                 level = LogLevel.INFO,
                 event = Events.Backup.Phase,
-                fields = fields { reason(LogFieldKeys.Backup.FailureReason, Reasons.BackupRecordDataTruncated) },
+                fields = fields { reason(LogFieldKeys.Backup.FailureReason, Reasons.Backup.Container.BackupRecordDataTruncated) },
             ),
             context(),
         )
         val accepted = result as SanitizationResult.Accepted
         assertEquals(
-            LogValue.ReasonCodeValue(Reasons.BackupRecordDataTruncated),
+            LogValue.ReasonCodeValue(Reasons.Backup.Container.BackupRecordDataTruncated),
             accepted.record.fields.values[LogFieldKeys.Backup.FailureReason],
         )
     }
@@ -271,8 +271,8 @@ class PrivacyPolicyTest {
                     event = Events.Autofill.ResultDeliveryFailed,
                     error =
                         PendingError(
-                            errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                            reason = Reasons.PlatformCallbackFailed,
+                            errorCode = ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                            reason = Reasons.Autofill.Platform.PlatformCallbackFailed,
                             throwable = IllegalStateException(secret),
                         ),
                 ),
@@ -297,8 +297,8 @@ class PrivacyPolicyTest {
                     },
                 error =
                     PendingError(
-                        errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                        reason = Reasons.PlatformCallbackFailed,
+                        errorCode = ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                        reason = Reasons.Autofill.Platform.PlatformCallbackFailed,
                         throwable = IllegalStateException(throwableSecret),
                     ),
             )

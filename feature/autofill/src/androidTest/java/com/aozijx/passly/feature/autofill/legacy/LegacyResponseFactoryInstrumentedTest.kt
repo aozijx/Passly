@@ -289,7 +289,7 @@ class LegacyResponseFactoryInstrumentedTest {
 
         assertNotNull(result.response)
         assertEquals(
-            LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
+            LegacyDiscoveryObservation.Unavailable(Reasons.Autofill.Matching.NoMatchingEntry),
             result.observation,
         )
     }
@@ -334,7 +334,7 @@ class LegacyResponseFactoryInstrumentedTest {
             )
 
         assertNull(result.response)
-        assertEquals(LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields), result.observation)
+        assertEquals(LegacyDiscoveryObservation.Unavailable(Reasons.Autofill.Matching.NoFillableFields), result.observation)
     }
 
     @Test
@@ -342,10 +342,10 @@ class LegacyResponseFactoryInstrumentedTest {
         val parsed = ParsedStructure()
         val cases =
             listOf(
-                AutofillDiscoveryOutcome.Disabled to Reasons.SessionRestricted,
-                AutofillDiscoveryOutcome.UnsupportedFields to Reasons.NoFillableFields,
+                AutofillDiscoveryOutcome.Disabled to Reasons.Security.Session.SessionRestricted,
+                AutofillDiscoveryOutcome.UnsupportedFields to Reasons.Autofill.Matching.NoFillableFields,
                 AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED) to
-                    Reasons.DatabaseUnavailable,
+                    Reasons.Database.Availability.DatabaseUnavailable,
             )
 
         cases.forEach { (outcome, reason) ->

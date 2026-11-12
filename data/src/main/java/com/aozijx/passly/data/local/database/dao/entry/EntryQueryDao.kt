@@ -9,6 +9,7 @@ import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.model.EntryPagingRow
+import com.aozijx.passly.data.local.database.model.EntryTypeProjection
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
@@ -43,6 +44,9 @@ interface EntryQueryDao {
 
     @Query("SELECT * FROM entries WHERE entryId IN (:entryIds)")
     suspend fun getByIds(entryIds: List<String>): List<EntryEntity>
+
+    @Query("SELECT entryId, entryType FROM entries WHERE entryId IN (:entryIds)")
+    suspend fun getTypesByIds(entryIds: List<String>): List<EntryTypeProjection>
 
     @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActiveByType(entryType: EntryType): List<EntryEntity>

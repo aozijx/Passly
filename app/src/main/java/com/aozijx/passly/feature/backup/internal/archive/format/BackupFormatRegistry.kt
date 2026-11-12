@@ -30,7 +30,7 @@ internal class BackupFormatRegistry
         private val importersById = importers.associateUnique("import")
 
         fun exporter(formatId: BackupFormatId): BackupExportAdapter =
-            exportersById[formatId] ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value)
+            exportersById[formatId] ?: throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupFormatUnsupported.value)
 
         fun selectImporter(
             requestedFormat: BackupFormatId?,
@@ -39,7 +39,7 @@ internal class BackupFormatRegistry
             if (requestedFormat != null) {
                 return BackupImportSelection(
                     importersById[requestedFormat]
-                        ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value),
+                        ?: throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupFormatUnsupported.value),
                     source,
                 )
             }
@@ -61,7 +61,7 @@ internal class BackupFormatRegistry
             val adapter =
                 if (BackupContainerHeader.hasMagic(prefix, length)) {
                     importersById[BackupFormats.PASSLY_ENCRYPTED]
-                        ?: throw BackupFailed(reasonCode = Reasons.BackupFormatUnsupported.value)
+                        ?: throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupFormatUnsupported.value)
                 } else {
                     jsonDispatcher
                 }

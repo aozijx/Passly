@@ -33,9 +33,16 @@ Security 的认证事件统一为 `security.authentication.*`，具体用途由 
 Vault 状态变化才使用 `security.vault.unlocked`。锁定事件使用 `security.lock.started`，并精确结束为
 `completed`、`failed` 或 `cancelled`，禁止输出 `security.lock.completed + result=FAILURE`。
 
-错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 生成 `core:common` 的应用错误码常量、
-Core 类型、App 用户提示 resolver 和 `error-codes.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
-值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
+错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。每个条目必须用 `group_path` 记录归属；分组可在开发期
+调整，不因此提升 schema 版本。生成 API 依
+`业务域 → 功能组 → 叶码` 组织，例如 `ErrorCodes.Autofill.Inbox.AutofillInboxKeyProvisionFailed` 和
+`Reasons.Backup.Authentication.BackupAuthenticationFailed`。Gradle 同时生成 `core:common` 类型化业务错误码、Core
+观测目录、App 用户提示 resolver 和 `error-codes.md`。此层级只组织源码和文档；wire 值始终来自 catalog 中的稳定字符串，
+不使用 Kotlin 符号、enum 名称或序号。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
+
+`AppErrorCode` 是业务错误码类型，来自相同目录生成的 `CatalogErrorCodes.<业务域>.<功能组>.<叶码>`。
+Reporter 输出不同的 `error_code` 和 `reason_code`：错误码标识失败操作，原因码优先使用显式的安全原因，否则使用目录
+登记的 `default_reason`。`NoticeCode` 与诊断码分开，由 Feature 按操作结果决定用户反馈。
 
 Autofill 服务记录所选展示模式和键盘 Inline 能力；手动无障碍回退分别记录用户请求、受控不可用、
 平台接收写入和异常失败。来源是枚举，目标包只记录 HMAC 标识；节点文字、候选标题、用户名和凭据不进入日志。

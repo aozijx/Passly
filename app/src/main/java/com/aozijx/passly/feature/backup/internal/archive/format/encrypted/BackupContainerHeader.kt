@@ -124,7 +124,7 @@ internal object BackupContainerHeader {
         var offset = 0
         while (offset < target.size) {
             val count = input.read(target, offset, target.size - offset)
-            if (count < 0) throw BackupTruncatedException(Reasons.BackupContainerHeaderTruncated)
+            if (count < 0) throw BackupTruncatedException(Reasons.Backup.Container.BackupContainerHeaderTruncated)
             if (count == 0) continue
             offset += count
         }

@@ -7,33 +7,17 @@ import org.junit.Test
 
 class EntryLinkTest {
     @Test
-    fun `related link canonicalizes endpoints`() {
+    fun `generic link canonicalizes endpoint order`() {
         val link =
             EntryLink.create(
                 id = EntryLinkId("link"),
-                sourceEntryId = EntryId("z"),
-                targetEntryId = EntryId("a"),
-                relationType = EntryRelationType.RELATED_TO,
+                firstEntryId = EntryId("z"),
+                secondEntryId = EntryId("a"),
                 createdAt = 1L,
             )
 
-        assertEquals(EntryId("a"), link.sourceEntryId)
-        assertEquals(EntryId("z"), link.targetEntryId)
-    }
-
-    @Test
-    fun `directional link preserves direction`() {
-        val link =
-            EntryLink.create(
-                id = EntryLinkId("link"),
-                sourceEntryId = EntryId("login"),
-                targetEntryId = EntryId("account"),
-                relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-                createdAt = 1L,
-            )
-
-        assertEquals(EntryId("login"), link.sourceEntryId)
-        assertEquals(EntryId("account"), link.targetEntryId)
+        assertEquals(EntryId("a"), link.firstEntryId)
+        assertEquals(EntryId("z"), link.secondEntryId)
     }
 
     @Test
@@ -41,9 +25,8 @@ class EntryLinkTest {
         assertThrows(IllegalArgumentException::class.java) {
             EntryLink.create(
                 id = EntryLinkId("link"),
-                sourceEntryId = EntryId("same"),
-                targetEntryId = EntryId("same"),
-                relationType = EntryRelationType.OTP_FOR,
+                firstEntryId = EntryId("same"),
+                secondEntryId = EntryId("same"),
                 createdAt = 1L,
             )
         }

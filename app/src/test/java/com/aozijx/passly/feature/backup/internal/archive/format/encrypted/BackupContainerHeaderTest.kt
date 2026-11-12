@@ -149,7 +149,7 @@ class BackupContainerHeaderTest {
                         },
                     )
                 }
-                assertEquals(Reasons.BackupContainerHeaderTruncated, failure.reasonCode)
+                assertEquals(Reasons.Backup.Container.BackupContainerHeaderTruncated, failure.reasonCode)
                 assertFalse("$field truncation must be rejected before KDF", derivationStarted)
             } finally {
                 password.fill('\u0000')

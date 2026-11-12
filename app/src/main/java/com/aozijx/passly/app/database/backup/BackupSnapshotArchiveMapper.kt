@@ -3,7 +3,6 @@ package com.aozijx.passly.app.database.backup
 import com.aozijx.passly.domain.backup.model.VaultBackupResource
 import com.aozijx.passly.domain.backup.model.VaultBackupResourceKind
 import com.aozijx.passly.domain.backup.model.VaultBackupSnapshot
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -40,13 +39,12 @@ internal object BackupSnapshotArchiveMapper {
             val exportedIds = snapshot.entries.mapTo(hashSetOf()) { it.id }
             val links =
                 snapshot.links
-                    .filter { it.sourceEntryId in exportedIds && it.targetEntryId in exportedIds }
+                    .filter { it.firstEntryId in exportedIds && it.secondEntryId in exportedIds }
                     .map { link ->
                         BackupLinkRecord(
                             id = link.id.value,
-                            sourceEntryId = link.sourceEntryId.value,
-                            targetEntryId = link.targetEntryId.value,
-                            relationType = BackupArchiveKeyRegistry.relationTypeKey(link.relationType),
+                            sourceEntryId = link.firstEntryId.value,
+                            targetEntryId = link.secondEntryId.value,
                             createdAt = link.createdAt,
                             updatedAt = link.updatedAt,
                         )

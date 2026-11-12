@@ -38,7 +38,7 @@ class BackupCodecTest {
             val failure = assertThrows(BackupFailed::class.java) {
                 EncryptedBackupImporter().import(ByteArrayInputStream(encoded.toByteArray()), password, BackupImportStrategy.STRICT, ::testKey)
             }
-            org.junit.Assert.assertEquals(Reasons.BackupZipDocumentMissing.value, failure.reasonCode)
+            org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDocumentMissing.value, failure.reasonCode)
         } finally {
             password.fill('\u0000')
         }
@@ -57,7 +57,7 @@ class BackupCodecTest {
             val failure = assertThrows(BackupFailed::class.java) {
                 EncryptedBackupImporter().import(ByteArrayInputStream(encoded.toByteArray()), wrongPassword, BackupImportStrategy.STRICT, ::testKey)
             }
-            org.junit.Assert.assertEquals(Reasons.BackupAuthenticationFailed.value, failure.reasonCode)
+            org.junit.Assert.assertEquals(Reasons.Backup.Authentication.BackupAuthenticationFailed.value, failure.reasonCode)
         } finally {
             password.fill('\u0000')
             wrongPassword.fill('\u0000')
@@ -86,7 +86,7 @@ class BackupCodecTest {
         val missing = assertThrows(BackupIntegrityException::class.java) {
             BackupZipCodec.readZip(ByteArrayInputStream(byteArrayOf()))
         }
-        org.junit.Assert.assertEquals(Reasons.BackupZipDocumentMissing, missing.reasonCode)
+        org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDocumentMissing, missing.reasonCode)
         val invalid = assertThrows(BackupIntegrityException::class.java) {
             BackupZipCodec.buildZip(
                 "{}".toByteArray(),
@@ -94,7 +94,7 @@ class BackupCodecTest {
                 ByteArrayOutputStream(),
             )
         }
-        org.junit.Assert.assertEquals(Reasons.BackupZipInvalidEntry, invalid.reasonCode)
+        org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipInvalidEntry, invalid.reasonCode)
     }
 
     @Test
@@ -116,7 +116,7 @@ class BackupCodecTest {
         val failure = assertThrows(BackupIntegrityException::class.java) {
             BackupZipCodec.readZip(ByteArrayInputStream(archive))
         }
-        org.junit.Assert.assertEquals(Reasons.BackupZipDuplicateEntry, failure.reasonCode)
+        org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDuplicateEntry, failure.reasonCode)
     }
 
     @Test

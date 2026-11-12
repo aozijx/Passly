@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
@@ -31,15 +30,15 @@ internal class RelatedPasswordOperationsImpl
             withLoggedFailure {
                 val activeLogins = activeLogins()
                 if (activeLogins.none { it.id == sourceEntryId }) return@withLoggedFailure emptyList()
+                val activeIds = activeLogins.mapTo(hashSetOf()) { it.id }
 
                 val relatedIds =
                     entryLinkRepository
                         .getLinks(sourceEntryId)
                         .asSequence()
-                        .filter { it.relationType == EntryRelationType.RELATED_TO }
                         .map { link ->
-                            if (link.sourceEntryId == sourceEntryId) link.targetEntryId else link.sourceEntryId
-                        }.toSet()
+                            if (link.firstEntryId == sourceEntryId) link.secondEntryId else link.firstEntryId
+                        }.filter(activeIds::contains).toSet()
 
                 activeLogins.filter { it.id != sourceEntryId && it.id !in relatedIds }
             }
@@ -60,8 +59,8 @@ internal class RelatedPasswordOperationsImpl
                     entryLinkRepository
                         .getLinks(sourceEntryId)
                         .any { link ->
-                            link.relationType == EntryRelationType.RELATED_TO &&
-                                (link.sourceEntryId == targetEntryId || link.targetEntryId == targetEntryId)
+                            (link.firstEntryId == targetEntryId || link.secondEntryId == targetEntryId) &&
+                                link.otherEndpoint(sourceEntryId) == targetEntryId
                         }
                 if (alreadyRelated) return@withLoggedFailure AppResult.Success(Unit)
 
@@ -70,9 +69,8 @@ internal class RelatedPasswordOperationsImpl
                     entryLinkRepository.upsert(
                         EntryLink.create(
                             id = EntryLinkId(UUID.randomUUID().toString()),
-                            sourceEntryId = sourceEntryId,
-                            targetEntryId = targetEntryId,
-                            relationType = EntryRelationType.RELATED_TO,
+                            firstEntryId = sourceEntryId,
+                            secondEntryId = targetEntryId,
                             createdAt = now,
                         ),
                     )
@@ -98,8 +96,7 @@ internal class RelatedPasswordOperationsImpl
                 if (selectedLink == null) {
                     val samePasswordRelationExists =
                         sourceLinks.any { link ->
-                            link.relationType == EntryRelationType.RELATED_TO &&
-                                hasEndpoints(link, sourceEntryId, targetEntryId)
+                            hasEndpoints(link, sourceEntryId, targetEntryId)
                         }
                     return@withLoggedFailure if (samePasswordRelationExists) {
                         AppResult.Failure(ValidationError())
@@ -108,9 +105,7 @@ internal class RelatedPasswordOperationsImpl
                     }
                 }
 
-                if (selectedLink.relationType != EntryRelationType.RELATED_TO ||
-                    !hasEndpoints(selectedLink, sourceEntryId, targetEntryId)
-                ) {
+                if (!hasEndpoints(selectedLink, sourceEntryId, targetEntryId)) {
                     return@withLoggedFailure AppResult.Failure(ValidationError())
                 }
 
@@ -124,8 +119,15 @@ internal class RelatedPasswordOperationsImpl
             firstEntryId: EntryId,
             secondEntryId: EntryId,
         ): Boolean =
-            (link.sourceEntryId == firstEntryId && link.targetEntryId == secondEntryId) ||
-                (link.sourceEntryId == secondEntryId && link.targetEntryId == firstEntryId)
+            (link.firstEntryId == firstEntryId && link.secondEntryId == secondEntryId) ||
+                (link.firstEntryId == secondEntryId && link.secondEntryId == firstEntryId)
+
+        private fun EntryLink.otherEndpoint(entryId: EntryId): EntryId? =
+            when (entryId) {
+                firstEntryId -> secondEntryId
+                secondEntryId -> firstEntryId
+                else -> null
+            }
 
         private suspend fun activeLogins(): List<EntryListItem> = entryListQueryRepository.getActiveByType(EntryType.LOGIN)
 
@@ -142,8 +144,8 @@ internal class RelatedPasswordOperationsImpl
         private fun logFailure(failure: Throwable) {
             logger.error(
                 Events.Vault.Error,
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.UnknownFailure,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Application.Fallback.UnknownFailure,
                 failure,
             )
         }

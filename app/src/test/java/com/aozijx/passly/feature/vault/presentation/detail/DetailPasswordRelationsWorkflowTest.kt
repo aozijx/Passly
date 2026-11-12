@@ -18,7 +18,6 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -473,7 +472,7 @@ class DetailPasswordRelationsWorkflowTest {
         override suspend fun getAll(): List<EntryLink> = storedLinks.toList()
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
-            storedLinks.filter { it.sourceEntryId == entryId || it.targetEntryId == entryId }
+            storedLinks.filter { it.firstEntryId == entryId || it.secondEntryId == entryId }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {
             upsertAttempts++
@@ -503,9 +502,8 @@ class DetailPasswordRelationsWorkflowTest {
             val link =
                 EntryLink.create(
                     id = EntryLinkId("source-target"),
-                    sourceEntryId = EntryId("source"),
-                    targetEntryId = EntryId("target"),
-                    relationType = EntryRelationType.RELATED_TO,
+                    firstEntryId = EntryId("source"),
+                    secondEntryId = EntryId("target"),
                     createdAt = 1L,
                 )
             return Fixture(
@@ -547,6 +545,15 @@ class DetailPasswordRelationsWorkflowTest {
                                         }?.takeUnless { isEntryMissing(it.id) }
                                     }
                                 }
+
+                                override suspend fun getTypesByIds(entryIds: List<EntryId>) =
+                                    entryIds.mapNotNull { id ->
+                                        when (id) {
+                                            EntryId("source") -> id to entry("source").type
+                                            EntryId("target") -> id to entry("target").type
+                                            else -> null
+                                        }
+                                    }.toMap()
                             },
                         sensitiveFieldRepository =
                             object : SensitiveFieldRepository {

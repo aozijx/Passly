@@ -29,7 +29,7 @@ internal fun BackupNoticeEffect.toAppNotice(): AppNotice =
         is BackupNoticeEffect.Failed -> {
             newAppNotice(
                 when {
-                    operation == BackupOperation.IMPORT && reasonCode == Reasons.BackupAuthenticationFailed -> {
+                    operation == BackupOperation.IMPORT && reasonCode == Reasons.Backup.Authentication.BackupAuthenticationFailed -> {
                         NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED
                     }
 

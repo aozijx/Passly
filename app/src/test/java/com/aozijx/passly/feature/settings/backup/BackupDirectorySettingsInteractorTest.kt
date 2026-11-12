@@ -181,7 +181,7 @@ class BackupDirectorySettingsInteractorTest {
             )
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.ResourceCleanupFailed, logger.events.single().event)
-            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(Reasons.Application.Storage.StorageFailure, logger.events.single().reason)
             assertEquals(
                 IllegalStateException::class.java,
                 logger.events
@@ -376,7 +376,7 @@ class BackupDirectorySettingsInteractorTest {
             assertEquals("content://tree/new", repository.savedUri)
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.ResourceCleanupFailed, logger.events.single().event)
-            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(Reasons.Application.Storage.StorageFailure, logger.events.single().reason)
             assertEquals(
                 listOf(
                     "acquire:content://tree/new",

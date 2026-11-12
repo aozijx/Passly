@@ -19,7 +19,7 @@ interface EntryLinkQueryDao {
     @Query(
         """
         SELECT * FROM entry_links
-        WHERE sourceEntryId = :entryId OR targetEntryId = :entryId
+        WHERE firstEntryId = :entryId OR secondEntryId = :entryId
         ORDER BY createdAt ASC
         """,
     )
@@ -28,7 +28,7 @@ interface EntryLinkQueryDao {
     @Query(
         """
         SELECT * FROM entry_links
-        WHERE sourceEntryId = :entryId OR targetEntryId = :entryId
+        WHERE firstEntryId = :entryId OR secondEntryId = :entryId
         ORDER BY createdAt ASC
         """,
     )

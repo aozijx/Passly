@@ -24,7 +24,7 @@ internal class PostCommitCleanup
         suspend fun <T> afterCommit(
             result: AppResult<T>,
             operation: OperationCode = Operations.ResourceCleanup,
-            reason: ReasonCode = Reasons.StorageFailure,
+            reason: ReasonCode = Reasons.Application.Storage.StorageFailure,
             action: suspend (T) -> Unit,
         ): AppResult<T> =
             when (result) {
@@ -40,7 +40,7 @@ internal class PostCommitCleanup
 
         suspend fun run(
             operation: OperationCode = Operations.ResourceCleanup,
-            reason: ReasonCode = Reasons.StorageFailure,
+            reason: ReasonCode = Reasons.Application.Storage.StorageFailure,
             action: suspend () -> Unit,
         ) {
             try {
@@ -51,7 +51,7 @@ internal class PostCommitCleanup
                 try {
                     logger.warn(
                         event = Events.Application.ResourceCleanupFailed,
-                        errorCode = ErrorCodes.Application.ResourceCleanupFailed,
+                        errorCode = ErrorCodes.Application.Resources.ResourceCleanupFailed,
                         reason = reason,
                         throwable = error,
                         fields = fields { operation(LogFieldKeys.Operation, operation) },

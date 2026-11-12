@@ -3,16 +3,15 @@
     <string name="ui_error_database_locked">The database is locked. Unlock it first.</string>
     <string name="ui_error_database_init_failed">Unable to initialize the database</string>
     <string name="ui_error_backup_failed">Backup operation failed</string>
-    <string name="ui_error_network">Network error. Check your connection.</string>
     <string name="ui_error_file_io">File operation failed</string>
     <string name="ui_error_crypto">Encryption or decryption failed</string>
     <string name="ui_error_crypto_corrupted">Encrypted data is corrupted</string>
     <string name="ui_error_validation">Invalid input</string>
     <string name="ui_error_not_found">The requested item was not found</string>
+    <string name="ui_error_session_restricted">This operation is unavailable in the current session</string>
     <string name="trash_error_load">Unable to load trash</string>
     <string name="trash_error_command">Trash operation failed</string>
     <string name="trash_error_empty">Unable to empty trash</string>
-    <string name="trash_error_session_restricted">Trash is unavailable in this session</string>
     <string name="database_session_retry_failed">Unable to reopen the database</string>
     <string name="vault_error_delete_access">This session cannot delete entries</string>
     <string name="vault_error_copy_access">This session cannot copy sensitive fields</string>

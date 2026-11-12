@@ -197,7 +197,7 @@ class LegacyAutofillService : AutofillService() {
                                 callback,
                                 completion,
                                 "Credential saving is disabled",
-                                Reasons.SessionRestricted,
+                                Reasons.Security.Session.SessionRestricted,
                             )
                         }
 
@@ -206,7 +206,7 @@ class LegacyAutofillService : AutofillService() {
                                 callback,
                                 completion,
                                 "No password was available to save",
-                                Reasons.NoFillableFields,
+                                Reasons.Autofill.Matching.NoFillableFields,
                             )
                         }
 
@@ -215,12 +215,12 @@ class LegacyAutofillService : AutofillService() {
                                 callback,
                                 completion,
                                 "Credential could not be saved",
-                                Reasons.StorageFailure,
+                                Reasons.Application.Storage.StorageFailure,
                             )
                         }
                     }
                 } catch (cancelled: CancellationException) {
-                    failSave(callback, completion, "Credential saving was cancelled", Reasons.UnknownFailure)
+                    failSave(callback, completion, "Credential saving was cancelled", Reasons.Application.Fallback.UnknownFailure)
                     throw cancelled
                 } catch (error: Exception) {
                     diagnostics.saveFailed(error)

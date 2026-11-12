@@ -54,10 +54,10 @@ internal object BackupZipCodec {
                 while (entry != null) {
                     entryCount++
                     require(entryCount <= BackupBundleValidator.MAX_ENTRIES + 1) { "备份归档条目数量过多" }
-                    if (entry.isDirectory) throw BackupIntegrityException(Reasons.BackupZipInvalidEntry)
+                    if (entry.isDirectory) throw BackupIntegrityException(Reasons.Backup.Archive.BackupZipInvalidEntry)
                     when (entry.name) {
                         DOCUMENT_ENTRY_NAME -> {
-                            if (documentJson != null) throw BackupIntegrityException(Reasons.BackupZipDuplicateEntry)
+                            if (documentJson != null) throw BackupIntegrityException(Reasons.Backup.Archive.BackupZipDuplicateEntry)
                             val content = zip.readLimited(BackupBundleValidator.MAX_DOCUMENT_BYTES)
                             documentJson = content
                             totalBytes = Math.addExact(totalBytes, content.size.toLong())
@@ -65,7 +65,7 @@ internal object BackupZipCodec {
 
                         else -> {
                             validateEntryName(entry.name)
-                            if (entry.name in resources) throw BackupIntegrityException(Reasons.BackupZipDuplicateEntry)
+                            if (entry.name in resources) throw BackupIntegrityException(Reasons.Backup.Archive.BackupZipDuplicateEntry)
                             val content = zip.readLimited(BackupBundleValidator.MAX_RESOURCE_BYTES)
                             resources[entry.name] = content
                             totalBytes = Math.addExact(totalBytes, content.size.toLong())
@@ -77,7 +77,7 @@ internal object BackupZipCodec {
                 }
             }
             return ZipContent(
-                documentJson = documentJson ?: throw BackupIntegrityException(Reasons.BackupZipDocumentMissing),
+                documentJson = documentJson ?: throw BackupIntegrityException(Reasons.Backup.Archive.BackupZipDocumentMissing),
                 resources = resources,
             )
         } catch (error: Throwable) {
@@ -96,7 +96,7 @@ internal object BackupZipCodec {
         if (!name.startsWith(RESOURCE_ENTRY_PREFIX) || name.length <= RESOURCE_ENTRY_PREFIX.length ||
             ".." in name || '\\' in name || name.startsWith('/')
         ) {
-            throw BackupIntegrityException(Reasons.BackupZipInvalidEntry)
+            throw BackupIntegrityException(Reasons.Backup.Archive.BackupZipInvalidEntry)
         }
     }
 

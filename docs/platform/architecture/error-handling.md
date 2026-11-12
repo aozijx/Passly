@@ -19,12 +19,12 @@ flowchart TD
 ## 禁止反向依赖
 
 Feature 自有的行内错误与全局 Notice 分开处理：`presentation/shared/error/UiErrorMessage.kt` 的
-`toUiErrorMessage` 只将稳定错误码映射为 `UiErrorMessage` 资源键，未知错误使用调用方的资源键回退。
+`toUiErrorMessage` 只将稳定错误码映射为 `UiErrorMessage` 资源键，未知错误使用调用方的资源键回退；跨页面的会话限制等错误在此统一映射，Feature 不再按具体错误子类重复挑选文案。
 数据库重置的失败说明、回收站错误状态、交互设置保存失败效果和应用壳层重试失败效果只保存资源键，
 不携带已解析文案、Throwable 或原始异常文本。
 Compose 内容用 `stringResource`，Toast 在消费时用当前 `LocalResources` 解析资源；中英文文案在
 `values/strings_errors.xml` 与 `values-en/strings_errors.xml`，语言切换不需重建 ViewModel 的错误状态。
-取消异常必须继续传播，不能变成失败提示。此映射不记录日志、不发布 Notice，也不改变 Core 的错误码合同。
+取消异常和非 `Exception` 的 fatal `Throwable` 必须继续传播，不能变成失败提示。此映射不记录日志、不发布 Notice，也不改变 Core 的错误码合同。
 
 ```
 core/error -X-> observability
@@ -40,7 +40,7 @@ message    -X-> Throwable
 core/common/.../core/error/
   model/
     AppError.kt          -- 纯错误模型（code、layer、severity、recoverable、errorId）
-    ErrorCodes.kt        -- 集中错误码常量
+    CatalogErrorCodes.kt -- 从唯一目录生成的类型化业务错误码
     DatabaseErrors.kt    -- 数据库错误子类
     CryptoErrors.kt      -- 密码学错误子类
     BackupFailed.kt      -- 备份错误子类
@@ -122,6 +122,12 @@ UI feedback
 
 `AppError` 不直接发布 `AppNotice`。内联显示（Snackbar、输入框错误）由页面根据错误码决定；需要全局通知时，Feature 根据其类型化操作结果明确选择 `NoticeCode`，再交给消息中心分发。Backup 等有独立操作语义的通知映射留在对应 Feature。
 
+## 稳定错误目录与归属层级
+
+`config/observability/error-catalog.json` 是业务错误码、诊断错误码和原因码的唯一来源。每个错误和原因必须用 `group_path` 声明所属功能，生成的 Kotlin API 按 `业务域 → 功能组 → 叶码` 嵌套，例如 `ErrorCodes.Autofill.Inbox.AutofillInboxKeyProvisionFailed`、`Reasons.Backup.Authentication.BackupAuthenticationFailed`。分组可随开发调整；当前开发阶段不因结构调整提升目录 schema 版本。目录校验拒绝空路径、非法层级名、重复归属路径和叶码/父级重名。生成文档显示同一条归属路径。
+
+层级只用于代码归属和检索；日志/导出中的 `code` 字符串仍使用 catalog 中已有的稳定 wire 值。`AppError.code` 使用 `AppErrorCode` 类型，并从生成的 `CatalogErrorCodes.<业务域>.<功能组>.<叶码>` 取值。`error_code` 与 `reason_code` 是两个独立字段：Reporter 使用错误的目录默认原因，确有更具体原因时才覆盖；不得把错误码复制成原因码。`NoticeCode` 和本地化文案仍由展示/Feature owner 管理，不从诊断路径推导。
+
 ## 记录策略
 
 不是所有失败都应该写日志：
@@ -142,7 +148,7 @@ UI feedback
 
 ```kotlin
 sealed class AppError(
-    open val code: String,          // 稳定错误码，如 "DATABASE_LOCKED"
+    open val code: AppErrorCode,    // 稳定错误码的类型化包装
     open val layer: ErrorLayer,     // DATA / DOMAIN / UI
     open val severity: ErrorSeverity, // WARNING / ERROR
     open val recoverable: Boolean,  // 是否可恢复

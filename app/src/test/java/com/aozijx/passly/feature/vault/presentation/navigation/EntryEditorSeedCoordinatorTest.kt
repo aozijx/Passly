@@ -132,8 +132,8 @@ class EntryEditorSeedCoordinatorTest {
         assertEquals(EntryEditorSeedConsumeResult.Missing, coordinator.consume(requireNotNull(token)))
         assertEquals(1, logger.events.size)
         assertEquals(Events.Vault.Error, logger.events.single().event)
-        assertEquals(ErrorCodes.Security.VaultOperationFailed, logger.events.single().errorCode)
-        assertEquals(Reasons.UnknownFailure, logger.events.single().reason)
+        assertEquals(ErrorCodes.Security.Vault.VaultOperationFailed, logger.events.single().errorCode)
+        assertEquals(Reasons.Application.Fallback.UnknownFailure, logger.events.single().reason)
         assertSame(failure, logger.events.single().throwable)
     }
 

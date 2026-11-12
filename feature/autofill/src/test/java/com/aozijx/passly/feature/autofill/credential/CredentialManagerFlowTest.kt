@@ -310,7 +310,14 @@ class CredentialManagerFlowTest {
                             store,
                             lease,
                         ),
-                    resolveSelection = ResolveAutofillSelection(store, resolver, authentication, vault),
+                    resolveSelection =
+                        ResolveAutofillSelection(
+                            store,
+                            finish,
+                            resolver,
+                            authentication,
+                            vault,
+                        ),
                     saveCredential = saveCredential,
                     secureSessionAccessState = vault,
                     inboxQueue =

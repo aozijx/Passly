@@ -47,14 +47,14 @@ internal class CredentialBeginGetHandler
                 request.beginGetCredentialOptions
                     .filterIsInstance<BeginGetPasswordOption>()
             if (passwordOptions.isEmpty()) {
-                logUnavailable(Reasons.NoFillableFields)
+                logUnavailable(Reasons.Autofill.Matching.NoFillableFields)
                 return CredentialBeginGetResult(BeginGetCredentialResponse())
             }
 
             val packageName =
                 CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
                     ?: run {
-                        logUnavailable(Reasons.NoFillableFields)
+                        logUnavailable(Reasons.Autofill.Matching.NoFillableFields)
                         return CredentialBeginGetResult(BeginGetCredentialResponse())
                     }
             val discovery = flow.beginGet(adapter.buildRequest(packageName))
@@ -178,7 +178,7 @@ internal class CredentialBeginGetHandler
                     }
                     if (entries.isEmpty()) {
                         flow.cancel(discovery.snapshot.id)
-                        logUnavailable(Reasons.NoMatchingEntry)
+                        logUnavailable(Reasons.Autofill.Matching.NoMatchingEntry)
                         BeginGetCredentialResponse()
                     } else {
                         traceContinuations.capture(discovery.snapshot.id.value)
@@ -198,25 +198,25 @@ internal class CredentialBeginGetHandler
 
                 is AutofillDiscoveryOutcome.NoCandidates -> {
                     flow.cancel(discovery.snapshot.id)
-                    logUnavailable(Reasons.NoMatchingEntry)
+                    logUnavailable(Reasons.Autofill.Matching.NoMatchingEntry)
                     BeginGetCredentialResponse()
                 }
 
                 AutofillDiscoveryOutcome.Disabled -> {
                     BeginGetCredentialResponse().also {
-                        logUnavailable(Reasons.SessionRestricted)
+                        logUnavailable(Reasons.Security.Session.SessionRestricted)
                     }
                 }
 
                 AutofillDiscoveryOutcome.UnsupportedFields -> {
                     BeginGetCredentialResponse().also {
-                        logUnavailable(Reasons.NoFillableFields)
+                        logUnavailable(Reasons.Autofill.Matching.NoFillableFields)
                     }
                 }
 
                 is AutofillDiscoveryOutcome.Failed -> {
                     BeginGetCredentialResponse().also {
-                        logUnavailable(Reasons.DatabaseUnavailable)
+                        logUnavailable(Reasons.Database.Availability.DatabaseUnavailable)
                     }
                 }
             }

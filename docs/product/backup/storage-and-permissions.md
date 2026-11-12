@@ -20,13 +20,13 @@ Data 使用 `databaseSession.queryFullVault(onDenied = { throw SessionModeRestri
 `secretFieldStore.readAll(db, entity.entryId, entity.entryType)` 作为
 `EntryAssembler.assembleFromDatabase(entity, profile, secret)` 的参数组装完整 Domain `Entry`；按开关读取图标和附件内容，
 只返回所选 Entry 两端都存在的 `EntryLink`。App `BackupSnapshotArchiveMapper.toBundle(...)` 使用
-`KeyedEntryArchiveMapper.toRecord(entry, attachmentIds)`、`BackupArchiveKeyRegistry.relationTypeKey(type)` 和资源稳定 ID
-形成 `BackupBundle`。归档层仍会再次验证资源数和总字节，作为
+`KeyedEntryArchiveMapper.toRecord(entry, attachmentIds)`、通用链接端点映射和资源稳定 ID
+形成 `BackupBundle`。链接只保存两个条目端点及稳定 ID/时间戳；归档层不再写入关系类型键，关系含义由端点类型推导。归档层仍会再次验证资源数和总字节，作为
 协议完整性校验；快照内存预算已在 Data 物化期间执行。
 
 导入时 `AppBackupSnapshotGateway.restore(bundle, mode)` 先保留覆盖保护：仅当源 archive 原本为空，或仍有至少一条
 兼容后的记录时才允许 `OVERWRITE`。随后通过 `KeyedEntryArchiveMapper.toEntry(record)` 及
-`BackupArchiveKeyRegistry.relationType(key)` 转换 archive records/links，以 `bundle.resourceData[record.id]` 提供资源字节，
+`KeyedEntryArchiveMapper.toEntry(record)` 转换 archive entries，通用链接记录直接保留两个端点，以 `bundle.resourceData[record.id]` 提供资源字节，
 映射 archive `ImportMode` 到 `VaultBackupRestoreMode`，再调用
 `VaultBackupStore.restore(VaultBackupSnapshot(entries, links, resources), mode, onCommitted)`。
 Data `RoomVaultBackupStore.restore(snapshot, mode, onCommitted)` 先以 `attachmentGarbageCollector.withMutationLock` 校验

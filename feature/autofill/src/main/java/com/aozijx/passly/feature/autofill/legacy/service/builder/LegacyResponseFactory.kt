@@ -36,15 +36,15 @@ internal class LegacyResponseFactory
             when (outcome) {
                 AutofillDiscoveryOutcome.Disabled,
                 -> {
-                    unavailable(Reasons.SessionRestricted)
+                    unavailable(Reasons.Security.Session.SessionRestricted)
                 }
 
                 AutofillDiscoveryOutcome.UnsupportedFields -> {
-                    unavailable(Reasons.NoFillableFields)
+                    unavailable(Reasons.Autofill.Matching.NoFillableFields)
                 }
 
                 is AutofillDiscoveryOutcome.Failed -> {
-                    unavailable(Reasons.DatabaseUnavailable)
+                    unavailable(Reasons.Database.Availability.DatabaseUnavailable)
                 }
 
                 is AutofillDiscoveryOutcome.RequiresUnlock -> {
@@ -93,7 +93,7 @@ internal class LegacyResponseFactory
                                 editableIds = editableIds,
                                 inlineRequest = inlineRequest,
                             ),
-                        observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
+                        observation = LegacyDiscoveryObservation.Unavailable(Reasons.Autofill.Matching.NoMatchingEntry),
                     )
                 }
 
@@ -115,7 +115,7 @@ internal class LegacyResponseFactory
                 }
 
                 is AutofillDiscoveryOutcome.ResumeSelection -> {
-                    unavailable(Reasons.UnknownFailure)
+                    unavailable(Reasons.Application.Fallback.UnknownFailure)
                 }
             }
 
@@ -397,7 +397,7 @@ internal class LegacyResponseFactory
         ) = result(
             built,
             if (built.response == null) {
-                LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields)
+                LegacyDiscoveryObservation.Unavailable(Reasons.Autofill.Matching.NoFillableFields)
             } else {
                 LegacyDiscoveryObservation.Completed(interactionId)
             },

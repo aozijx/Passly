@@ -115,15 +115,15 @@ internal class DekManager
                         logger.log(LogStatements.Security.vaultUnlocked())
                         DekUnlockResult.Success
                     } catch (e: javax.crypto.AEADBadTagException) {
-                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.AuthenticationFailed, degraded = true))
+                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.Security.Authentication.AuthenticationFailed, degraded = true))
                         DekUnlockResult.Failed(DekUnlockError.AUTH_FAILED)
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (e: IllegalArgumentException) {
-                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
+                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.Security.KeyManagement.DekVerificationFailed))
                         DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
                     } catch (e: Exception) {
-                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.UnlockFailed))
+                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.Security.Vault.UnlockFailed))
                         DekUnlockResult.Failed(DekUnlockError.UNKNOWN)
                     }
                 }
@@ -153,10 +153,10 @@ internal class DekManager
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (e: IllegalArgumentException) {
-                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
+                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.Security.KeyManagement.DekVerificationFailed))
                         DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
                     } catch (e: Exception) {
-                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekInstallFailed))
+                        logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.Security.KeyManagement.DekInstallFailed))
                         DekUnlockResult.Failed(DekUnlockError.UNKNOWN)
                     }
                 }

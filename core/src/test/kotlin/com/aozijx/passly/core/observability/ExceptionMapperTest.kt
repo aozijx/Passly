@@ -12,17 +12,17 @@ class ExceptionMapperTest {
 
         assertEquals(
             ExceptionKind.DATABASE_IO,
-            ExceptionMapper.map(ErrorCodes.Database.DatabaseOpenFailed, Reasons.DatabaseOpenFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Database.OpenReset.DatabaseOpenFailed, Reasons.Database.OpenReset.DatabaseOpenFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.AUTHENTICATION,
-            ExceptionMapper.map(ErrorCodes.Security.AuthenticationFailed, Reasons.AuthenticationFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Security.Authentication.AuthenticationFailed, Reasons.Security.Authentication.AuthenticationFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.PLATFORM,
             ExceptionMapper.map(
-                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                Reasons.PlatformCallbackFailed,
+                ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                Reasons.Autofill.Platform.PlatformCallbackFailed,
                 obfuscatedFailure,
             ),
         )
@@ -35,24 +35,24 @@ class ExceptionMapperTest {
         assertEquals(
             ExceptionKind.IO,
             ExceptionMapper.map(
-                ErrorCodes.Application.ResourceCleanupFailed,
-                Reasons.FileDeleteFailed,
+                ErrorCodes.Application.Resources.ResourceCleanupFailed,
+                Reasons.Application.Storage.FileDeleteFailed,
                 failure,
             ),
         )
         assertEquals(
             ExceptionKind.CRYPTO,
             ExceptionMapper.map(
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.DekVerificationFailed,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Security.KeyManagement.DekVerificationFailed,
                 failure,
             ),
         )
         assertEquals(
             ExceptionKind.LIFECYCLE,
             ExceptionMapper.map(
-                ErrorCodes.Security.VaultOperationFailed,
-                Reasons.CallbackFailed,
+                ErrorCodes.Security.Vault.VaultOperationFailed,
+                Reasons.Application.Callback.CallbackFailed,
                 failure,
             ),
         )
@@ -63,24 +63,24 @@ class ExceptionMapperTest {
         assertEquals(
             ExceptionKind.CRYPTO,
             ExceptionMapper.map(
-                ErrorCodes.Application.ApplicationUnhandledException,
-                Reasons.UnknownFailure,
+                ErrorCodes.Application.Runtime.ApplicationUnhandledException,
+                Reasons.Application.Fallback.UnknownFailure,
                 AEADBadTagException(),
             ),
         )
         assertEquals(
             ExceptionKind.IO,
             ExceptionMapper.map(
-                ErrorCodes.Application.ApplicationUnhandledException,
-                Reasons.UnknownFailure,
+                ErrorCodes.Application.Runtime.ApplicationUnhandledException,
+                Reasons.Application.Fallback.UnknownFailure,
                 IOException("secret"),
             ),
         )
         assertEquals(
             ExceptionKind.UNKNOWN,
             ExceptionMapper.map(
-                ErrorCodes.Application.ApplicationUnhandledException,
-                Reasons.UnknownFailure,
+                ErrorCodes.Application.Runtime.ApplicationUnhandledException,
+                Reasons.Application.Fallback.UnknownFailure,
                 RuntimeException("secret"),
             ),
         )

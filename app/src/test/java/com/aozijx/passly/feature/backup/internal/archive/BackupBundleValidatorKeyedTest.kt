@@ -22,9 +22,9 @@ class BackupBundleValidatorKeyedTest {
         )
         val document = BackupDocument(format = BackupDocument.FORMAT, version = BackupDocument.CURRENT_VERSION, exportedAt = 1, entries = emptyList(), resources = listOf(record))
         val cases = listOf(
-            BackupBundle(document, emptyMap()) to Reasons.BackupResourceManifestMismatch,
-            BackupBundle(document, mapOf("icon" to byteArrayOf(1))) to Reasons.BackupResourceSizeMismatch,
-            BackupBundle(document, mapOf("icon" to byteArrayOf(3, 2, 1))) to Reasons.BackupResourceDigestMismatch,
+            BackupBundle(document, emptyMap()) to Reasons.Backup.Resource.BackupResourceManifestMismatch,
+            BackupBundle(document, mapOf("icon" to byteArrayOf(1))) to Reasons.Backup.Resource.BackupResourceSizeMismatch,
+            BackupBundle(document, mapOf("icon" to byteArrayOf(3, 2, 1))) to Reasons.Backup.Resource.BackupResourceDigestMismatch,
         )
         cases.forEach { (bundle, reason) ->
             val failure = assertThrows(BackupIntegrityException::class.java) {

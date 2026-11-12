@@ -14,7 +14,6 @@ import com.aozijx.passly.domain.autofill.port.AutofillCredentialResolver
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.MatchType
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
@@ -59,10 +58,15 @@ internal class RoomAutofillCredentialResolver
                             }
                             if (AutofillCredentialField.OTP in selection.requestedFields) {
                                 val linkedOtpEntryId =
-                                    findLinkedOtpEntryId(
-                                        loginEntryId = entity.entryId,
-                                        links = entryLinkQueryDao().getByEntryId(entity.entryId),
-                                    )
+                                    entryLinkQueryDao().getByEntryId(entity.entryId).let { links ->
+                                        val endpointIds = links.flatMap { listOf(it.firstEntryId, it.secondEntryId) }.distinct()
+                                        val endpointTypes =
+                                            endpointIds
+                                                .chunked(MAX_LINK_ENDPOINT_IDS_PER_QUERY)
+                                                .flatMap { ids -> entryQueryDao().getTypesByIds(ids) }
+                                                .associate { it.entryId to it.entryType }
+                                        findLinkedOtpEntryId(entity.entryId, links, endpointTypes)
+                                    }
                                 val otpEntity =
                                     if (linkedOtpEntryId != null) {
                                         entryQueryDao().getById(linkedOtpEntryId)
@@ -113,6 +117,8 @@ internal class RoomAutofillCredentialResolver
         }
     }
 
+private const val MAX_LINK_ENDPOINT_IDS_PER_QUERY = 900
+
 private fun EntryEntity.matchesAutofillScope(selection: AutofillCredentialSelection): Boolean =
     autofillMatch(
         applicationId = selection.scope.packageName.takeIf { selection.scope.webDomain == null },
@@ -123,11 +129,18 @@ private fun EntryEntity.matchesAutofillScope(selection: AutofillCredentialSelect
 internal fun findLinkedOtpEntryId(
     loginEntryId: String,
     links: List<EntryLinkEntity>,
+    endpointTypes: Map<String, EntryType>,
 ): String? =
     links
-        .firstOrNull {
-            it.relationType == EntryRelationType.OTP_FOR && it.targetEntryId == loginEntryId
-        }?.sourceEntryId
+        .firstNotNullOfOrNull { link ->
+            val otherId =
+                when (loginEntryId) {
+                    link.firstEntryId -> link.secondEntryId
+                    link.secondEntryId -> link.firstEntryId
+                    else -> return@firstNotNullOfOrNull null
+                }
+            otherId.takeIf { endpointTypes[it] == EntryType.OTP }
+        }
 
 internal fun resolveAutofillCredential(
     entity: EntryEntity?,

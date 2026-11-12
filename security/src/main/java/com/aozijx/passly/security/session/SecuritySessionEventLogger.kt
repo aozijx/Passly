@@ -25,7 +25,7 @@ internal class SecuritySessionEventLogger
                 logger.log(
                     LogStatements.Security.vaultOperationFailed(
                         failure,
-                        Reasons.UnknownFailure,
+                        Reasons.Application.Fallback.UnknownFailure,
                         degraded = failure !is Error,
                     ),
                 )
@@ -97,7 +97,7 @@ internal class SecuritySessionEventLogger
                     logger.log(
                         LogStatements.Security.lockFailed(
                             failure,
-                            Reasons.UnknownFailure,
+                            Reasons.Application.Fallback.UnknownFailure,
                             lockFields(
                                 request,
                                 timeoutMs,
@@ -295,13 +295,13 @@ internal class SecuritySessionEventLogger
 
         private fun LockReason.toReasonCode(): ReasonCode =
             when (this) {
-                LockReason.USER -> Reasons.User
-                LockReason.IDLE_TIMEOUT -> Reasons.IdleTimeout
-                LockReason.AUTOFILL_REQUEST_FINISHED -> Reasons.AutofillRequestFinished
-                LockReason.BACKGROUND -> Reasons.Background
-                LockReason.RECOVERY_EXIT -> Reasons.RecoveryExit
-                LockReason.INTEGRITY_FAILURE -> Reasons.IntegrityFailure
-                LockReason.APP_EXIT -> Reasons.AppExit
+                LockReason.USER -> Reasons.Application.Lifecycle.User
+                LockReason.IDLE_TIMEOUT -> Reasons.Application.Lifecycle.IdleTimeout
+                LockReason.AUTOFILL_REQUEST_FINISHED -> Reasons.Autofill.Session.AutofillRequestFinished
+                LockReason.BACKGROUND -> Reasons.Application.Lifecycle.Background
+                LockReason.RECOVERY_EXIT -> Reasons.Security.Recovery.RecoveryExit
+                LockReason.INTEGRITY_FAILURE -> Reasons.Security.Integrity.IntegrityFailure
+                LockReason.APP_EXIT -> Reasons.Application.Lifecycle.AppExit
             }
 
         private fun LockTrigger.toLogTrigger(): SecurityTrigger =

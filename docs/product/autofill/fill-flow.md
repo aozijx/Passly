@@ -115,12 +115,16 @@ Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInter
 
 传统 Autofill 的保存提示不再有独立开关：全局 Autofill 启用且字段分类识别出有效密码字段时，响应始终带上系统 SaveInfo；全局关闭时不返回填充响应，也不接受保存请求。Credential Manager 的创建流程仍由其自身平台能力和设置控制。
 
+Legacy `AutofillService.onFillRequest()` 的每个请求都必须终结一次 `FillCallback`。AOSP 要求服务调用 `onSuccess()` 或 `onFailure()`；遗漏回调会让系统等待，最终超时丢弃请求。`CancellationSignal` 到达时，服务先用空响应 `onSuccess(null)` 结束平台请求，再取消后台工作；成功、失败和取消通过同一原子完成点竞争，迟到结果不再回调。该行为由 [`AutofillRequestCompletionTest`](../../../feature/autofill/src/test/java/com/aozijx/passly/feature/autofill/legacy/service/AutofillRequestCompletionTest.kt) 覆盖，依据 [AutofillService API](https://developer.android.com/reference/android/service/autofill/AutofillService) 与 [AOSP AutofillService 源码](https://android.googlesource.com/platform/frameworks/base/+/HEAD/core/java/android/service/autofill/AutofillService.java)。
+
+授权完成后的 Autofill interaction 进入 `Completed`、`Cancelled` 或 `Expired` 终态时，必须通过 `FinishAutofillInteraction` 完成；它在状态确实转换后释放该 interaction 持有的解锁 lease。后续业务流程直接调用 Store 的终态迁移会绕过 lease 释放，使状态先终结、借用仍残留并阻塞会话清理。授权中的取消与回滚由 `AuthorizeAutofillInteraction` 自己完成状态迁移和尝试期间的资源释放。
+
 ## 解析秘密
 
 `ResolveAutofillSelection` 不重读发现时的设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
 Credential Manager 的 `allowedUserIds` 在 `CredentialManagerFlow.selectPassword()` 收到解析结果后独立校验，Legacy 不使用该限制。
 `ResolveAutofillSelection` 将本次请求的 `AutofillCredentialField` 集合传给 `AutofillCredentialResolver`；Credential Manager 请求账号和密码，Legacy 与 Accessibility 按识别出的字段角色请求对应字段。账号只从已查询的条目元数据构造，密码仅在请求密码时通过 `SecretFieldStore.readField(PASSWORD)` 解密。
-请求 OTP 且 `otpAutofillEnabled` 开启时，resolver 优先查找选中登录条目的 `OTP_FOR` 关联。关联 OTP 必须符合它自身的包名或网址范围，否则本次不填 OTP。登录条目没有关联时，才从符合各自包名或网址范围的活动 OTP 条目中选择；仅唯一候选可回退，零个或多个候选都不填 OTP。通过范围匹配后，`SecretFieldStore.readOtpGenerationMaterial()` 读取该 OTP 的配置和独立加密 seed 并生成验证码。解析结果仅包含请求且成功取得的非空字段；未请求字段不会解密或进入 payload。
+请求 OTP 且 `otpAutofillEnabled` 开启时，resolver 优先查找与选中 Login 通过通用链接关联的 OTP 端点；链接不存储关系类型，Data 按两端条目的 `EntryType` 识别 OTP 关联。关联 OTP 必须符合它自身的包名或网址范围，否则本次不填 OTP。Login 没有关联 OTP 时，才从符合各自包名或网址范围的活动 OTP 条目中选择；仅唯一候选可回退，零个或多个候选都不填 OTP。通过范围匹配后，`SecretFieldStore.readOtpGenerationMaterial()` 读取该 OTP 的配置和独立加密 seed 并生成验证码。解析结果仅包含请求且成功取得的非空字段；未请求字段不会解密或进入 payload。
 Base32 secret 的字符、补位和尾部位由 Domain 的 `OtpSecretCodec` 统一校验；`OtpGenerator` 遇到损坏密钥时
 返回 `InvalidSecret`，不生成或填充 OTP 码。
 

@@ -3,8 +3,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.entry.model.EntryFieldValueType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -187,16 +185,8 @@ internal object KeyedBackupBundleValidator {
     ) {
         links.forEach { link ->
             require(BackupBundleValidator.isSafeArchiveId(link.id)) { "关系 ID 无效: ${link.id}" }
-            val sourceType = requireNotNull(entryTypes[link.sourceEntryId]) { "关系引用了不存在的条目: ${link.id}" }
-            val targetType = requireNotNull(entryTypes[link.targetEntryId]) { "关系引用了不存在的条目: ${link.id}" }
+            require(link.sourceEntryId in entryTypes && link.targetEntryId in entryTypes) { "关系引用了不存在的条目: ${link.id}" }
             require(link.sourceEntryId != link.targetEntryId) { "条目不能关联自身: ${link.id}" }
-            val relationType: EntryRelationType =
-                requireNotNull(
-                    BackupArchiveKeyRegistry.relationType(link.relationType),
-                ) { "未知关系类型: ${link.relationType}" }
-            require(EntryLinkPolicy.isAllowed(relationType, sourceType, targetType)) {
-                "关系方向或条目类型无效: ${link.id}"
-            }
             require(link.createdAt >= 0 && link.updatedAt >= link.createdAt) { "关系时间无效: ${link.id}" }
         }
     }
@@ -215,18 +205,18 @@ internal object KeyedBackupBundleValidator {
             }
         }
         if (!bundle.resourceData.keys.all { it in resourceIds }) {
-            throw BackupIntegrityException(Reasons.BackupResourceManifestMismatch)
+            throw BackupIntegrityException(Reasons.Backup.Resource.BackupResourceManifestMismatch)
         }
         val attachments =
             document.resources
                 .filter { it.kind == BackupResourceKind.ATTACHMENT }
                 .groupBy({ it.entryId }, { it.id })
         if (!document.entries.all { it.attachmentIds.toSet() == attachments[it.id].orEmpty().toSet() }) {
-            throw BackupIntegrityException(Reasons.BackupResourceReferenceMismatch)
+            throw BackupIntegrityException(Reasons.Backup.Resource.BackupResourceReferenceMismatch)
         }
         if (requireResourceData) {
             if (bundle.resourceData.keys != resourceIds) {
-                throw BackupIntegrityException(Reasons.BackupResourceManifestMismatch)
+                throw BackupIntegrityException(Reasons.Backup.Resource.BackupResourceManifestMismatch)
             }
         }
         var totalBytes = 0L
@@ -238,10 +228,10 @@ internal object KeyedBackupBundleValidator {
             require(record.mimeType == null || record.mimeType.length <= 255) { "备份资源 MIME 类型过长: ${record.id}" }
             bundle.resourceData[record.id]?.let { content ->
                 if (content.size.toLong() != record.size) {
-                    throw BackupIntegrityException(Reasons.BackupResourceSizeMismatch)
+                    throw BackupIntegrityException(Reasons.Backup.Resource.BackupResourceSizeMismatch)
                 }
                 if (!BackupBundleValidator.sha256Hex(content).equals(record.sha256, ignoreCase = true)) {
-                    throw BackupIntegrityException(Reasons.BackupResourceDigestMismatch)
+                    throw BackupIntegrityException(Reasons.Backup.Resource.BackupResourceDigestMismatch)
                 }
                 totalBytes += content.size
                 require(totalBytes <= BackupBundleValidator.MAX_TOTAL_RESOURCE_BYTES) { "备份资源总大小超限" }

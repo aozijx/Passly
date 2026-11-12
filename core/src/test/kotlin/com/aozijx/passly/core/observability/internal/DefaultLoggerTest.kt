@@ -58,15 +58,15 @@ class DefaultLoggerTest {
             logger.withRootTrace(Operations.AutofillLegacyRequest) {
                 logger.error(
                     Events.Autofill.ResultDeliveryFailed,
-                    ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                    Reasons.PlatformCallbackFailed,
+                    ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+                    Reasons.Autofill.Platform.PlatformCallbackFailed,
                     IllegalStateException("first"),
                 )
                 logger.inSpan(Operations.AutofillSessionClose) {
                     logger.warn(
                         Events.Autofill.SessionCloseFailed,
-                        ErrorCodes.Autofill.AutofillSessionCloseFailed,
-                        Reasons.SessionCloseFailed,
+                        ErrorCodes.Autofill.Session.AutofillSessionCloseFailed,
+                        Reasons.Database.Session.SessionCloseFailed,
                         IllegalStateException("second"),
                     )
                 }
@@ -94,8 +94,8 @@ class DefaultLoggerTest {
 
             val record = records.single()
             assertEquals(Events.Autofill.ResultDeliveryFailed, record.event)
-            assertEquals(ErrorCodes.Autofill.AutofillResultDeliveryFailed, record.error?.errorCode)
-            assertEquals(Reasons.PlatformCallbackFailed, record.error?.reason)
+            assertEquals(ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed, record.error?.errorCode)
+            assertEquals(Reasons.Autofill.Platform.PlatformCallbackFailed, record.error?.reason)
             assertEquals(
                 "IllegalStateException",
                 record.error

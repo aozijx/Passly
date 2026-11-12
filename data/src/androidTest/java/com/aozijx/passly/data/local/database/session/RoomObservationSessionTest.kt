@@ -38,7 +38,6 @@ import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.runtime.session.SessionLockedException
@@ -474,9 +473,8 @@ class RoomObservationSessionTest {
                     entryLinkCommandDao().insertStrict(
                         EntryLinkEntity(
                             linkId = "link-1",
-                            sourceEntryId = "entry-a",
-                            targetEntryId = "entry-b",
-                            relationType = EntryRelationType.RELATED_TO,
+                            firstEntryId = "entry-a",
+                            secondEntryId = "entry-b",
                             createdAt = 1L,
                             updatedAt = 1L,
                         ),

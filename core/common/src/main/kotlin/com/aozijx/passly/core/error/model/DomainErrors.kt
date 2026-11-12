@@ -8,7 +8,7 @@ class ValidationError(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DomainError(
-        code = VALIDATION_ERROR,
+        code = CatalogErrorCodes.Application.Validation.VALIDATION_ERROR,
         recoverable = true,
         severity = ErrorSeverity.WARNING,
         errorId = errorId,
@@ -19,7 +19,7 @@ class NotFound(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DomainError(
-        code = NOT_FOUND,
+        code = CatalogErrorCodes.Vault.Lookup.NOT_FOUND,
         recoverable = true,
         severity = ErrorSeverity.WARNING,
         errorId = errorId,
@@ -30,7 +30,7 @@ class Conflict(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DomainError(
-        code = CONFLICT,
+        code = CatalogErrorCodes.Vault.Mutation.CONFLICT,
         recoverable = true,
         severity = ErrorSeverity.WARNING,
         errorId = errorId,
@@ -41,7 +41,7 @@ class SessionModeRestricted(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DomainError(
-        code = SESSION_MODE_RESTRICTED,
+        code = CatalogErrorCodes.Security.Session.SESSION_MODE_RESTRICTED,
         recoverable = true,
         severity = ErrorSeverity.WARNING,
         errorId = errorId,

@@ -6,44 +6,51 @@ enum class ErrorLayer { DATA, DOMAIN, UI }
 
 enum class ErrorSeverity { WARNING, ERROR }
 
-private val ERROR_CODE = Regex("[A-Z][A-Z0-9_]{2,63}")
+@JvmInline
+value class AppErrorCode(
+    val value: String,
+) {
+    init {
+        require(value.matches(Regex("^[A-Z][A-Z0-9_]{2,63}$"))) { "Invalid AppError code" }
+    }
+}
 
 sealed class AppError(
-    open val code: String,
+    open val code: AppErrorCode,
     open val layer: ErrorLayer,
     open val recoverable: Boolean,
     open val severity: ErrorSeverity,
     open val errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     open val throwableType: String? = null,
-) : Exception(code, null) {
-    init {
-        require(code.matches(ERROR_CODE)) { "Error code must be UPPER_SNAKE: $code" }
-    }
+    open val reasonCode: String? = null,
+) : Exception(code.value, null) {
 
     companion object
 }
 
 sealed class DataError(
-    code: String,
+    code: AppErrorCode,
     recoverable: Boolean,
     severity: ErrorSeverity,
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
-) : AppError(code, ErrorLayer.DATA, recoverable, severity, errorId, throwableType)
+    reasonCode: String? = null,
+) : AppError(code, ErrorLayer.DATA, recoverable, severity, errorId, throwableType, reasonCode)
 
 sealed class DomainError(
-    code: String,
+    code: AppErrorCode,
     recoverable: Boolean,
     severity: ErrorSeverity,
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
-) : AppError(code, ErrorLayer.DOMAIN, recoverable, severity, errorId, throwableType)
+    reasonCode: String? = null,
+) : AppError(code, ErrorLayer.DOMAIN, recoverable, severity, errorId, throwableType, reasonCode)
 
 class Unexpected(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-        code = UNEXPECTED,
+        code = CatalogErrorCodes.Application.Runtime.UNEXPECTED,
         recoverable = false,
         severity = ErrorSeverity.ERROR,
         errorId = errorId,

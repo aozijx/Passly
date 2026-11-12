@@ -98,8 +98,8 @@ Passly 是产品名；`vault` 是安全领域概念，不作为面向用户的�
 nullable 的 `savingEdit` 与 `saveErrorCode`。
 
 用户自定义分类尚未实现。实现时应新增独立 `categoryId` 或 Entry-Category 关联表；`tags` 继续表示多值标签。
-当前也没有 `parentEntryId` 或 `ACCOUNT` 容器。LOGIN、OTP、PASSKEY 等保持原子 Entry，需要组合时使用
-`entry_links` 的显式关系类型，不使用 `entryType`、标签或未来的空间 ID 冒充父子关系。
+当前没有 `parentEntryId`。LOGIN、OTP、PASSKEY 等保持原子 Entry；所有 Entry 组合都用无方向的
+`entry_links` 端点对，账号归属、OTP 和恢复码含义由两端 `EntryType` 推导。标签仍只表示分类标签，不能代替关联。
 
 
 ## 代码位置

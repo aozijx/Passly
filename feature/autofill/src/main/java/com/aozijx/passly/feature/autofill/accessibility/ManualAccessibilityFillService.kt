@@ -128,7 +128,7 @@ class ManualAccessibilityFillService : AccessibilityService() {
                 receipt.interactionId.value,
                 Operations.AutofillAccessibilityRequest,
             ) {
-                logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.PlatformCallbackFailed))
+                logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.Autofill.Platform.PlatformCallbackFailed))
                 finishInteraction.cancel(receipt.interactionId)
                 traceContinuations.discard(receipt.interactionId.value)
             }
@@ -142,7 +142,7 @@ class ManualAccessibilityFillService : AccessibilityService() {
             AccessibilityCapture.Unavailable -> {
                 scope.launch {
                     logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
-                        logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.NoFillableFields))
+                        logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.Autofill.Matching.NoFillableFields))
                     }
                 }
             }

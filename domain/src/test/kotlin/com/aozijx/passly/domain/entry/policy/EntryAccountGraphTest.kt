@@ -1,21 +1,27 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class EntryAccountGraphTest {
     @Test
-    fun `account graph resolves direct, recovery, and otp members`() {
+    fun `account graph infers membership, recovery, and otp from endpoint types`() {
         val graph =
             EntryAccountGraph(
                 listOf(
-                    link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-                    link("recovery", "recovery", "account", EntryRelationType.RECOVERY_FOR),
-                    link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+                    link("member", "login", "account"),
+                    link("recovery", "recovery", "account"),
+                    link("otp", "otp", "login"),
+                ),
+                mapOf(
+                    EntryId("login") to EntryType.LOGIN,
+                    EntryId("account") to EntryType.ACCOUNT,
+                    EntryId("recovery") to EntryType.RECOVERY_CODE,
+                    EntryId("otp") to EntryType.OTP,
                 ),
             )
 
@@ -30,14 +36,12 @@ class EntryAccountGraphTest {
 
     private fun link(
         id: String,
-        source: String,
-        target: String,
-        type: EntryRelationType,
+        first: String,
+        second: String,
     ) = EntryLink.create(
         id = EntryLinkId(id),
-        sourceEntryId = EntryId(source),
-        targetEntryId = EntryId(target),
-        relationType = type,
+        firstEntryId = EntryId(first),
+        secondEntryId = EntryId(second),
         createdAt = 1L,
     )
 }

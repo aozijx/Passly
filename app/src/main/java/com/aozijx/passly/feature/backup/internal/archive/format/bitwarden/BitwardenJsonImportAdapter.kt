@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
@@ -62,17 +61,17 @@ internal class BitwardenJsonImportAdapter
             } catch (error: BackupFailed) {
                 throw error
             } catch (_: OtpGenerationError) {
-                throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+                throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
             } catch (error: Exception) {
                 throw BackupFailed(
                     throwableType = error.javaClass.simpleName,
-                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                    reasonCode = Reasons.Backup.Document.BackupDocumentMalformed.value,
                 )
             }
 
         internal fun decodeParsed(export: BitwardenExport): BackupBundle {
             if (export.encrypted) {
-                throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+                throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
             }
             val folderNames = export.folders.associate { it.id to it.name }
             val now = System.currentTimeMillis()
@@ -97,10 +96,10 @@ internal class BitwardenJsonImportAdapter
         }
 
         internal fun validateImportSupport(item: BitwardenItem) {
-            if (item.type !in 1..4) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
-            if (!item.login?.fido2Credentials.isNullOrEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
-            if (item.attachments.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
-            if (item.passwordHistory.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.BackupContentUnsupported.value)
+            if (item.type !in 1..4) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
+            if (!item.login?.fido2Credentials.isNullOrEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
+            if (item.attachments.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
+            if (item.passwordHistory.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
         }
 
         private fun BitwardenItem.toBackupRecords(
@@ -211,7 +210,7 @@ internal class BitwardenJsonImportAdapter
                     identity?.let { source ->
                         val idNumber =
                             source.ssn ?: source.passportNumber ?: source.licenseNumber
-                                ?: throw BackupFailed(reasonCode = Reasons.BackupDocumentMalformed.value)
+                                ?: throw BackupFailed(reasonCode = Reasons.Backup.Document.BackupDocumentMalformed.value)
                         fields += archiveField(FieldKey.ID_NUMBER, BackupFieldValue.text(idNumber))
                         listOf(
                             "称谓" to source.title,
@@ -289,7 +288,6 @@ internal class BitwardenJsonImportAdapter
                             id = relatedId(record.id, "member-link"),
                             sourceEntryId = record.id,
                             targetEntryId = account.id,
-                            relationType = BackupArchiveKeyRegistry.relationTypeKey(EntryRelationType.MEMBER_OF_ACCOUNT),
                             createdAt = createdAt,
                             updatedAt = updatedAt,
                         ),
@@ -297,7 +295,6 @@ internal class BitwardenJsonImportAdapter
                             id = relatedId(record.id, "otp-link"),
                             sourceEntryId = otpEntry.id,
                             targetEntryId = record.id,
-                            relationType = BackupArchiveKeyRegistry.relationTypeKey(EntryRelationType.OTP_FOR),
                             createdAt = createdAt,
                             updatedAt = updatedAt,
                         ),
@@ -314,7 +311,7 @@ internal class BitwardenJsonImportAdapter
                     }
 
                     OtpUriParseResult.Malformed, OtpUriParseResult.Unsupported -> {
-                        throw BackupFailed(reasonCode = Reasons.BackupDocumentMalformed.value)
+                        throw BackupFailed(reasonCode = Reasons.Backup.Document.BackupDocumentMalformed.value)
                     }
 
                     OtpUriParseResult.NotOtp -> {

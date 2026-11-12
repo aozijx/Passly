@@ -35,7 +35,6 @@ import com.aozijx.passly.core.ui.components.common.ActionButtonPhase
 import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
-import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.unlock.presentation.KdfInitializationUiState

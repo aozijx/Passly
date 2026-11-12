@@ -87,6 +87,8 @@ internal class EditableEntryUseCaseFixture(
         override suspend fun getById(entryId: EntryId) = current
 
         override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+        override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
     }
 
     private class TestAuthorization : AuthorizationGate {

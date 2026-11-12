@@ -20,9 +20,9 @@ class BackupImportPlannerTest {
     fun structuralFailuresHaveSameReasonInBothImportStrategiesAndExportValidation() {
         val source = bundle(entry("note", listOf(BackupFieldRecord("title", BackupFieldValue.text("entry")))))
         val cases = listOf(
-            source.copy(document = source.document.copy(format = "unknown")) to Reasons.BackupDocumentFormatUnsupported,
-            source.copy(document = source.document.copy(version = BackupDocument.CURRENT_VERSION + 1)) to Reasons.BackupDocumentVersionUnsupported,
-            source.copy(document = source.document.copy(entries = source.document.entries + source.document.entries)) to Reasons.BackupDocumentDuplicateEntryId,
+            source.copy(document = source.document.copy(format = "unknown")) to Reasons.Backup.Document.BackupDocumentFormatUnsupported,
+            source.copy(document = source.document.copy(version = BackupDocument.CURRENT_VERSION + 1)) to Reasons.Backup.Document.BackupDocumentVersionUnsupported,
+            source.copy(document = source.document.copy(entries = source.document.entries + source.document.entries)) to Reasons.Backup.Document.BackupDocumentDuplicateEntryId,
         )
         cases.forEach { (invalid, reason) ->
             BackupImportStrategy.entries.forEach { strategy ->
@@ -145,8 +145,8 @@ class BackupImportPlannerTest {
                         bundle.document.copy(
                             links =
                                 listOf(
-                                    BackupLinkRecord("link-1", known.id, "missing-1", "related_to", 1, 1),
-                                    BackupLinkRecord("link-1", known.id, "missing-2", "related_to", 1, 1),
+                                    BackupLinkRecord("link-1", known.id, "missing-1", 1, 1),
+                                    BackupLinkRecord("link-1", known.id, "missing-2", 1, 1),
                                 ),
                         ),
                 )

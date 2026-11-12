@@ -11,53 +11,89 @@ object ExceptionMapper {
         throwable: Throwable,
     ): ExceptionKind =
         when (errorCode) {
-            ErrorCodes.Database.DatabaseSessionOpenFailed,
-            ErrorCodes.Database.DatabaseSessionCloseFailed,
-            ErrorCodes.Database.DatabaseOpenFailed,
-            ErrorCodes.Database.DatabaseResetFailed,
+            ErrorCodes.Database.Session.DatabaseSessionOpenFailed,
+            ErrorCodes.Database.Session.DatabaseSessionCloseFailed,
+            ErrorCodes.Database.OpenReset.DatabaseOpenFailed,
+            ErrorCodes.Database.OpenReset.DatabaseResetFailed,
+            ErrorCodes.Database.Initialization.DatabaseInitFailed,
             -> {
                 ExceptionKind.DATABASE_IO
             }
 
-            ErrorCodes.Security.AuthenticationFailed,
-            ErrorCodes.Security.BiometricPromptFailed,
+            ErrorCodes.Security.Authentication.AuthenticationFailed,
+            ErrorCodes.Security.Biometric.BiometricPromptFailed,
+            ErrorCodes.Database.Key.DatabaseLocked,
             -> {
                 ExceptionKind.AUTHENTICATION
             }
 
-            ErrorCodes.Security.SecurityLockFailed -> {
+            ErrorCodes.Security.Cryptography.CryptoError,
+            ErrorCodes.Security.Cryptography.CryptoDataCorrupted,
+            -> ExceptionKind.CRYPTO
+
+            ErrorCodes.Security.Session.SessionModeRestricted -> ExceptionKind.LIFECYCLE
+
+            ErrorCodes.Application.Storage.FileIoError -> ExceptionKind.IO
+
+            ErrorCodes.Security.Lock.SecurityLockFailed -> {
                 ExceptionKind.LIFECYCLE
             }
 
-            ErrorCodes.Application.ResourceCleanupFailed -> {
+            ErrorCodes.Application.Resources.ResourceCleanupFailed -> {
                 ExceptionKind.IO
             }
 
-            ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
-            ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-            ErrorCodes.Autofill.AutofillSessionCloseFailed,
-            ErrorCodes.Autofill.AutofillSaveFailed,
-            ErrorCodes.Application.PackageIconUnavailable,
-            ErrorCodes.Application.ScannerFailed,
-            ErrorCodes.Application.NativeLibraryLoadFailed,
+            ErrorCodes.Autofill.Discovery.AutofillDiscoveryUnavailable,
+            ErrorCodes.Autofill.Delivery.AutofillResultDeliveryFailed,
+            ErrorCodes.Autofill.Session.AutofillSessionCloseFailed,
+            ErrorCodes.Autofill.Save.AutofillSaveFailed,
+            ErrorCodes.Application.Package.PackageIconUnavailable,
+            ErrorCodes.Application.Scanner.ScannerFailed,
+            ErrorCodes.Application.Native.NativeLibraryLoadFailed,
             -> {
                 ExceptionKind.PLATFORM
             }
 
-            ErrorCodes.Application.DiagnosticsExportFailed -> {
+            ErrorCodes.Autofill.Inbox.AutofillInboxKeyProvisionFailed -> {
+                when (reason) {
+                    Reasons.Security.Integrity.IntegrityFailure,
+                    Reasons.Security.KeyManagement.DekVerificationFailed,
+                    Reasons.Security.KeyManagement.DekInstallFailed,
+                    -> ExceptionKind.CRYPTO
+
+                    else -> mapThrowableFamily(throwable)
+                }
+            }
+
+            ErrorCodes.Backup.Operation.BackupOperationFailed -> {
+                when (reason) {
+                    Reasons.Backup.Authentication.BackupAuthenticationFailed -> ExceptionKind.AUTHENTICATION
+
+                    Reasons.Security.Integrity.IntegrityFailure,
+                    Reasons.Backup.Resource.BackupResourceManifestMismatch,
+                    Reasons.Backup.Resource.BackupResourceReferenceMismatch,
+                    Reasons.Backup.Resource.BackupResourceSizeMismatch,
+                    Reasons.Backup.Resource.BackupResourceDigestMismatch,
+                    -> ExceptionKind.CRYPTO
+
+                    else -> mapThrowableFamily(throwable)
+                }
+            }
+
+            ErrorCodes.Application.Diagnostics.DiagnosticsExportFailed -> {
                 ExceptionKind.IO
             }
 
-            ErrorCodes.Security.VaultOperationFailed -> {
+            ErrorCodes.Security.Vault.VaultOperationFailed -> {
                 when (reason) {
-                    Reasons.DekVerificationFailed,
-                    Reasons.DekInstallFailed,
-                    Reasons.UnlockFailed,
+                    Reasons.Security.KeyManagement.DekVerificationFailed,
+                    Reasons.Security.KeyManagement.DekInstallFailed,
+                    Reasons.Security.Vault.UnlockFailed,
                     -> ExceptionKind.CRYPTO
 
-                    Reasons.AuthenticationFailed -> ExceptionKind.AUTHENTICATION
+                    Reasons.Security.Authentication.AuthenticationFailed -> ExceptionKind.AUTHENTICATION
 
-                    Reasons.CallbackFailed -> ExceptionKind.LIFECYCLE
+                    Reasons.Application.Callback.CallbackFailed -> ExceptionKind.LIFECYCLE
 
                     else -> mapThrowableFamily(throwable)
                 }

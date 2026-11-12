@@ -408,6 +408,8 @@ class TrashViewModelTest {
                 override suspend fun getById(entryId: EntryId) = null
 
                 override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+                override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
             }
         return TrashViewModel(queries, TrashCommandUseCase(commands, entryQueries, access, authorization))
     }

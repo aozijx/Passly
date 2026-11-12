@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "8279e508f6bf1f85fd503f03d9d650d0",
+    "identityHash": "a455cba2f7302a1f50e2fa2d970ecd5f",
     "entities": [
       {
         "tableName": "entries",
@@ -264,7 +264,7 @@
       },
       {
         "tableName": "entry_links",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`linkId` TEXT NOT NULL, `sourceEntryId` TEXT NOT NULL, `targetEntryId` TEXT NOT NULL, `relationType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`linkId`), FOREIGN KEY(`sourceEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`targetEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`linkId` TEXT NOT NULL, `firstEntryId` TEXT NOT NULL, `secondEntryId` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`linkId`), FOREIGN KEY(`firstEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`secondEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "linkId",
@@ -273,20 +273,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "sourceEntryId",
-            "columnName": "sourceEntryId",
+            "fieldPath": "firstEntryId",
+            "columnName": "firstEntryId",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "targetEntryId",
-            "columnName": "targetEntryId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "relationType",
-            "columnName": "relationType",
+            "fieldPath": "secondEntryId",
+            "columnName": "secondEntryId",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -311,33 +305,23 @@
         },
         "indices": [
           {
-            "name": "index_entry_links_sourceEntryId",
+            "name": "index_entry_links_secondEntryId",
             "unique": false,
             "columnNames": [
-              "sourceEntryId"
+              "secondEntryId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_links_sourceEntryId` ON `${TABLE_NAME}` (`sourceEntryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_links_secondEntryId` ON `${TABLE_NAME}` (`secondEntryId`)"
           },
           {
-            "name": "index_entry_links_targetEntryId",
-            "unique": false,
-            "columnNames": [
-              "targetEntryId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_links_targetEntryId` ON `${TABLE_NAME}` (`targetEntryId`)"
-          },
-          {
-            "name": "index_entry_links_sourceEntryId_targetEntryId_relationType",
+            "name": "index_entry_links_firstEntryId_secondEntryId",
             "unique": true,
             "columnNames": [
-              "sourceEntryId",
-              "targetEntryId",
-              "relationType"
+              "firstEntryId",
+              "secondEntryId"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_entry_links_sourceEntryId_targetEntryId_relationType` ON `${TABLE_NAME}` (`sourceEntryId`, `targetEntryId`, `relationType`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_entry_links_firstEntryId_secondEntryId` ON `${TABLE_NAME}` (`firstEntryId`, `secondEntryId`)"
           }
         ],
         "foreignKeys": [
@@ -346,7 +330,7 @@
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
-              "sourceEntryId"
+              "firstEntryId"
             ],
             "referencedColumns": [
               "entryId"
@@ -357,7 +341,7 @@
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
-              "targetEntryId"
+              "secondEntryId"
             ],
             "referencedColumns": [
               "entryId"
@@ -801,7 +785,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8279e508f6bf1f85fd503f03d9d650d0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a455cba2f7302a1f50e2fa2d970ecd5f')"
     ]
   }
 }

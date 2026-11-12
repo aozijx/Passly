@@ -42,8 +42,8 @@ class LocalAlertPolicyTest {
         fields = LogFields.Empty,
         error =
             ErrorPayload(
-                ErrorCodes.Database.DatabaseSessionOpenFailed,
-                Reasons.SessionOpenFailed,
+                ErrorCodes.Database.Session.DatabaseSessionOpenFailed,
+                Reasons.Database.Session.SessionOpenFailed,
                 null,
             ),
     )

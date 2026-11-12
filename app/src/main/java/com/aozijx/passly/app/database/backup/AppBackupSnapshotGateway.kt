@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.feature.backup.contract.ImportMode
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -70,15 +69,10 @@ internal class AppBackupSnapshotGateway
             val entries = bundle.document.entries.map(KeyedEntryArchiveMapper::toEntry)
             val links =
                 bundle.document.links.map { link ->
-                    val relation =
-                        requireNotNull(BackupArchiveKeyRegistry.relationType(link.relationType)) {
-                            "未知关系类型: ${link.relationType}"
-                        }
                     EntryLink.create(
                         id = EntryLinkId(link.id),
-                        sourceEntryId = EntryId(link.sourceEntryId),
-                        targetEntryId = EntryId(link.targetEntryId),
-                        relationType = relation,
+                        firstEntryId = EntryId(link.sourceEntryId),
+                        secondEntryId = EntryId(link.targetEntryId),
                         createdAt = link.createdAt,
                         updatedAt = link.updatedAt,
                     )

@@ -132,7 +132,7 @@ internal class ActivityAuthUiHost(
                         cryptoBound = cryptoObject != null,
                     )
                 } catch (failure: IllegalArgumentException) {
-                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.InvalidConfiguration))
+                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.Application.Validation.InvalidConfiguration))
                     return@inSpan BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
                 }
             suspendCancellableCoroutine { continuation ->
@@ -187,7 +187,7 @@ internal class ActivityAuthUiHost(
                         logger.log(
                             LogStatements.Security.biometricPromptFailed(
                                 failure,
-                                Reasons.HostUnavailable,
+                                Reasons.Autofill.Platform.HostUnavailable,
                                 degraded = true,
                             ),
                         )
@@ -222,7 +222,7 @@ internal class ActivityAuthUiHost(
                 } catch (failure: IllegalArgumentException) {
                     if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
                     activeRequest.cancelPrompt()
-                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.InvalidConfiguration))
+                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.Application.Validation.InvalidConfiguration))
                     if (continuation.isActive) {
                         continuation.resume(
                             BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID),
@@ -234,7 +234,7 @@ internal class ActivityAuthUiHost(
                     logger.log(
                         LogStatements.Security.biometricPromptFailed(
                             failure,
-                            Reasons.HostUnavailable,
+                            Reasons.Autofill.Platform.HostUnavailable,
                             degraded = true,
                         ),
                     )
@@ -242,7 +242,7 @@ internal class ActivityAuthUiHost(
                 } catch (failure: SecurityException) {
                     if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
                     activeRequest.cancelPrompt()
-                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.PermissionDenied))
+                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.Autofill.Platform.PermissionDenied))
                     if (continuation.isActive) {
                         continuation.resume(
                             BiometricHostResult.Failure(BiometricHostFailure.METHOD_UNAVAILABLE),
@@ -251,7 +251,7 @@ internal class ActivityAuthUiHost(
                 } catch (failure: Exception) {
                     if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
                     activeRequest.cancelPrompt()
-                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.UnknownFailure))
+                    logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.Application.Fallback.UnknownFailure))
                     if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
                 }
             }

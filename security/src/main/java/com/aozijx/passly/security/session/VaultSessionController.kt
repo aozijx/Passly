@@ -368,8 +368,8 @@ internal class VaultSessionController
                     ) {
                         val fatal =
                             sealDatabaseForLock(
-                                onCancellation = { recordFailure(it, Reasons.SessionSealFailed) },
-                                onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                onCancellation = { recordFailure(it, Reasons.Database.Session.SessionSealFailed) },
+                                onFailure = { recordFailure(it, Reasons.Database.Session.SessionSealFailed) },
                             )
                         dekManager.lock()
                         lockStateManager.mark(SecureSessionState.SEALED)
@@ -475,10 +475,10 @@ internal class VaultSessionController
                                         } catch (cancelled: CancellationException) {
                                             cleanupCancellation = cancelled
                                         } catch (failure: Error) {
-                                            recordFailure(failure, Reasons.SessionSoftLockFailed)
+                                            recordFailure(failure, Reasons.Database.Session.SessionSoftLockFailed)
                                             cleanupFatal = combineFatal(cleanupFatal, failure)
                                         } catch (failure: Exception) {
-                                            recordFailure(failure, Reasons.SessionSoftLockFailed)
+                                            recordFailure(failure, Reasons.Database.Session.SessionSoftLockFailed)
                                         }
                                         lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                                     }
@@ -501,7 +501,7 @@ internal class VaultSessionController
                                         cleanupFatal,
                                         sealDatabaseForLock(
                                             onCancellation = { cleanupCancellation = it },
-                                            onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                            onFailure = { recordFailure(it, Reasons.Database.Session.SessionSealFailed) },
                                         ),
                                     )
                                 databaseSealed = true
@@ -515,7 +515,7 @@ internal class VaultSessionController
                                             cleanupFatal,
                                             sealDatabaseForLock(
                                                 onCancellation = { cleanupCancellation = it },
-                                                onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                                onFailure = { recordFailure(it, Reasons.Database.Session.SessionSealFailed) },
                                             ),
                                         )
                                 }

@@ -259,6 +259,8 @@ class CopyEntryFieldUseCaseTest {
         }
 
         override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+        override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
     }
 
     private object UsernameReader : EntryFieldReader {

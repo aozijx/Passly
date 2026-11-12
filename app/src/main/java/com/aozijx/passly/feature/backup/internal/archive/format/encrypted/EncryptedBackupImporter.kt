@@ -70,17 +70,17 @@ class EncryptedBackupImporter
             } catch (error: AEADBadTagException) {
                 throw BackupFailed(
                     throwableType = error.javaClass.simpleName,
-                    reasonCode = Reasons.BackupAuthenticationFailed.value,
+                    reasonCode = Reasons.Backup.Authentication.BackupAuthenticationFailed.value,
                 )
             } catch (error: ZipException) {
                 throw BackupFailed(
                     throwableType = error.javaClass.simpleName,
-                    reasonCode = Reasons.BackupZipMalformed.value,
+                    reasonCode = Reasons.Backup.Archive.BackupZipMalformed.value,
                 )
             } catch (error: Exception) {
                 throw BackupFailed(
                     throwableType = error.javaClass.simpleName,
-                    reasonCode = Reasons.BackupDocumentMalformed.value,
+                    reasonCode = Reasons.Backup.Document.BackupDocumentMalformed.value,
                 )
             } finally {
                 archive?.documentJson?.fill(0)

@@ -116,9 +116,9 @@ Favicon 编辑状态和 Action 仍归 `DetailViewModel`：它发起上传/URL st
 
 ## 详情页密码关联
 
-已保存且活动的 Login 详情可以通过关联密码组添加其他活动 Login。候选搜索只展示标题和用户名摘要，不读取密码明文。账户组与其他关系仍保留在可导航的关联条目组中；直接的 LOGIN↔LOGIN `RELATED_TO` 关系单独显示，避免解绑后因账户组仍包含同一条目而看起来没有变化。
+已保存且活动的 Login 详情可以通过关联密码组添加其他活动 Login。候选搜索只展示标题和用户名摘要，不读取密码明文。账户组与其他关系仍保留在可导航的关联条目组中；两端均为 Login 的直接通用关联单独显示，避免解绑后因账户组仍包含同一条目而看起来没有变化。链接本身只存储规范化端点对，关系含义由端点类型推导。
 
-左滑直接密码行会打开确认框。确认前会按当前详情重新验证两端仍是活动 Login，并核对所选 `RELATED_TO` link ID 及对称端点；确认后只调用现有 `EntryLinkRepository.delete(linkId)` 删除这条关系，两个密码项都保留。现有 Room 删除事务继续负责关系修订快照和附件清理；不增加表、字段、迁移、DAO 或 Repository 契约，也不更改备份格式。
+左滑直接密码行会打开确认框。确认前会按当前详情重新验证两端仍是活动 Login，并核对所选 link ID 与规范化端点对；确认后只调用现有 `EntryLinkRepository.delete(linkId)` 删除这条关系，两个密码项都保留。现有 Room 删除事务继续负责关系修订快照和附件清理。
 
 取消确认不改变关系。删除失败会保留关系和可重试确认框；每次尝试后刷新当前详情关系投影。关联写入与解绑由当前详情页和安全会话持有，页面替换或会话撤销会取消旧任务并抑制迟到结果。普通操作异常由所属服务记录；关系投影刷新失败由详情工作流记录。
 
@@ -191,7 +191,7 @@ Favicon 编辑状态和 Action 仍归 `DetailViewModel`：它发起上传/URL st
 | 持有确认状态、页面/会话取消和解绑后刷新 | `DetailPasswordRelationsWorkflow.requestUnlink()`、`confirmUnlink()` | [`DetailPasswordRelationsWorkflow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordRelationsWorkflow.kt) |
 | 展示关系分组、绑定选择器和解绑确认 | `RelatedEntriesSection()`、`RelatedPasswordPickerSheet()` | [`RelatedEntriesSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedEntriesSection.kt)、[`RelatedPasswordPickerSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedPasswordPickerSheet.kt) |
 | 关系查询/绑定/解绑策略与页面 owner 行为测试 | `RelatedPasswordOperationsImplTest`、`DetailPasswordRelationsWorkflowTest` | [`RelatedPasswordOperationsImplTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/detail/RelatedPasswordOperationsImplTest.kt)、[`DetailPasswordRelationsWorkflowTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordRelationsWorkflowTest.kt) |
-| 关系唯一约束与端点级联删除 | `EntryLinkConstraintDaoTest.endpointTripleIsUnique_andDeletingEndpointCascadesLink` | [`EntryLinkConstraintDaoTest.kt`](../../../data/src/androidTest/java/com/aozijx/passly/data/local/database/EntryLinkConstraintDaoTest.kt) |
+| 规范化端点对唯一约束、同 ID 更新与端点级联删除 | `EntryLinkConstraintDaoTest.endpointPairIsUnique_andDeletingEndpointCascadesLink` | [`EntryLinkConstraintDaoTest.kt`](../../../data/src/androidTest/java/com/aozijx/passly/data/local/database/EntryLinkConstraintDaoTest.kt) |
 | Compose 解绑确认、关系分组与候选选择器状态测试源码 | `RelatedEntriesSectionTest`、`RelatedPasswordPickerSheetTest` | [`RelatedEntriesSectionTest.kt`](../../../app/src/androidTest/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedEntriesSectionTest.kt)、[`RelatedPasswordPickerSheetTest.kt`](../../../app/src/androidTest/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedPasswordPickerSheetTest.kt) |
 | 维护详情标签弹层的单一状态及草稿、校验和 chips 投影 | `DetailTagEditorReducer.reduce()`、`DetailTagEditorState`、`DetailEditorOverlays()` | [`DetailTagEditorReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailTagEditorReducer.kt)、[`DetailTagEditorState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailTagEditorState.kt)、[`DetailEditorOverlays.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/DetailEditorOverlays.kt) |
 | 共享应用目录状态与搜索投影 | `AppPackagePickerUiState`、`fromInstalledApps()`、`search()`、`mapItems()` | [`AppPackagePickerUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/AppPackagePickerUiState.kt) |

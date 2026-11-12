@@ -20,6 +20,7 @@ internal data class ReasonCatalogEntry(
     val symbol: String,
     val code: String,
     val description: String,
+    val groupPath: List<String>,
 )
 
 internal data class ErrorCatalogEntry(
@@ -30,12 +31,14 @@ internal data class ErrorCatalogEntry(
     val exposure: String,
     val description: String,
     val messageKey: String?,
+    val groupPath: List<String>,
 )
 
 internal object ErrorCatalogParser {
     private val symbolPattern = Regex("^[A-Z][A-Za-z0-9]{1,63}$")
     private val codePattern = Regex("^[A-Z][A-Z0-9_]{2,63}$")
     private val messageKeyPattern = Regex("^[a-z][a-z0-9_]{2,127}$")
+    private val groupPattern = Regex("^[A-Z][A-Za-z0-9]{1,63}$")
     private val categories = setOf("APPLICATION", "DATABASE", "SECURITY", "AUTOFILL", "BACKUP", "VAULT")
     private val exposures = setOf("INTERNAL", "USER_ACTIONABLE")
 
@@ -47,18 +50,19 @@ internal object ErrorCatalogParser {
         val reasons =
             root.requiredList("reasons").mapIndexed { index, value ->
                 val item = value.asStringMap("reasons[$index]")
-                item.requireKeys(setOf("symbol", "code", "description"), "reasons[$index]")
+                item.requireKeys(setOf("symbol", "code", "description", "group_path"), "reasons[$index]")
                 ReasonCatalogEntry(
                     symbol = item.requiredString("symbol"),
                     code = item.requiredString("code"),
                     description = item.requiredString("description"),
+                    groupPath = item.requiredStringList("group_path"),
                 )
             }
         val errors =
             root.requiredList("errors").mapIndexed { index, value ->
                 val item = value.asStringMap("errors[$index]")
                 item.requireKeys(
-                    setOf("symbol", "code", "default_reason", "category", "exposure", "description", "message_key"),
+                    setOf("symbol", "code", "default_reason", "category", "exposure", "description", "message_key", "group_path"),
                     "errors[$index]",
                     optional = setOf("message_key"),
                 )
@@ -74,6 +78,7 @@ internal object ErrorCatalogParser {
                             require(it is String && it.isNotBlank()) { "message_key must be a non-empty string" }
                             it
                         },
+                    groupPath = item.requiredStringList("group_path"),
                 )
             }
         validate(reasons, errors)
@@ -90,11 +95,13 @@ internal object ErrorCatalogParser {
             require(symbolPattern.matches(it.symbol)) { "Invalid reason symbol ${it.symbol}" }
             require(codePattern.matches(it.code)) { "Invalid reason code ${it.code}" }
             require(it.description.isNotBlank()) { "Reason description cannot be blank" }
+            require(it.groupPath.isNotEmpty() && it.groupPath.all(groupPattern::matches)) { "Invalid reason group_path for ${it.code}" }
         }
         errors.forEach {
             require(symbolPattern.matches(it.symbol)) { "Invalid error symbol ${it.symbol}" }
             require(codePattern.matches(it.code)) { "Invalid error code ${it.code}" }
             require(it.category in categories) { "Invalid error category ${it.category}" }
+            require(it.groupPath.isNotEmpty() && it.groupPath.all(groupPattern::matches)) { "Invalid error group_path for ${it.code}" }
             require(it.exposure in exposures) { "Invalid error exposure ${it.exposure}" }
             require(it.description.isNotBlank()) { "Error description cannot be blank" }
             require(it.defaultReason in reasons.map(ReasonCatalogEntry::code)) {
@@ -121,6 +128,32 @@ internal object ErrorCatalogParser {
         requireUnique("reason codes", reasons.map(ReasonCatalogEntry::code))
         requireUnique("error symbols", errors.map(ErrorCatalogEntry::symbol))
         requireUnique("error codes", errors.map(ErrorCatalogEntry::code))
+        val reasonPaths = reasons.map { it.groupPath + it.symbol }
+        val errorPaths =
+            errors.map {
+                listOf(it.category.lowercase().replaceFirstChar(Char::uppercase)) + it.groupPath + it.symbol
+            }
+        requireUnique("reason paths", reasonPaths.map { it.joinToString(".") })
+        requireUnique("error paths", errorPaths.map { it.joinToString(".") })
+        requireNoHierarchyConflicts("reason paths", reasonPaths)
+        requireNoHierarchyConflicts("error paths", errorPaths)
+    }
+
+    private fun requireNoHierarchyConflicts(
+        label: String,
+        paths: List<List<String>>,
+    ) {
+        val completePaths = paths.map { it.joinToString(".") }.toSet()
+        val conflicts =
+            paths.flatMap { path ->
+                (1 until path.size).mapNotNull { parentSize ->
+                    val parent = path.take(parentSize).joinToString(".")
+                    parent.takeIf { it in completePaths }?.let { "$it -> ${path.joinToString(".")}" }
+                }
+            }
+        require(conflicts.isEmpty()) {
+            "Conflicting $label: ${conflicts.sorted().joinToString()}"
+        }
     }
 
     private fun requireUnique(
@@ -149,6 +182,12 @@ internal object ErrorCatalogParser {
 
     private fun Map<String, Any?>.requiredString(key: String): String =
         get(key).also { require(it is String && it.isNotBlank()) { "$key must be a non-empty string" } } as String
+
+    private fun Map<String, Any?>.requiredStringList(key: String): List<String> =
+        requiredList(key).mapIndexed { index, value ->
+            require(value is String && value.isNotBlank()) { "$key[$index] must be a non-empty string" }
+            value
+        }
 
     private fun Map<String, Any?>.requiredNumber(key: String): Number =
         get(key).also { require(it is Number) { "$key must be a number" } } as Number
@@ -196,26 +235,31 @@ internal object ErrorCatalogRenderer {
             appendLine(")")
             appendLine()
             appendLine("object ErrorCodes {")
-            catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
-                appendLine("    object ${category.categoryObjectName()} {")
-                errors.forEach { appendLine("        val ${it.symbol} = ErrorCode(\"${it.code}\")") }
-                appendLine("    }")
-            }
+            appendHierarchy(
+                catalog.errors.map {
+                    (listOf(it.category.categoryObjectName()) + it.groupPath) to
+                        (it.symbol to "val ${it.symbol} = ErrorCode(\"${it.code}\")")
+                },
+            )
             appendLine("}")
             appendLine()
             appendLine("object Reasons {")
-            catalog.reasons.forEach { appendLine("    val ${it.symbol} = ReasonCode(\"${it.code}\")") }
+            appendHierarchy(catalog.reasons.map { it.groupPath to (it.symbol to "val ${it.symbol} = ReasonCode(\"${it.code}\")") })
             appendLine("}")
             appendLine()
             appendLine("object ErrorCatalog {")
             appendLine("    val All: List<RegisteredError> = listOf(")
             catalog.errors.forEach {
                 val reasonSymbol = catalog.reasons.single { reason -> reason.code == it.defaultReason }.symbol
-                appendLine(
-                    "        RegisteredError(ErrorCodes.${it.category.categoryObjectName()}.${it.symbol}, Reasons.$reasonSymbol, LogCategory.${it.category}, ErrorExposure.${it.exposure}),",
-                )
+                val errorPath = (listOf(it.category.categoryObjectName()) + it.groupPath + it.symbol).joinToString(".")
+                val reason = catalog.reasons.single { reason -> reason.code == it.defaultReason }
+                val reasonPath = (reason.groupPath + reasonSymbol).joinToString(".")
+                appendLine("        RegisteredError(ErrorCodes.$errorPath, Reasons.$reasonPath, LogCategory.${it.category}, ErrorExposure.${it.exposure}),")
             }
             appendLine("    )")
+            appendLine("    private val byCode = All.associateBy(RegisteredError::code)")
+            appendLine()
+            appendLine("    fun find(code: ErrorCode): RegisteredError? = byCode[code]")
             appendLine("}")
         }
 
@@ -225,7 +269,12 @@ internal object ErrorCatalogRenderer {
             appendLine("package com.aozijx.passly.core.error.model")
             appendLine()
             appendLine("object CatalogErrorCodes {")
-            catalog.errors.forEach { appendLine("    const val ${it.code} = \"${it.code}\"") }
+            appendHierarchy(
+                catalog.errors.map {
+                    (listOf(it.category.categoryObjectName()) + it.groupPath) to
+                        (it.code to "val ${it.code} = AppErrorCode(\"${it.code}\")")
+                },
+            )
             appendLine("}")
         }
 
@@ -243,7 +292,7 @@ internal object ErrorCatalogRenderer {
             appendLine("    @StringRes")
             appendLine("    fun resolve(errorCode: ErrorCode): Int? = when (errorCode) {")
             catalog.errors.filter { it.messageKey != null }.forEach {
-                appendLine("        ErrorCodes.${it.category.categoryObjectName()}.${it.symbol} -> R.string.${it.messageKey}")
+                appendLine("        ErrorCodes.${(listOf(it.category.categoryObjectName()) + it.groupPath + it.symbol).joinToString(".")} -> R.string.${it.messageKey}")
             }
             appendLine("        else -> null")
             appendLine("    }")
@@ -264,16 +313,35 @@ internal object ErrorCatalogRenderer {
                 appendLine("| Code | Default reason | Exposure | Description |")
                 appendLine("|---|---|---|---|")
                 errors.forEach {
-                    appendLine("| `${it.code}` | `${it.defaultReason}` | ${it.exposure} | ${it.description} |")
+                    val reason = catalog.reasons.single { reason -> reason.code == it.defaultReason }
+                    val reasonOwner = (reason.groupPath + reason.symbol).joinToString(".")
+                    appendLine("| `${(listOf(category.categoryObjectName()) + it.groupPath + it.symbol).joinToString(".")}` (`${it.code}`) | `$reasonOwner` (`${it.defaultReason}`) | ${it.exposure} | ${it.description} |")
                 }
             }
             appendLine()
             appendLine("## Reasons")
             appendLine()
-            appendLine("| Code | Description |")
-            appendLine("|---|---|")
-            catalog.reasons.forEach { appendLine("| `${it.code}` | ${it.description} |") }
+            appendLine("| Owner | Code | Description |")
+            appendLine("|---|---|---|")
+            catalog.reasons.forEach { appendLine("| `${(it.groupPath + it.symbol).joinToString(".")}` | `${it.code}` | ${it.description} |") }
         }
+
+    private fun StringBuilder.appendHierarchy(entries: List<Pair<List<String>, Pair<String, String>>>) {
+        fun render(
+            nodes: List<Pair<List<String>, Pair<String, String>>>,
+            depth: Int,
+        ) {
+            val groups = nodes.groupBy { it.first.firstOrNull() }
+            groups[null].orEmpty().forEach { appendLine("${"    ".repeat(depth + 1)}${it.second.second}") }
+            groups.filterKeys { it != null }.toSortedMap(compareBy<String?> { it }).forEach { (segment, children) ->
+                appendLine("${"    ".repeat(depth + 1)}object $segment {")
+                val nested = children.map { it.first.drop(1) to it.second }
+                render(nested, depth + 1)
+                appendLine("${"    ".repeat(depth + 1)}}")
+            }
+        }
+        render(entries, 0)
+    }
 
     private fun String.categoryObjectName(): String = lowercase().replaceFirstChar(Char::uppercase)
 }

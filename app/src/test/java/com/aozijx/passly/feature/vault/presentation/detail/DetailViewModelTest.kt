@@ -47,7 +47,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -290,7 +289,8 @@ class DetailViewModelTest {
                 fixture.viewModel.onAction(DetailUiAction.BindPassword(OTHER_ENTRY_ID.value))
                 runCurrent()
 
-                assertEquals(EntryRelationType.RELATED_TO, links.saved.single().relationType)
+                assertEquals(ENTRY_ID, links.saved.single().firstEntryId)
+                assertEquals(OTHER_ENTRY_ID, links.saved.single().secondEntryId)
                 assertEquals(
                     listOf(OTHER_ENTRY_ID),
                     fixture.viewModel.uiState.value.relatedPasswords
@@ -960,6 +960,8 @@ class DetailViewModelTest {
                             }
 
                             override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
+
+                            override suspend fun getTypesByIds(entryIds: List<EntryId>) = entries.getTypesByIds(entryIds)
                         }
                     },
                 )
@@ -996,6 +998,8 @@ class DetailViewModelTest {
                             override suspend fun getById(entryId: EntryId): Entry? = null
 
                             override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+                            override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
                         }
                     },
                 )
@@ -1078,6 +1082,8 @@ class DetailViewModelTest {
                             override suspend fun getById(entryId: EntryId): Entry? = awaitCancellation()
 
                             override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+                            override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
                         }
                     },
                 )
@@ -1108,6 +1114,8 @@ class DetailViewModelTest {
                                     override suspend fun getById(entryId: EntryId): Entry? = throw fatal
 
                                     override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
+
+                                    override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
                                 }
                             },
                         )
@@ -1144,6 +1152,8 @@ class DetailViewModelTest {
                             }
 
                             override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
+
+                            override suspend fun getTypesByIds(entryIds: List<EntryId>) = entries.getTypesByIds(entryIds)
                         }
                     },
                 )
@@ -1189,6 +1199,8 @@ class DetailViewModelTest {
                             }
 
                             override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
+
+                            override suspend fun getTypesByIds(entryIds: List<EntryId>) = entries.getTypesByIds(entryIds)
                         }
                     },
                 )
@@ -1488,6 +1500,9 @@ class DetailViewModelTest {
 
         override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entryIds.mapNotNull(values::get)
 
+        override suspend fun getTypesByIds(entryIds: List<EntryId>) =
+            entryIds.mapNotNull { id -> values[id]?.let { id to it.type } }.toMap()
+
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 
         override suspend fun updateEntry(
@@ -1553,7 +1568,7 @@ class DetailViewModelTest {
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
             flowOf(
                 saved.filter {
-                    it.sourceEntryId == entryId || it.targetEntryId == entryId
+                    it.firstEntryId == entryId || it.secondEntryId == entryId
                 },
             )
 
@@ -1561,7 +1576,7 @@ class DetailViewModelTest {
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
             saved.filter {
-                it.sourceEntryId == entryId || it.targetEntryId == entryId
+                it.firstEntryId == entryId || it.secondEntryId == entryId
             }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {

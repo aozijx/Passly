@@ -134,7 +134,7 @@ internal class BackupArchiveServiceImpl
             password: CharArray?,
         ) {
             if (required && (password == null || password.isEmpty())) {
-                throw BackupFailed(reasonCode = Reasons.BackupPasswordRequired.value)
+                throw BackupFailed(reasonCode = Reasons.Backup.Authentication.BackupPasswordRequired.value)
             }
         }
 
@@ -157,7 +157,7 @@ internal class BackupArchiveServiceImpl
                         (result.error as? BackupFailed)?.let {
                             logBestEffort(
                                 LogStatements.Backup.failureReason(
-                                    it.reasonCode?.let(::ReasonCode) ?: Reasons.UnknownFailure,
+                                    it.reasonCode?.let(::ReasonCode) ?: Reasons.Application.Fallback.UnknownFailure,
                                 ),
                             )
                         }

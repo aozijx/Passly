@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 
 @Entity(
     tableName = "entry_links",
@@ -12,21 +11,20 @@ import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
         ForeignKey(
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
-            childColumns = ["sourceEntryId"],
+            childColumns = ["firstEntryId"],
             onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
-            childColumns = ["targetEntryId"],
+            childColumns = ["secondEntryId"],
             onDelete = ForeignKey.CASCADE,
         ),
     ],
     indices = [
-        Index(value = ["sourceEntryId"]),
-        Index(value = ["targetEntryId"]),
+        Index(value = ["secondEntryId"]),
         Index(
-            value = ["sourceEntryId", "targetEntryId", "relationType"],
+            value = ["firstEntryId", "secondEntryId"],
             unique = true,
         ),
     ],
@@ -34,9 +32,8 @@ import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 data class EntryLinkEntity(
     @PrimaryKey
     val linkId: String,
-    val sourceEntryId: String,
-    val targetEntryId: String,
-    val relationType: EntryRelationType,
+    val firstEntryId: String,
+    val secondEntryId: String,
     val createdAt: Long,
     val updatedAt: Long,
 )

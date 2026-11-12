@@ -149,7 +149,7 @@ internal class CredentialResponseViewModel
                             CredentialManagerPasswordResult.NotAvailable -> {
                                 activeInteractionId = null
                                 logger.log(
-                                    LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                                    LogStatements.Autofill.discoveryUnavailable(Reasons.Autofill.Matching.NoMatchingEntry),
                                 )
                                 traceContinuations.discard(request.interactionId.value)
                                 completeGetError(NoCredentialException("Credential is no longer available"))
@@ -203,7 +203,7 @@ internal class CredentialResponseViewModel
                                 activeInteractionId = null
                                 logger.log(
                                     LogStatements.Autofill.discoveryUnavailable(
-                                        Reasons.AuthenticationRejected,
+                                        Reasons.Security.Authentication.AuthenticationRejected,
                                     ),
                                 )
                                 traceContinuations.discard(request.interactionId.value)
@@ -218,7 +218,7 @@ internal class CredentialResponseViewModel
                                 flow.cancel(request.interactionId)
                                 activeInteractionId = null
                                 logger.log(
-                                    LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                                    LogStatements.Autofill.discoveryUnavailable(Reasons.Autofill.Matching.NoMatchingEntry),
                                 )
                                 traceContinuations.discard(request.interactionId.value)
                                 completeGetError(NoCredentialException("Credential is no longer available"))
@@ -277,7 +277,7 @@ internal class CredentialResponseViewModel
 
                             CredentialManagerCreateResult.NotSaved -> {
                                 activeInteractionId = null
-                                logger.log(LogStatements.Autofill.saveUnavailable(Reasons.StorageFailure))
+                                logger.log(LogStatements.Autofill.saveUnavailable(Reasons.Application.Storage.StorageFailure))
                                 traceContinuations.discard(request.interactionId.value)
                                 completeCreateError(CreateCredentialUnknownException("Credential was not saved"))
                             }
@@ -285,7 +285,7 @@ internal class CredentialResponseViewModel
                             is CredentialManagerCreateResult.NotAuthorized -> {
                                 activeInteractionId = null
                                 logger.log(
-                                    LogStatements.Autofill.saveUnavailable(Reasons.AuthenticationRejected),
+                                    LogStatements.Autofill.saveUnavailable(Reasons.Security.Authentication.AuthenticationRejected),
                                 )
                                 traceContinuations.discard(request.interactionId.value)
                                 completeCreateError(

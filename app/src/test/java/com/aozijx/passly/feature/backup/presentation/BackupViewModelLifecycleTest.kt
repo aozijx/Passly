@@ -42,7 +42,7 @@ class BackupViewModelLifecycleTest {
             val model =
                 model {
                     BackupExecutionResult.Failure(
-                        BackupFailed(reasonCode = Reasons.BackupAuthenticationFailed.value),
+                        BackupFailed(reasonCode = Reasons.Backup.Authentication.BackupAuthenticationFailed.value),
                     )
                 }
             val owner = model.onPageEntered()
@@ -52,7 +52,7 @@ class BackupViewModelLifecycleTest {
             model.onAction(BackupUiAction.SubmitImport)
 
             assertEquals(
-                BackupNoticeEffect.Failed(BackupOperation.IMPORT, Reasons.BackupAuthenticationFailed),
+                BackupNoticeEffect.Failed(BackupOperation.IMPORT, Reasons.Backup.Authentication.BackupAuthenticationFailed),
                 effect.await(),
             )
             model.onPageExited(owner)

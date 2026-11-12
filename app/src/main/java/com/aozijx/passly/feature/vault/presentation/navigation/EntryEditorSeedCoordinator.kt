@@ -103,8 +103,8 @@ internal class EntryEditorSeedCoordinator
                 discardAfterFailure(token, failure)
                 logger.error(
                     Events.Vault.Error,
-                    ErrorCodes.Security.VaultOperationFailed,
-                    Reasons.UnknownFailure,
+                    ErrorCodes.Security.Vault.VaultOperationFailed,
+                    Reasons.Application.Fallback.UnknownFailure,
                     failure,
                     fields {
                         operation(LogFieldKeys.Operation, OperationCode("vault_seed_navigation"))

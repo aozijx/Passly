@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -129,17 +128,6 @@ class StorageEnumMappingsTest {
             ::fieldKeyFromStorageKey,
         )
         assertMapping(
-            EntryRelationType.entries,
-            mapOf(
-                EntryRelationType.MEMBER_OF_ACCOUNT to "MEMBER_OF_ACCOUNT",
-                EntryRelationType.OTP_FOR to "OTP_FOR",
-                EntryRelationType.RECOVERY_FOR to "RECOVERY_FOR",
-                EntryRelationType.RELATED_TO to "RELATED_TO",
-            ),
-            EntryRelationType::toStorageKey,
-            ::entryRelationTypeFromStorageKey,
-        )
-        assertMapping(
             SensitiveFieldKey.entries,
             mapOf(
                 SensitiveFieldKey.PASSWORD to "PASSWORD",
@@ -207,9 +195,6 @@ class StorageEnumMappingsTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             fieldKeyFromStorageKey("FUTURE_OR_CORRUPT")
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            entryRelationTypeFromStorageKey("FUTURE_OR_CORRUPT")
         }
         assertThrows(IllegalArgumentException::class.java) {
             sensitiveFieldKeyFromStorageKey("FUTURE_OR_CORRUPT")

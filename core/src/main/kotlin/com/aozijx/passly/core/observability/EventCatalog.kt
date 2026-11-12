@@ -180,6 +180,7 @@ object Events {
         val SaveStaged = EventKey("autofill.save.staged")
         val SaveCompleted = EventKey("autofill.save.completed")
         val SaveFailed = EventKey("autofill.save.failed")
+        val InboxKeyProvisionFailed = EventKey("autofill.inbox.key_provision_failed")
         val ActionIgnored = EventKey("autofill.action.ignored")
         val HostAbandoned = EventKey("autofill.host.abandoned")
         val RequestCancelled = EventKey("autofill.request.cancelled")
@@ -281,6 +282,7 @@ object Events {
             Autofill.SaveStaged,
             Autofill.SaveCompleted,
             Autofill.SaveFailed,
+            Autofill.InboxKeyProvisionFailed,
             Autofill.ActionIgnored,
             Autofill.HostAbandoned,
             Autofill.RequestCancelled,

@@ -210,12 +210,12 @@ internal class DatabaseSessionEventLogger
 
         private fun SessionTransitionReason.toReasonCode(): ReasonCode =
             when (this) {
-                SessionTransitionReason.OPEN -> Reasons.SessionOpen
-                SessionTransitionReason.OPEN_FAILED -> Reasons.SessionOpenFailed
-                SessionTransitionReason.RESUME -> Reasons.SessionResume
-                SessionTransitionReason.SOFT_LOCK -> Reasons.SessionSoftLock
-                SessionTransitionReason.SEAL -> Reasons.SessionSeal
-                SessionTransitionReason.DRAIN_TIMEOUT -> Reasons.SessionDrainTimeout
-                SessionTransitionReason.CLOSE_FAILED -> Reasons.DatabaseResourceCloseFailed
+                SessionTransitionReason.OPEN -> Reasons.Database.Session.SessionOpen
+                SessionTransitionReason.OPEN_FAILED -> Reasons.Database.Session.SessionOpenFailed
+                SessionTransitionReason.RESUME -> Reasons.Database.Session.SessionResume
+                SessionTransitionReason.SOFT_LOCK -> Reasons.Database.Session.SessionSoftLock
+                SessionTransitionReason.SEAL -> Reasons.Database.Session.SessionSeal
+                SessionTransitionReason.DRAIN_TIMEOUT -> Reasons.Database.Session.SessionDrainTimeout
+                SessionTransitionReason.CLOSE_FAILED -> Reasons.Database.Resource.DatabaseResourceCloseFailed
             }
     }

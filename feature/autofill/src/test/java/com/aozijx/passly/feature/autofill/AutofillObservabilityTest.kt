@@ -63,7 +63,7 @@ class AutofillObservabilityTest {
             logger.withRootTrace(Operations.AutofillLegacyRequest) {
                 logger.log(LogStatements.Autofill.discoveryStarted(context))
                 logger.log(
-                    LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry, context),
+                    LogStatements.Autofill.discoveryUnavailable(Reasons.Autofill.Matching.NoMatchingEntry, context),
                 )
             }
 
@@ -71,7 +71,7 @@ class AutofillObservabilityTest {
                 listOf(Events.Autofill.DiscoveryStarted, Events.Autofill.DiscoveryUnavailable),
                 records.map { it.event },
             )
-            assertEquals(Reasons.NoMatchingEntry, records.last().error?.reason)
+            assertEquals(Reasons.Autofill.Matching.NoMatchingEntry, records.last().error?.reason)
             assertTrue(
                 records.all {
                     it.fields.values[LogFieldKeys.TargetPackage] is LogValue.HashedIdentifierValue

@@ -24,7 +24,7 @@ class BackupNoticeMapperTest {
                 BackupNoticeEffect.Failed(BackupOperation.IMPORT) to NoticeCode.BACKUP_IMPORT_FAILED,
                 BackupNoticeEffect.Failed(
                     BackupOperation.IMPORT,
-                    Reasons.BackupAuthenticationFailed,
+                    Reasons.Backup.Authentication.BackupAuthenticationFailed,
                 ) to NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED,
                 BackupNoticeEffect.Failed(BackupOperation.DIRECTORY_CHECK) to
                     NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED,

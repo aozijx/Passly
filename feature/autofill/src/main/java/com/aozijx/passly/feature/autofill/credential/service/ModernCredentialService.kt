@@ -128,10 +128,10 @@ class ModernCredentialService : CredentialProviderService() {
                         logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.CREDENTIAL_MANAGER))
                         throw e
                     } catch (e: CreateCredentialException) {
-                        logger.log(LogStatements.Autofill.saveFailed(e, Reasons.NoFillableFields))
+                        logger.log(LogStatements.Autofill.saveFailed(e, Reasons.Autofill.Matching.NoFillableFields))
                         if (!cancellationSignal.isCanceled) callback.onError(e)
                     } catch (e: Exception) {
-                        logger.log(LogStatements.Autofill.saveFailed(e, Reasons.UnknownFailure))
+                        logger.log(LogStatements.Autofill.saveFailed(e, Reasons.Application.Fallback.UnknownFailure))
                         if (!cancellationSignal.isCanceled) {
                             callback.onError(CreateCredentialUnknownException("Credential creation failed"))
                         }

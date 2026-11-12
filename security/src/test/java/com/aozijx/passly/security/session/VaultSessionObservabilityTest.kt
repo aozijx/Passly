@@ -219,7 +219,7 @@ class VaultSessionObservabilityTest {
                 SessionLockRequest(LockReason.BACKGROUND, LockTrigger.APP_BACKGROUND),
                 timeoutMs = 5_000,
             ) {
-                recordFailure(failure, Reasons.SessionSealFailed)
+                recordFailure(failure, Reasons.Database.Session.SessionSealFailed)
             }
 
             val failed = records.last()

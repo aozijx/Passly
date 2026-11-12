@@ -11,64 +11,41 @@ value class EntryLinkId(
     }
 }
 
-/**
- * Explicit relations between independently stored entries.
- *
- * ACCOUNT is the grouping hub. Credentials point at it instead of forming an N x N graph.
- */
-enum class EntryRelationType {
-    MEMBER_OF_ACCOUNT,
-    OTP_FOR,
-    RECOVERY_FOR,
-    RELATED_TO,
-    ;
-
-    val isSymmetric: Boolean
-        get() = this == RELATED_TO
+/** The inferred meaning of a generic link; never persisted on the link itself. */
+enum class EntryLinkKind {
+    ACCOUNT_MEMBERSHIP,
+    OTP_ASSOCIATION,
+    RECOVERY_ASSOCIATION,
+    RELATED_ENTRIES,
 }
 
-/**
- * A typed edge in the entry graph.
- *
- * Symmetric edges use a canonical endpoint order so the database can enforce uniqueness.
- */
+/** A generic, undirected association between two independently stored entries. */
 class EntryLink private constructor(
     val id: EntryLinkId,
-    val sourceEntryId: EntryId,
-    val targetEntryId: EntryId,
-    val relationType: EntryRelationType,
+    val firstEntryId: EntryId,
+    val secondEntryId: EntryId,
     val createdAt: Long,
     val updatedAt: Long,
 ) {
     init {
-        require(sourceEntryId != targetEntryId) { "An entry cannot link to itself" }
-        require(
-            !relationType.isSymmetric || sourceEntryId.value < targetEntryId.value,
-        ) { "Symmetric entry links must use canonical endpoint order" }
+        require(firstEntryId != secondEntryId) { "An entry cannot link to itself" }
+        require(firstEntryId.value < secondEntryId.value) { "Entry link endpoints must be canonical" }
     }
 
     companion object {
         fun create(
             id: EntryLinkId,
-            sourceEntryId: EntryId,
-            targetEntryId: EntryId,
-            relationType: EntryRelationType,
+            firstEntryId: EntryId,
+            secondEntryId: EntryId,
             createdAt: Long,
             updatedAt: Long = createdAt,
         ): EntryLink {
-            val (source, target) =
-                if (
-                    relationType.isSymmetric && sourceEntryId.value > targetEntryId.value
-                ) {
-                    targetEntryId to sourceEntryId
-                } else {
-                    sourceEntryId to targetEntryId
-                }
+            val (first, second) =
+                if (firstEntryId.value < secondEntryId.value) firstEntryId to secondEntryId else secondEntryId to firstEntryId
             return EntryLink(
                 id = id,
-                sourceEntryId = source,
-                targetEntryId = target,
-                relationType = relationType,
+                firstEntryId = first,
+                secondEntryId = second,
                 createdAt = createdAt,
                 updatedAt = updatedAt,
             )
@@ -78,11 +55,10 @@ class EntryLink private constructor(
     override fun equals(other: Any?): Boolean =
         other is EntryLink &&
             id == other.id &&
-            sourceEntryId == other.sourceEntryId &&
-            targetEntryId == other.targetEntryId &&
-            relationType == other.relationType &&
+            firstEntryId == other.firstEntryId &&
+            secondEntryId == other.secondEntryId &&
             createdAt == other.createdAt &&
             updatedAt == other.updatedAt
 
-    override fun hashCode(): Int = arrayOf(id, sourceEntryId, targetEntryId, relationType, createdAt, updatedAt).contentHashCode()
+    override fun hashCode(): Int = arrayOf(id, firstEntryId, secondEntryId, createdAt, updatedAt).contentHashCode()
 }

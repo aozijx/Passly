@@ -6,7 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -35,7 +34,7 @@ class EntryLinkConstraintDaoTest {
     }
 
     @Test
-    fun endpointTripleIsUnique_andDeletingEndpointCascadesLink() =
+    fun endpointPairIsUnique_andDeletingEndpointCascadesLink() =
         runBlocking {
             database.entryCommandDao().insertStrict(entry("login", EntryType.LOGIN))
             database.entryCommandDao().insertStrict(entry("account", EntryType.ACCOUNT))
@@ -46,11 +45,11 @@ class EntryLinkConstraintDaoTest {
                     database.entryLinkCommandDao().upsert(link("link-2"))
                 }.exceptionOrNull()
             assertTrue(
-                "expected the endpoint triple unique index to reject the duplicate, but was $duplicateFailure",
+                "expected the endpoint pair unique index to reject the duplicate, but was $duplicateFailure",
                 generateSequence(duplicateFailure) { it.cause }.any {
                     it.message?.contains(
-                        "UNIQUE constraint failed: entry_links.sourceEntryId, " +
-                            "entry_links.targetEntryId, entry_links.relationType",
+                        "UNIQUE constraint failed: entry_links.firstEntryId, " +
+                            "entry_links.secondEntryId",
                     ) == true
                 },
             )
@@ -90,9 +89,8 @@ class EntryLinkConstraintDaoTest {
     private fun link(id: String) =
         EntryLinkEntity(
             linkId = id,
-            sourceEntryId = "login",
-            targetEntryId = "account",
-            relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+            firstEntryId = "account",
+            secondEntryId = "login",
             createdAt = 1L,
             updatedAt = 1L,
         )

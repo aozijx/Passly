@@ -63,11 +63,11 @@ internal class AutofillInboxQueueWriter
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Exception) {
+            } catch (failure: Exception) {
                 logger.log(
                     LogStatements.Autofill.saveFailed(
-                        throwable = IllegalStateException("Autofill Inbox enqueue failed"),
-                        reason = Reasons.StorageFailure,
+                        throwable = failure,
+                        reason = Reasons.Application.Storage.StorageFailure,
                     ),
                 )
                 AutofillInboxEnqueueOutcome.Failed

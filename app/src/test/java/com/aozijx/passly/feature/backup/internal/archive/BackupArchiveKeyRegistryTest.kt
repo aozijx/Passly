@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,17 +28,6 @@ class BackupArchiveKeyRegistryTest {
             assertEquals(field, BackupArchiveKeyRegistry.field(BackupArchiveKeyRegistry.fieldKey(field)))
         }
         assertNull(BackupArchiveKeyRegistry.field("PASSWORD"))
-    }
-
-    @Test
-    fun relationKeysDoNotUseEnumNames() {
-        EntryRelationType.entries.forEach { type ->
-            assertEquals(
-                type,
-                BackupArchiveKeyRegistry.relationType(BackupArchiveKeyRegistry.relationTypeKey(type)),
-            )
-        }
-        assertNull(BackupArchiveKeyRegistry.relationType("OTP_FOR"))
     }
 
     @Test

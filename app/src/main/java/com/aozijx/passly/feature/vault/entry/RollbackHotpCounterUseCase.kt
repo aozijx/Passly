@@ -22,20 +22,19 @@ internal class RollbackHotpCounterUseCase
         ): Boolean {
             val callerJob = currentCoroutineContext()[Job]
             val isCurrent = { callerJob?.isActive != false && canRollback() }
-            if (!isCurrent()) return false
-            return try {
+            return isCurrent() && try {
                 when (
                     val result =
                         authorizationGate.authorize(
                             AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET),
                         ) {
-                            if (isCurrent()) otpRuntime.rollbackLastHotpCounter(entryId) else false
+                            isCurrent() && otpRuntime.rollbackLastHotpCounter(entryId)
                         }
                 ) {
                     is AuthorizationResult.Allowed -> result.value
                     is AuthorizationResult.Denied,
                     AuthorizationResult.Cancelled,
-                    -> false
+                        -> false
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled

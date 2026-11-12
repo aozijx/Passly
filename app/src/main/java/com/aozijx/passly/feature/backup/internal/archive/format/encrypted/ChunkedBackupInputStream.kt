@@ -79,10 +79,10 @@ internal class ChunkedBackupInputStream(
 
     private fun readNextRecord() {
         val firstType = input.read()
-        if (firstType < 0) throw BackupTruncatedException(Reasons.BackupTerminalMissing)
+        if (firstType < 0) throw BackupTruncatedException(Reasons.Backup.Container.BackupTerminalMissing)
         val recordHeader = ByteArray(BackupContainerV1Spec.RECORD_HEADER_LENGTH)
         recordHeader[0] = firstType.toByte()
-        BackupRecordCrypto.readFully(input, recordHeader, 1, recordHeader.size - 1, Reasons.BackupRecordHeaderTruncated)
+        BackupRecordCrypto.readFully(input, recordHeader, 1, recordHeader.size - 1, Reasons.Backup.Container.BackupRecordHeaderTruncated)
         val fields = ByteBuffer.wrap(recordHeader)
         val type = fields.get().toInt() and 0xff
         val recordSequence = fields.long
@@ -101,7 +101,7 @@ internal class ChunkedBackupInputStream(
         val nonce = BackupRecordCrypto.nonce(containerHeader.noncePrefix, sequence)
         val aad = BackupRecordCrypto.aad(containerHeader.authenticatedBytes, recordHeader)
         try {
-            BackupRecordCrypto.readFully(input, ciphertext, reason = Reasons.BackupRecordDataTruncated)
+            BackupRecordCrypto.readFully(input, ciphertext, reason = Reasons.Backup.Container.BackupRecordDataTruncated)
             val decoded = BackupRecordCrypto.crypt(Cipher.DECRYPT_MODE, keyBytes, nonce, aad, ciphertext, ciphertext.size)
             if (type == BackupContainerV1Spec.DATA_RECORD_TYPE) {
                 plaintext = decoded

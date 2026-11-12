@@ -39,13 +39,13 @@ internal class AutofillInboxKeyProvisioner
 
         override suspend fun provisionAfterUnlock() =
             mutex.withLock {
-                var failureReason: ReasonCode = Reasons.StorageFailure
+                var failureReason: ReasonCode = Reasons.Application.Storage.StorageFailure
                 try {
                     val current = bootstrapStore.loadAutofillInboxKeyMaterial()
                     if (current != null) {
                         val pending = recordStore.pending(current.keyId)
                         try {
-                            failureReason = Reasons.UnknownFailure
+                            failureReason = Reasons.Application.Fallback.UnknownFailure
                             val decoded =
                                 withContext(Dispatchers.Default) {
                                     dekManager.withDek { dek ->
@@ -68,26 +68,26 @@ internal class AutofillInboxKeyProvisioner
                                         }
                                     }
                                 }
-                            failureReason = Reasons.UnknownFailure
+                            failureReason = Reasons.Application.Fallback.UnknownFailure
                             for (record in pending) {
                                 val draft = decoded.firstOrNull { it.first.draftId == record.draftId }?.second
                                 if (draft == null) {
-                                    failureReason = Reasons.StorageFailure
+                                    failureReason = Reasons.Application.Storage.StorageFailure
                                     recordStore.quarantine(current.keyId, record.draftId)
-                                    failureReason = Reasons.UnknownFailure
+                                    failureReason = Reasons.Application.Fallback.UnknownFailure
                                     continue
                                 }
                                 when (draftImporter.get().import(draft)) {
                                     AutofillInboxImportOutcome.Imported -> {
-                                        failureReason = Reasons.StorageFailure
+                                        failureReason = Reasons.Application.Storage.StorageFailure
                                         recordStore.remove(current.keyId, record.draftId)
-                                        failureReason = Reasons.UnknownFailure
+                                        failureReason = Reasons.Application.Fallback.UnknownFailure
                                     }
 
                                     AutofillInboxImportOutcome.Invalid -> {
-                                        failureReason = Reasons.StorageFailure
+                                        failureReason = Reasons.Application.Storage.StorageFailure
                                         recordStore.quarantine(current.keyId, record.draftId)
-                                        failureReason = Reasons.UnknownFailure
+                                        failureReason = Reasons.Application.Fallback.UnknownFailure
                                     }
 
                                     AutofillInboxImportOutcome.Retry -> {
@@ -101,12 +101,12 @@ internal class AutofillInboxKeyProvisioner
                         return@withLock
                     }
 
-                    failureReason = Reasons.UnknownFailure
+                    failureReason = Reasons.Application.Fallback.UnknownFailure
                     val material =
                         withContext(Dispatchers.Default) {
                             dekManager.withDek(keyMaterialCodec::generateAndWrap)
                         }
-                    failureReason = Reasons.StorageFailure
+                    failureReason = Reasons.Application.Storage.StorageFailure
                     bootstrapStore.saveAutofillInboxKeyMaterial(material)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
@@ -114,10 +114,9 @@ internal class AutofillInboxKeyProvisioner
                     val integrityFailure = failure as? ExistingKeyMaterialIntegrityFailure
                     logger.inSpan(Operations.AutofillInboxKeyProvision) {
                         logger.log(
-                            LogStatements.Security.vaultOperationFailed(
+                            LogStatements.Autofill.inboxKeyProvisionFailed(
                                 throwable = integrityFailure?.cause ?: failure,
-                                reason = integrityFailure?.let { Reasons.IntegrityFailure } ?: failureReason,
-                                degraded = true,
+                                reason = integrityFailure?.let { Reasons.Security.Integrity.IntegrityFailure } ?: failureReason,
                             ),
                         )
                     }

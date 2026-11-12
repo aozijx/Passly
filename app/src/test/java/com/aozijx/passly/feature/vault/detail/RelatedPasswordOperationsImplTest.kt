@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.testing.RecordingTestLogger
@@ -102,28 +101,6 @@ class RelatedPasswordOperationsImplTest {
         }
 
     @Test
-    fun unlinkLeavesUnrelatedLinkTypesUntouched() =
-        runTest {
-            val repository = TestEntries(listOf(password("source"), password("target")))
-            val unrelated =
-                EntryLink.create(
-                    id = EntryLinkId("otp-link"),
-                    sourceEntryId = EntryId("source"),
-                    targetEntryId = EntryId("target"),
-                    relationType = EntryRelationType.OTP_FOR,
-                    createdAt = 1L,
-                )
-            val links = TestLinks(listOf(unrelated))
-            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
-
-            val result = binding.unlink(EntryId("source"), EntryId("target"), unrelated.id)
-
-            assertTrue(result is AppResult.Failure)
-            assertTrue(links.deletes.isEmpty())
-            assertEquals(listOf(unrelated), links.currentLinks)
-        }
-
-    @Test
     fun unlinkLogsRepositoryFailureAndPropagatesCancellation() =
         runTest {
             val repository = TestEntries(listOf(password("source"), password("target")))
@@ -145,8 +122,8 @@ class RelatedPasswordOperationsImplTest {
 
             assertTrue(result is AppResult.Failure)
             assertEquals(1, logger.events.size)
-            assertEquals(ErrorCodes.Security.VaultOperationFailed, logger.events.single().errorCode)
-            assertEquals(Reasons.UnknownFailure, logger.events.single().reason)
+            assertEquals(ErrorCodes.Security.Vault.VaultOperationFailed, logger.events.single().errorCode)
+            assertEquals(Reasons.Application.Fallback.UnknownFailure, logger.events.single().reason)
 
             val cancellationFailure = CancellationException("cancelled")
             val cancellingLinks = TestLinks(listOf(edge), deleteFailure = cancellationFailure)
@@ -176,7 +153,7 @@ class RelatedPasswordOperationsImplTest {
         }
 
     @Test
-    fun bindCreatesOneCanonicalRelatedToLinkForTwoSavedPasswords() =
+    fun bindCreatesOneCanonicalLinkForTwoSavedPasswords() =
         runTest {
             val repository = TestEntries(listOf(password("z-current"), password("a-target")))
             val links = TestLinks()
@@ -186,9 +163,8 @@ class RelatedPasswordOperationsImplTest {
 
             assertTrue(result is AppResult.Success<*>)
             val saved = links.upserts.single()
-            assertEquals(EntryId("a-target"), saved.sourceEntryId)
-            assertEquals(EntryId("z-current"), saved.targetEntryId)
-            assertEquals(EntryRelationType.RELATED_TO, saved.relationType)
+            assertEquals(EntryId("a-target"), saved.firstEntryId)
+            assertEquals(EntryId("z-current"), saved.secondEntryId)
         }
 
     @Test
@@ -244,7 +220,7 @@ class RelatedPasswordOperationsImplTest {
         override suspend fun getAll(): List<EntryLink> = links
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
-            links.filter { it.sourceEntryId == entryId || it.targetEntryId == entryId }
+            links.filter { it.firstEntryId == entryId || it.secondEntryId == entryId }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {
             upserts += link
@@ -277,9 +253,8 @@ class RelatedPasswordOperationsImplTest {
             second: String,
         ) = EntryLink.create(
             id = EntryLinkId("$first-$second"),
-            sourceEntryId = EntryId(first),
-            targetEntryId = EntryId(second),
-            relationType = EntryRelationType.RELATED_TO,
+            firstEntryId = EntryId(first),
+            secondEntryId = EntryId(second),
             createdAt = 1L,
         )
     }

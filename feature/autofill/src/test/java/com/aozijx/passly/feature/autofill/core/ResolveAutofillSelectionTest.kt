@@ -357,6 +357,34 @@ class ResolveAutofillSelectionTest {
             assertEquals(1, fixture.resolver.resolveCalls)
         }
 
+    @Test
+    fun legacyWebFreshAuthenticationRejectionReleasesTheAutofillLease() =
+        runBlocking {
+            val fixture = fixture()
+            fixture.resolver.freshAuthenticationRequiredOnFirstCall = true
+            val recipient = webScope()
+            val entryId = EntryId("entry-1")
+            val interaction = fixture.start(AutofillInteractionSource.LEGACY, recipient, requireAuthentication = false)
+            fixture.lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            fixture.store.confirmWebRecipient(interaction.id, recipient, 1L)
+            fixture.store.recordCandidates(interaction.id, setOf(entryId), sessionAtMs = 1L)
+            fixture.store.confirmWebEntry(interaction.id, recipient, entryId, 1L)
+
+            val outcome =
+                fixture.operation(
+                    interaction.id,
+                    recipient,
+                    entryId,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
+                )
+
+            assertEquals(AutofillSelectionOutcome.Unauthorized, outcome)
+            assertEquals(AutofillInteractionState.Cancelled, fixture.store.snapshot(interaction.id)?.state)
+            assertEquals(1, fixture.authentication.lockCount)
+        }
+
     private fun fixture(
         result: AutofillCredentialResolution = AutofillCredentialResolution.NotFound,
         authenticationState: AuthenticationState = AuthenticationState.Authenticated(1L),
@@ -372,7 +400,15 @@ class ResolveAutofillSelectionTest {
             start = StartAutofillInteraction(store, lease, vault),
             resolver = resolver,
             authentication = authentication,
-            operation = ResolveAutofillSelection(store, resolver, authentication, vault),
+            operation =
+                ResolveAutofillSelection(
+                    store,
+                    FinishAutofillInteraction(store, lease),
+                    resolver,
+                    authentication,
+                    vault,
+                ),
+            lease = lease,
         )
     }
 
@@ -386,6 +422,7 @@ class ResolveAutofillSelectionTest {
         val resolver: RecordingCredentialResolver,
         val authentication: RecordingAuthentication,
         val operation: ResolveAutofillSelection,
+        val lease: AutofillUnlockLease,
     )
 
     private class RecordingCredentialResolver(
@@ -418,6 +455,7 @@ class ResolveAutofillSelectionTest {
     ) : AuthenticationRequester,
         SessionLockController {
         val requests = mutableListOf<AuthenticationRequest>()
+        var lockCount = 0
         var beforeResult: suspend () -> Unit = {}
 
         override suspend fun authenticate(
@@ -429,6 +467,8 @@ class ResolveAutofillSelectionTest {
             return result ?: error("Authentication is not expected")
         }
 
-        override suspend fun lock(request: SessionLockRequest) = Unit
+        override suspend fun lock(request: SessionLockRequest) {
+            lockCount++
+        }
     }
 }

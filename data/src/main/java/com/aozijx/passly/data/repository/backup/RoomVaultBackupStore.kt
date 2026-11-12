@@ -32,7 +32,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -140,13 +139,12 @@ internal class RoomVaultBackupStore
                             entryLinkQueryDao()
                                 .getAll()
                                 .asSequence()
-                                .filter { it.sourceEntryId in entryIds && it.targetEntryId in entryIds }
+                                .filter { it.firstEntryId in entryIds && it.secondEntryId in entryIds }
                                 .map { link ->
                                     EntryLink.create(
                                         id = EntryLinkId(link.linkId),
-                                        sourceEntryId = EntryId(link.sourceEntryId),
-                                        targetEntryId = EntryId(link.targetEntryId),
-                                        relationType = link.relationType,
+                                        firstEntryId = EntryId(link.firstEntryId),
+                                        secondEntryId = EntryId(link.secondEntryId),
                                         createdAt = link.createdAt,
                                         updatedAt = link.updatedAt,
                                     )
@@ -188,7 +186,7 @@ internal class RoomVaultBackupStore
                     }
                     require(
                         snapshot.links.all {
-                            it.sourceEntryId in snapshotEntryIds && it.targetEntryId in snapshotEntryIds
+                            it.firstEntryId in snapshotEntryIds && it.secondEntryId in snapshotEntryIds
                         },
                     ) { "Snapshot contains a link for an unknown entry" }
                     require(
@@ -271,15 +269,14 @@ internal class RoomVaultBackupStore
 
                             snapshot.links.forEach { link ->
                                 if (
-                                    entryQueryDao().exists(link.sourceEntryId.value) &&
-                                    entryQueryDao().exists(link.targetEntryId.value)
+                                    entryQueryDao().exists(link.firstEntryId.value) &&
+                                    entryQueryDao().exists(link.secondEntryId.value)
                                 ) {
                                     entryLinkCommandDao().upsert(
                                         EntryLinkEntity(
                                             linkId = link.id.value,
-                                            sourceEntryId = link.sourceEntryId.value,
-                                            targetEntryId = link.targetEntryId.value,
-                                            relationType = link.relationType,
+                                            firstEntryId = link.firstEntryId.value,
+                                            secondEntryId = link.secondEntryId.value,
                                             createdAt = link.createdAt,
                                             updatedAt = link.updatedAt,
                                         ),

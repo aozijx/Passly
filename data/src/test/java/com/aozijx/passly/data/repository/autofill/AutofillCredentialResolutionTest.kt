@@ -5,7 +5,6 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -77,8 +76,15 @@ class AutofillCredentialResolutionTest {
                 link("expected", "otp-2", "entry-1"),
             )
 
-        assertEquals("otp-2", findLinkedOtpEntryId("entry-1", links))
-        assertEquals(null, findLinkedOtpEntryId("missing", links))
+        val endpointTypes =
+            mapOf(
+                "entry-1" to EntryType.LOGIN,
+                "other-login" to EntryType.LOGIN,
+                "otp-1" to EntryType.OTP,
+                "otp-2" to EntryType.OTP,
+            )
+        assertEquals("otp-2", findLinkedOtpEntryId("entry-1", links, endpointTypes))
+        assertEquals(null, findLinkedOtpEntryId("missing", links, endpointTypes))
     }
 
     @Test
@@ -107,13 +113,14 @@ class AutofillCredentialResolutionTest {
         id: String,
         source: String,
         target: String,
-    ): EntryLinkEntity =
-        EntryLinkEntity(
+    ): EntryLinkEntity {
+        val endpoints = listOf(source, target).sorted()
+        return EntryLinkEntity(
             linkId = id,
-            sourceEntryId = source,
-            targetEntryId = target,
-            relationType = EntryRelationType.OTP_FOR,
+            firstEntryId = endpoints[0],
+            secondEntryId = endpoints[1],
             createdAt = 10L,
             updatedAt = 10L,
         )
+    }
 }

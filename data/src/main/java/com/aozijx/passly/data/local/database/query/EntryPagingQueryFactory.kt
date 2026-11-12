@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 
 internal fun buildEntryCategoryQuery(): SimpleSQLiteQuery =
     SimpleSQLiteQuery(
@@ -116,38 +115,56 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
                 mapped.entryId,
                 COALESCE(
                     (
-                        SELECT direct.targetEntryId
+                        SELECT CASE
+                            WHEN first_entry.entryType = '${EntryType.ACCOUNT.toStorageKey()}' THEN first_entry.entryId
+                            ELSE second_entry.entryId
+                        END
                         FROM entry_links AS direct
-                        JOIN entries AS direct_target
-                          ON direct_target.entryId = direct.targetEntryId
-                         AND direct_target.deletedAt IS NULL
-                        WHERE direct.sourceEntryId = mapped.entryId
-                          AND direct.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.toStorageKey()}'
+                        JOIN entries AS first_entry ON first_entry.entryId = direct.firstEntryId
+                        JOIN entries AS second_entry ON second_entry.entryId = direct.secondEntryId
+                        WHERE ((direct.firstEntryId = mapped.entryId
+                                AND first_entry.entryType != '${EntryType.ACCOUNT.toStorageKey()}'
+                                AND second_entry.entryType = '${EntryType.ACCOUNT.toStorageKey()}')
+                           OR (direct.secondEntryId = mapped.entryId
+                                AND second_entry.entryType != '${EntryType.ACCOUNT.toStorageKey()}'
+                                AND first_entry.entryType = '${EntryType.ACCOUNT.toStorageKey()}'))
+                          AND (first_entry.entryId != mapped.entryId OR second_entry.entryId != mapped.entryId)
+                          AND CASE
+                                WHEN first_entry.entryType = '${EntryType.ACCOUNT.toStorageKey()}' THEN first_entry.deletedAt
+                                ELSE second_entry.deletedAt
+                              END IS NULL
                         ORDER BY direct.createdAt DESC, direct.linkId DESC
                         LIMIT 1
                     ),
                     (
-                        SELECT recovery.targetEntryId
-                        FROM entry_links AS recovery
-                        JOIN entries AS recovery_target
-                          ON recovery_target.entryId = recovery.targetEntryId
-                         AND recovery_target.deletedAt IS NULL
-                        WHERE recovery.sourceEntryId = mapped.entryId
-                          AND recovery.relationType = '${EntryRelationType.RECOVERY_FOR.toStorageKey()}'
-                        ORDER BY recovery.createdAt DESC, recovery.linkId DESC
-                        LIMIT 1
-                    ),
-                    (
-                        SELECT member.targetEntryId
-                        FROM entry_links AS otp
-                        JOIN entry_links AS member ON member.sourceEntryId = otp.targetEntryId
-                        JOIN entries AS account_target
-                          ON account_target.entryId = member.targetEntryId
-                         AND account_target.deletedAt IS NULL
-                        WHERE otp.sourceEntryId = mapped.entryId
-                          AND otp.relationType = '${EntryRelationType.OTP_FOR.toStorageKey()}'
-                          AND member.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.toStorageKey()}'
-                        ORDER BY otp.createdAt DESC, member.createdAt DESC, member.linkId DESC
+                        SELECT CASE
+                            WHEN member_first.entryType = '${EntryType.ACCOUNT.toStorageKey()}' THEN member_first.entryId
+                            ELSE member_second.entryId
+                        END
+                        FROM entry_links AS factor
+                        JOIN entries AS factor_first ON factor_first.entryId = factor.firstEntryId
+                        JOIN entries AS factor_second ON factor_second.entryId = factor.secondEntryId
+                        JOIN entries AS member_entry ON member_entry.entryId = CASE
+                            WHEN factor_first.entryType IN ('${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}') THEN factor_second.entryId
+                            ELSE factor_first.entryId
+                        END
+                        JOIN entry_links AS member ON member.firstEntryId = member_entry.entryId OR member.secondEntryId = member_entry.entryId
+                        JOIN entries AS member_first ON member_first.entryId = member.firstEntryId
+                        JOIN entries AS member_second ON member_second.entryId = member.secondEntryId
+                        WHERE mapped.entryId IN (factor.firstEntryId, factor.secondEntryId)
+                          AND (
+                                (factor_first.entryType IN ('${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}')
+                                    AND factor_second.entryType NOT IN ('${EntryType.ACCOUNT.toStorageKey()}', '${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}'))
+                             OR (factor_second.entryType IN ('${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}')
+                                    AND factor_first.entryType NOT IN ('${EntryType.ACCOUNT.toStorageKey()}', '${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}'))
+                          )
+                          AND member_entry.entryType NOT IN ('${EntryType.ACCOUNT.toStorageKey()}', '${EntryType.OTP.toStorageKey()}', '${EntryType.RECOVERY_CODE.toStorageKey()}')
+                          AND (member_first.entryType = '${EntryType.ACCOUNT.toStorageKey()}' OR member_second.entryType = '${EntryType.ACCOUNT.toStorageKey()}')
+                          AND CASE
+                                WHEN member_first.entryType = '${EntryType.ACCOUNT.toStorageKey()}' THEN member_first.deletedAt
+                                ELSE member_second.deletedAt
+                              END IS NULL
+                        ORDER BY factor.createdAt DESC, member.createdAt DESC, member.linkId DESC
                         LIMIT 1
                     )
                 ) AS accountId
